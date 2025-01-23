@@ -3,17 +3,18 @@ import { Fountain, Token, InlineLexer } from 'fountain-js';
 
 export const VIEW_TYPE_FOUNTAIN = 'fountain';
 
-function fountainToHtml(tokens: Token[]) {
-  return tokens.map(fountainTokenToHtml).join('');
+function fountainToHtml(tokens: Token[], options: { showSynopsis: boolean }) {
+  return tokens.map(t => fountainTokenToHtml(t, options)).join('');
 }
 
-function fountainTokenToHtml(token: Token) {
+function fountainTokenToHtml(token: Token, options: { showSynopsis: boolean } ) {
   // This is copied from fountain-js toHtml function
   // Why? Because it mostly does what I want, but
   // sadly not completely.
     let lexedText = '';
 
     if (token?.text) {
+       // TODO: Handle inline notes 
         lexedText = InlineLexer
                         .reconstruct(token.text, token.type === 'action');
     }
@@ -48,11 +49,10 @@ function fountainTokenToHtml(token: Token) {
           const section_marker = "#".repeat(token.depth ?? 1); // The ?? 1 is just to make typescript happy
           return `<p class="section">${section_marker} ${lexedText}</p>`;
         case 'synopsis':
-          return `<p class="synopsis">= ${lexedText}</p>`;
+          return options.showSynopsis ? `<p class="synopsis">= ${lexedText}</p>` : "";
 
         case 'note':
           return `<span class="note">[[${lexedText}]]</span>`;
-          //return `<p class="synopsis">${lexedText}</p>`;
         case 'boneyard_begin': return `<!-- `;
         case 'boneyard_end': return ` -->`;
 
@@ -66,13 +66,37 @@ function fountainTokenToHtml(token: Token) {
     }
 }
 
+type FountainViewOptions = {
+  showSynopsis: boolean;
+};
+
 export class FountainView extends TextFileView {
   fountain : Fountain;
+  options: FountainViewOptions;
+  tokens: Token[];
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
     this.fountain = new Fountain();
-    console.log('view created %p', this)
+    this.options = { showSynopsis : true };
+    console.log('view created %p', this);
+    this.addAction("notebook", "Toggle show notes", evt => {
+      this.toggleShowNotes();
+      this.render();
+    } );
+  }
+
+  toggleShowNotes() {
+    this.options.showSynopsis = !this.options.showSynopsis;
+  }
+
+  render() {
+      const child = this.containerEl.children[1];
+      child.empty();
+      const mainblock = child.createDiv('screenplay');
+      // Assuming nobody does a supply chain attack on the fountain library, the below
+      // is fine as there is no way for the user to embed html in the fountain.
+      mainblock.innerHTML = fountainToHtml(this.tokens, this.options);
   }
 
   getViewType() {
@@ -93,12 +117,8 @@ export class FountainView extends TextFileView {
 
       this.data = data;
       const script = this.fountain.parse(data, true);
-      const child = this.containerEl.children[1];
-      child.empty();
-      const mainblock = child.createDiv('screenplay');
-      // Assuming nobody does a supply chain attack on the fountain library, the below
-      // is fine as there is no way for the user to embed html in the fountain.
-      mainblock.innerHTML = fountainToHtml(script.tokens);
+      this.tokens = script.tokens;
+      this.render();
   }
 
   clear(): void {
