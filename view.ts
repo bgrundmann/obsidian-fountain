@@ -42,10 +42,17 @@ function fountainTokenToHtml(token: Token) {
         case 'dialogue_end': return `</div>`;
         case 'dual_dialogue_end': return `</div>`;
 
-        case 'section': return `<h${token.depth} class="section">${lexedText}</h${token.depth}>`;
-        case 'synopsis': return `<p class="synopsis">${lexedText}</p>`;
+        case 'section':
+          // Reconsider this. Should maybe just use h1,h2,h3,h4 for sections
+          // and scene_heading and the like should get classes
+          const section_marker = "#".repeat(token.depth ?? 1); // The ?? 1 is just to make typescript happy
+          return `<p class="section">${section_marker} ${lexedText}</p>`;
+        case 'synopsis':
+          return `<details><summary>Synopsis</summary>${lexedText}</details>`;
 
-        case 'note': return `<!-- ${lexedText} -->`;
+        case 'note':
+          return `<i>[[${lexedText}]]</i>`;
+          //return `<p class="synopsis">${lexedText}</p>`;
         case 'boneyard_begin': return `<!-- `;
         case 'boneyard_end': return ` -->`;
 
