@@ -28,117 +28,23 @@
     font-display: swap;
 }
 
-
-
-/* ====================================================== */
-/* ------------------------------------------------------- */
-/* ================ Fountain Plugin ================== */
-/* ------------------------------------------------------- */
-/* ====================================================== */
-
-/* basic preview elements (that have their own classes already) */
-p.centered {
-  text-align: center;
-  padding-left: 2.5in;
-}
-p.synopsis {
-  visibility: hidden;
-  margin: 0;
-  padding: 0;
-  display: block;
-}
-p.synopsis:not(:hover)::before {
-  visibility: visible;
-  content: "💬";
-}
-p.synopsis:hover {
-  visibility: visible;
-  background: var(--background-secondary);
-  color: var(--text-normal);
-  box-shadow: var(--shadow-s);
-  border: var(--background-modifier-border) solid 1px;
-  border-radius: var(--radius-s);
-  margin-left: 198px;
-  padding-left: 10px;
-  padding-right: 10px;
-  padding-top: 0.2em;
-  padding-bottom: 0.2em;
-  line-height: 1.5;
-  font-size: calc(var(--font-ui-small) + 1px);
-  font-family: var(--font-monospace-override) , var(--font-monospace) !important;
-  transition: 0.25s;
-  animation: pop-down 200ms forwards ease-in-out;
-}
-p.section {
-    font-weight: bold;
-    text-decoration: underline;
-    padding-left: 2.5in;
-    margin: 0 !important;
-}
-.hide-sections p.section, .hide-synopsis p.synopsis  {
-    display: none;
-}
-
-
-[class*=cm-fountain] {
-  color: var(--text-normal) !important;
-}
-
-
-/* fix some scrolling issues, make view more consistent */
-.fountain-source-view >.CodeMirror-wrap > .CodeMirror-scroll {
-    margin: 0 !important;
-    text-align: left !important;
-    font-size: 12pt !important;
-    font-family: var(--screenplay-edit-font), var(--font-monospace), Courier !important;
-    padding: 0.5in 0.5in 0.5in 1in !important;
-    max-width: 63ch;
-    min-width: 63ch;
-    width: 100% !important;
-    line-height: 1.4 !important;
-}
-.is-phone .fountain-source-view>.CodeMirror-wrap>.CodeMirror-scroll {
-    margin: 1em auto !important;
-    padding: 0.421in 0.421in 0.421in 0.633in !important;
-    width: 3.6in !important;
-    line-height: 1.4 !important;
-}
-
-
-
-
-/* Styles for Screenplain */
-.markdown-preview-view:not(.screenplay) .screenplay, [data-type=fountain] {
-   
-    --font-text: var(--screenplay-font) !important;
-    font-family: var(--screenplay-font) !important;
-    text-align: left !important;
-    line-height: 1.25 !important;
-}
-body:not(.is-phone) .markdown-preview-view:not(.screenplay) .screenplay {
-    padding: 0 !important;
-    max-width: 63ch !important;
-    width: 63ch !important;
-    min-width: 63ch !important;
-    overflow: scroll;
-    margin: 0em auto !important;
-    font-size: 12pt !important;
-}
-
-
-
-
-.is-phone  .markdown-source-view:not(.screenplay) .screenplay {
-   padding: 0 !important;
-   max-width: 63ch !important;
-   min-width: 63ch !important;
-   font-size: 1.1ch !important;
-}
-
 .screenplay {
-    font-family: var(--screenplay-font) !important;
-    --font-monospace: var(--screenplay-font) !important;
- }
+    font-family: var(--screenplay-font), 'Courier Final Draft', 'Courier', var(--font-monospace) !important;
+    --font-text: var(--screenplay-font), 'Courier Final Draft', 'Courier', var(--font-monospace) !important;
+    --font-preview-view: var(--screenplay-font), 'Courier Final Draft', 'Courier', var(--font-monospace) !important;
+    --h1-font: var(--screenplay-font) !important;
+    --h2-font: var(--screenplay-font) !important;
+    --h3-font: var(--screenplay-font) !important;
+    --h4-font: var(--screenplay-font) !important;
+    --h5-font: var(--screenplay-font) !important;
+    --h6-font: var(--screenplay-font) !important;
+    --file-margins: 1in 1in 1in 1.5in !important;
+    --file-line-width: 6.2in !important;
+    --font-text: var(--screenplay-font);
+    font-size: 12pt;
+    line-height: 1.3;
+}
+
 
 [data-type=fountain] .view-content .screenplay {
      padding: 0 !important;
@@ -150,101 +56,31 @@ body:not(.is-phone) .markdown-preview-view:not(.screenplay) .screenplay {
     font-size: 12pt !important;
 }
 
-/* ===== screenplay page class ===== */
-.screenplay-page .block-language-fountain,
-.screenplay-page:has(.screenplay) .cm-contentContainer,
-.screenplay-page .md-screenplay .markdown-preview-sizer,
-.screenplay-page .md-screenplay .cm-sizer {
-    background-color: var(--background-primary);
-    box-shadow: var(--shadow-s);
-
-}
-.screenplay-page:has(.screenplay) .cm-contentContainer {
-    padding: 0in 1in;
+body {
+    --screenplay-font: 'Courier Prime';
+    --bold-weight: 600;
 }
 
-/* horizontal rules with page-like view */
-.screenplay-page:has(.screenplay) hr,
-.screenplay-page .md-screenplay hr {
-    visibility: hidden;
-}
-.screenplay-page:has(.screenplay) hr::before,
-.screenplay-page .md-screenplay hr::before {
-   content: "";
-   visibility: visible;
-   position: absolute;
-   height: 7px;
-   background-color: var(--background-secondary);
-    box-shadow: rgba(0, 0, 0, 0.092) 0px 2px 4px inset;
+body:not(.is-phone) .screenplay {
+    padding: 0 !important;
+    max-width: 63ch !important;
+    width: 63ch !important;
+    min-width: 63ch !important;
+    overflow: scroll;
+    margin: 0em auto !important;
+    font-size: 12pt !important;
 }
 
-.screenplay-page:has(.screenplay) hr::before {
-    width: 8.31in;
-    margin-left: -97px;
+.is-phone .screenplay {
+   padding: 0 !important;
+   max-width: 63ch !important;
+   min-width: 63ch !important;
+   font-size: 1.1ch !important;
 }
 
-.screenplay-page .md-screenplay hr::before {
-    width: 7.4in;
-    margin-left: -50px;
-}
+/**************** dialogue */
 
-/* special adjustments for fountain */
-
-body:not(.is-phone) .md-screenplay .markdown-preview-sizer {
-    padding: 30px 50px;
-    width: 7.4in;
-    min-width: 7.4in;
-    max-width: 7.4in;
-}
-
-
-
-
-.screenplay-page .view-content:has(.screenplay),
-.screenplay-page .view-content:has(.md-screenplay) {
-    background-color: var(--background-secondary) !important;
-}
-/* when editing fountain files */
-.screenplay-page .fountain-source-view >.CodeMirror-wrap > .CodeMirror-scroll {
-    background-color: var(--background-primary); 
-    box-shadow: var(--shadow-s);
-}
-
-
-
-
-.is-phone .markdown-preview-view:not(.screenplay) .screenplay {
-    width: 3.6in;
-    padding: 0.421in 0.421in 0.421in 0.633in !important;
-}
-
-.markdown-preview-view:not(.screenplay) .screenplay > * {
-    text-indent: 0px !important;
-}
-
-
-
-
-.markdown-preview-view:not(.screenplay) .screenplay>br {
-    clear: both;
-}
-
-.markdown-preview-view:not(.screenplay) .screenplay>div.action p {
-    margin-top: 1em;
-}
-
-.markdown-preview-view:not(.screenplay) .screenplay .dual-dialogue {
-    display: flex;
-    gap: 0.5in;
-    margin-top: 1em;
-    text-align: left;
-    width: flex;
-}
-
-/* Dialogue */
-
-/* dual dialogue */
-.markdown-preview-view:not(.screenplay) .screenplay > .dual-dialogue h4, [data-type=fountain] .dual-dialogue h4 {
+.screenplay > .dual-dialogue > .character, [data-type=fountain] .dual-dialogue > h4 {
     text-align: left;
     text-transform: uppercase;
     color: var(--h2-color) !important;
@@ -256,31 +92,19 @@ body:not(.is-phone) .md-screenplay .markdown-preview-sizer {
     margin-bottom: 0 !important;
 }
 
-
-.markdown-preview-view:not(.screenplay) .screenplay > .dialogue h4,
-[data-type=fountain] .dialogue h4 { /* character names */
+.screenplay > .dialogue > .character, [data-type=fountain] .dialogue > .character { 
     text-transform: uppercase;
     color: var(--h2-color);
     font-weight: var(--bold-weight)  !important;
     font-size: inherit !important;
-   padding: 0.1in 0 0 2.5in !important;
-   margin: 0 !important;
+    padding: 0.1in 0 0 2.5in !important;
+    margin: 0 !important;
     width: fit-content;
     break-after: avoid-page !important;
     text-align: left;
-   
 }
 
-/* adjust dialogue margins for mobile */
-.is-phone .markdown-preview-view:not(.screenplay) .screenplay .dialogue h4 {
-    margin: 0 0 0 -0.7in !important;
-}
-.is-phone .markdown-preview-view:not(.screenplay) .screenplay>.dialogue > p {
-    margin: 0 0 0 0.5in !important;
-}
-
-.markdown-preview-view:not(.screenplay) .screenplay>.dialogue > p,
-[data-type=fountain] .dialogue > p { /* dialogue below names */
+.screenplay > .dialogue > .words, [data-type=fountain] .dialogue > .words { 
     text-align: left;
     width: calc(100% - 2.3in) !important;
     max-width: calc(100% - 2.3in) !important;
@@ -289,19 +113,26 @@ body:not(.is-phone) .md-screenplay .markdown-preview-sizer {
     break-before: avoid-page !important;
 }
 
+
+.is-phone .screenplay > .dialogue > .character {
+    margin: 0 0 0 -0.7in !important;
+}
+.is-phone .screenplay > .dialogue > .words {
+    margin: 0 0 0 0.5in !important;
+}
+
 /* prevents  a page break from interrupting dialogue */
 .dialogue {
     break-inside: avoid !important;
 }
 
 /* adjust for mobile */
-.is-phone .markdown-preview-view:not(.screenplay) .screenplay .dialogue > p {
+.is-phone .screenplay > .dialogue > .words {
     margin: 0 0 0 0.45in;
 }
 
 /* parentheticals */
-.markdown-preview-view:not(.screenplay) .screenplay>.dialogue > .parenthetical,
-[data-type=fountain] .dialogue > .parenthetical{
+.screenplay > .dialogue > .parenthetical, [data-type=fountain] .dialogue > .parenthetical{
     margin: 0 0 0 1.91in !important;
     padding: 0px !important;
     text-align: left;
@@ -309,13 +140,13 @@ body:not(.is-phone) .md-screenplay .markdown-preview-sizer {
 }
 
 /* adjust for phones */
-.is-phone .markdown-preview-view:not(.screenplay) .screenplay .dialogue > .parenthetical {
+.is-phone .screenplay > .dialogue > .parenthetical {
     margin: 0 0 0 0.8in !important; 
 }
 
-/* === Scene Headings === */
-.markdown-preview-view:not(.screenplay) .screenplay>h3,
-[data-type=fountain] h3 {
+/****** scene headings */
+
+.screenplay > .scene-heading, [data-type=fountain] .scene-heading {
     padding: 0px !important;
     text-transform: uppercase;
     font-weight: var(--bold-weight)  !important;
@@ -323,922 +154,37 @@ body:not(.is-phone) .md-screenplay .markdown-preview-sizer {
     text-align: left !important;
     color: var(--h1-color) !important;
 }
-.markdown-preview-view:not(.screenplay) .screenplay>h2,
-[data-type=fountain] .screenplay > h2 {
-padding: 0px !important;
-text-transform: uppercase;
-color: var(--h3-color) !important;
-font-weight: var(--bold-weight)  !important;
-font-size: inherit !important;
-text-align: right !important;
-}
-
-/* Change mode button */
-.fountain-button:hover {
-    color: var(--text-a);
-    background-color: transparent;
-}
-
-
-body:not(.is-phone) .markdown-preview-view:not(.screenplay):has(.screenplay) {
-    --file-line-width: 8.3in !important;
-}
-
-/* == fountain codeblock == */
-.view-content:has(.screenplay) .HyperMD-codeblock {
-    text-align: left !important;
-    font-size: 11pt !important;
-    padding: 5px 0in 5px 0in !important;
-    position: relative;
-    word-wrap: break-word;
-    white-space:initial;
-    background-color: var(--background-primary) !important;
-    display: block;
-    width: 5.7in !important;
-    min-width: 1.4in !important;
-    max-width: 8.4in !important;
-    line-height: 1.3 !important;
-    font-family: var(--screenplay-font) !important;
-   
-}
-.screenplay  .cm-hmd-codeblock {
-    letter-spacing: normal !important;
-}
-
-/* == underlines == */
-.underline {
-    font-weight: var(--bold-weight);
-}
-
-
-
-/* ====================================================== */
-/* ------------------------------------------------------- */
-/* ================ CSS Screenplay CLASS ================== */
-/* ------------------------------------------------------- */
-/* ====================================================== */
-
-body {
-    --screenplay-font: 'Courier Prime';
-    --bold-weight: 600;
-}
-
-
-.markdown-preview-view.screenplay,
-.markdown-source-view.screenplay {
-    font-family: var(--screenplay-font), 'Courier Final Draft', 'Courier', var(--font-monospace) !important;
-    --font-text: var(--screenplay-font), 'Courier Final Draft', 'Courier', var(--font-monospace) !important;
-  --font-preview-view: var(--screenplay-font), 'Courier Final Draft', 'Courier', var(--font-monospace) !important;
-    --h1-font: var(--screenplay-font) !important;
-    --h2-font: var(--screenplay-font) !important;
-    --h3-font: var(--screenplay-font) !important;
-    --h4-font: var(--screenplay-font) !important;
-    --h5-font: var(--screenplay-font) !important;
-    --h6-font: var(--screenplay-font) !important;
-    --file-margins: 1in 1in 1in 1.5in !important;
-    --file-line-width: 6.2in !important;
-    font-size: 12pt;
-    --font-text: var(--screenplay-font);
-    line-height: 1.3;
-}
-.screenplay.markdown-preview-view .cm-line,
-.md-screenplay .cm-line {
-    font-family: var(--screenplay-font) !important;
-    max-width: 63ch !important;
-}
-
-
-
-/* syntax highlighting option */
-.syntax .markdown-source-view.screenplay {
-    --h1-color: var(--color-blue) !important;
-    --h2-color: var(--color-orange) !important;
-    --h3-color: var(--color-yellow) !important;
-    --h4-color: var(--color-purple) !important;
-    --h5-color: var(--color-green) !important;
-}
-
-.syntax .markdown-source-view.screenplay div:has(h2) + div:has(p),
-.syntax .markdown-source-view.screenplay div:has(h3) + div:has(p),
-.syntax .markdown-source-view.screenplay .HyperMD-header-2 + .cm-line:not(.HyperMD-header),
-.syntax .markdown-source-view.screenplay .HyperMD-header-3 + .cm-line {
-    color: var(--color-cyan);
-}
-
-/* active line heading indicators */
-
-.markdown-source-view.screenplay .cm-active.HyperMD-header-1::before,
-.markdown-source-view.screenplay .cm-active.HyperMD-header-2::before,
-.markdown-source-view.screenplay .cm-active.HyperMD-header-3::before,
-.markdown-source-view.screenplay .cm-active.HyperMD-header-4::before,
-.markdown-source-view.screenplay .cm-active.HyperMD-header-5::before,
-.markdown-source-view.screenplay .cm-active.HyperMD-header-6::before,
-.markdown-source-view.screenplay .cm-active.HyperMD-hr::before,
-.markdown-source-view.screenplay .cm-active::before,
-.cm-fountain-scene-heading.cm-active::before {
-    font-size: 0.7rem;
-    width: auto;
-    margin-left: -110px;
-    position: absolute;
-    box-shadow: var(--shadow-s);
-    overflow: visible;
-    font-family: var(--font-default);
-    font-weight:var(--bold-weight)  !important;
+.screenplay > .transition, [data-type=fountain] .transition {
+    padding: 0px !important;
     text-transform: uppercase;
-    padding: 2px 5px;
-    border-radius: var(--radius-s);
-    color: var(--background-primary);
-}
-.h-syntax .markdown-source-view.screenplay .cm-active.HyperMD-header-1::before,
-.h-syntax .cm-fountain-scene-heading.cm-active::before{
-    content: 'Scene Heading';
-    background-color: var(--color-blue);
-}
-.h-syntax .markdown-source-view.screenplay .cm-active.HyperMD-header-2::before {
-    content: 'Character';
-    background-color: var(--color-orange);
-}
-
-.h-syntax .markdown-source-view.screenplay .HyperMD-header-2 + .cm-active::before,
-.h-syntax .markdown-source-view.screenplay .HyperMD-header-3 + .cm-active::before,
-.h-syntax .markdown-source-view.screenplay .HyperMD-header-6 + .cm-active::before {
-   content: 'Dialogue';
-   background-color: var(--color-cyan);
-}
-
-.h-syntax .markdown-source-view.screenplay .cm-active.HyperMD-header-3::before {
-    content: 'Parenthetical';
-    background-color: var(--color-yellow);
-}
-.h-syntax .markdown-source-view.screenplay .cm-active.HyperMD-header-4::before {
-    content: 'Transition';
-    background-color: var(--color-purple);
-}
-.h-syntax .markdown-source-view.screenplay .cm-active.HyperMD-header-5::before {
-    content: 'Act';
-    background-color: var(--color-green);
-}
-.h-syntax .markdown-source-view.screenplay  .cm-active.HyperMD-hr::before {
-    content: 'Page Break';
-    background-color: var(--color-pink);
-}
-
-
-
-/* scene headings */
-.markdown-preview-view.screenplay h1, .markdown-source-view.screenplay .HyperMD-header-1 {
-    font-size: inherit;
-    text-align: left;
-    text-transform: uppercase; 
-    font-weight: var(--bold-weight) ;
-}
-
-
-
-/* character names */
-.markdown-preview-view.screenplay h2, .markdown-source-view.screenplay .HyperMD-header-2 {
-    font-size: var(--font-text-size) !important;
-    padding: 0 0 0 2.2in !important;
-    text-transform: uppercase;
-    margin-top: 0.2in;
-    font-weight: var(--bold-weight) ;
-    width: fit-content;
-}
-
-/* dual dialogue (with efemkay's modular css layout) */
-.screenplay .callout {
-margin: 0 !important;
-padding: 0!important;
-max-width: unset;
-height: flex !important;
-}
-.screenplay .callout h2 {
-padding: 0 0 0 1.1in !important;
-  margin: 0 !important;
-}
-.screenplay .callout p {
-padding-left: 0.45in !important; 
-margin-top: 0.1in !important;
-}
-
-  
-/* dialogue */
-.markdown-preview-view.screenplay div:has(h2) + div:has(p),
-.markdown-preview-view.screenplay div:has(h3) + div:has(p),
-.markdown-source-view.screenplay .HyperMD-header-2 + .cm-line,
-.markdown-source-view.screenplay .HyperMD-header-3 + .cm-line {
-    padding-left: 1.5in !important;
-    width: fit-content;
-    margin-bottom: 0.2in;
-}
-
-/* reduce padding */ 
-.markdown-preview-view.screenplay div:has(h2) + div:has(p) p,
-.markdown-preview-view.screenplay div:has(h3) + div:has(p) p {
-margin-top: 0 !important;
-padding-top: 0 !important;
-}
-
-
-/* transitions */
-.markdown-preview-view.screenplay h4, .markdown-source-view.screenplay .HyperMD-header-4 {
-    text-align: right !important;
-    width: 100% !important;
-    font-size: inherit;
-    font-weight: var(--bold-weight) ;
-}
-
-/* parentheticals */
-.markdown-preview-view.screenplay h3,
-.markdown-source-view.screenplay .HyperMD-header-3 {
-    padding: 0 0 0 1.6in !important; 
-    font-size: inherit;
-    margin-top: 0;
-    font-weight: normal;
-}
-
-/* Acts */
-.markdown-preview-view.screenplay h5, 
-.markdown-source-view.screenplay .HyperMD-header-5 {
-    padding-left: 2.5in !important;
-    text-decoration: underline;
-}
-
-/* highlights */
-.screenplay.markdown-rendered mark,
-.screenplay .cm-highlight {
-    background-color: transparent !important;
-    text-decoration: underline;
-    font-weight: var(--bold-weight) ;
-}
-
-/* links */
-.screenplay a {
-    font-family: inherit;
-    color: var(--text-normal) !important;
-    text-decoration-color: var(--text-accent);
-}
-
-/* adjust heading styles that may be inherited from themes */
-.screenplay h1, .screenplay h2,.screenplay h3,.screenplay h4,.screenplay h5 {
-    border: none !important;
-    text-align: left !important;
-}
-
-/* printing elements */
-
-@media print {
-
-* {
-    line-height: 1 !important;
-}
-
-@page {
-    margin-top: 1in;
-    margin-bottom: 1in;
-    margin-left: 1.5in;
-    margin-right: 0.5in;
-    size: letter;    
-}
-
-
-/* exclusive to md-screenplays */
-.md-screenplay {
-    white-space: initial !important;
-    --file-line-width: 7.6in !important;
-    --file-margins: 0 !important;
-}
-.print .markdown-preview-view.md-screenplay {
-    margin: auto;
-    padding: 0px;
-    max-width: 63ch !important;
-}
-
-.markdown-preview-view:has(.screenplay) {
---file-line-width: 100% !important;
-}
-.screenplay h3 {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-}
-
-.screenplay p  {
-    max-width: 61ch !important;
-    min-width: 61ch !important;
-    width: 61ch !important;
-    margin-bottom: 0 !important;
-}
-
-.screenplay .dialogue p {
-    max-width: calc(100% - 2.5in) !important;
-    width: calc(100% - 2.5in) !important;
-    min-width: calc(100% - 2.5in) !important;
-    white-space: initial;
-}
-
-/* scene headings */
-h1 {
-    font-size: inherit;
-    text-transform: uppercase; 
-    font-weight: var(--bold-weight) ;
-}
-
-
-/* character names */
-h2 {
-    font-size: inherit;
-    padding-left: 2.2in !important;
-    text-transform: uppercase;
-    margin-top: 0.2in;
-}
-
-/* dialogue */
-.md-screenplay h2 + p,
-.md-screenplay h3 + p {
-    padding-left: 1.2in !important;
-    max-width: 5in !important;
-    margin-bottom: 0.2in;
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
-
-/* transitions */
-.md-screenplay h4 {
-    text-align: right;
-    text-transform: uppercase !important;
-    font-size: inherit;
-    font-weight: var(--bold-weight) ;
-}
-
-/* parentheticals */
-.md-screenplay h3  {
-    padding-left: 1.5in !important; 
-    font-size: inherit;
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-    font-weight: normal;
-}
-
-/* Acts */
-.md-screenplay h5 {
-    padding-left: 2.5in !important;
-    text-decoration: underline;
-}
-
-
-/* force page break with hr */
-hr {
-    break-after:page;
-    visibility: hidden;
-}
-
-}
-
-
-/* @settings
-
-name: Screenplay
-id: screenplay-settings
-settings:
-    -
-        id: screenplay-page
-        title: Page-like View
-        type: class-toggle
-        default: false
-        description: ⚠️ EXPERIMENTAL. View the screenplay in a page-like view similar to Microsoft Word. ☝️ RECOMMENDATION - Turn this off before exporting your scripts to PDF.
-    -
-        id: screenplay-font
-        title: Font
-        description: Supports fallback fonts as well. Enclose fonts in a list with a ' ('Courier Prime', 'Courier New')
-        type: variable-text
-        default: 'Courier Prime'
-    -
-        id: strip-styling
-        title: Strip Special Styling
-        description: By default, scene headings, character names, and underlines are bolded, and parentheticals are italicized in screenplay notes. This is not standard for a screenplay. With this setting you can remove such formatting.
-        type: class-select
-        default: strip-export
-        options:
-            -
-                label: None
-                value: none
-            -
-                label: Export Only
-                value: strip-export
-            -
-                label: All
-                value: strip-all
-
-    -
-        id: md-screenplay-heading
-        title: Markdown Screenplays
-        description: Markdown screenplays written with the `md-screenplay` CSS Class OR screenplays written with Chuang Caleb's "Fountain Editor" plugin.
-        type: heading
-        level: 2
-        collapsed: true
-    -
-        id: syntax
-        title: Syntax Highlighting
-        description: Change text colors according to screenplay elements. (Markdown screenplays only; Fountain Editor support coming soon.)
-        type: class-toggle
-        default: false
-    -   
-        id: h-syntax
-        title: Formatting Helper
-        type: class-toggle
-        description: Show the format of the active line. For example, show "Scene Heading" when you type a Header 1.
-        default: false
-    -
-        id: fountain-plugin-heading
-        title: Fountain Plugin
-        type: heading
-        level: 2
-        collapsed: true
-    -
-        id: hide-synopsis 
-        title: Hide Synopses
-        description: Hide Synopses (comments preceded by = ) 
-        type: class-toggle
-        default: false
-    -
-        id: hide-sections
-        title: Hide Sections
-        description: Hide Sections (markdown headings inside a fountain file)
-        type: class-toggle
-        default: false
-    -
-        id: more-info-heading
-        title: 📖 More
-        type: heading
-        level: 2
-        collapsed: true
-    -
-        id: recommended-fonts-heading
-        title: Fonts
-        type: heading
-        level: 3
-        collapsed: true
-    -
-        id: recommended-fonts-info
-        title: Recommended Fonts
-        description: "[Courier fonts]('https://en.wikipedia.org/wiki/Courier_(typeface)') are optimal for export. For editing, if you care about accurate word placement and number of action lines, use a monospaced font. Otherwise, any font will do. <br> <br>**Good Export Fonts** <br> - Courier <br> - Courier New <br> - Courier Prime (included with snippet) <br> -  [Courier Final Draft](https://fontsgeek.com/fonts/Final-Draft-Heavy-Regular) <br> - [Courier Screenplay](https://fontsgeek.com/screenplay-font) <br> - [Dark Courier](https://www.wfonts.com/font/dark-courier) <br> <br> **My Personal Favourite Editing Fonts** <br> - [iA Writer Duo S](https://fontsource.org/fonts/ia-writer-duo) <br> - [Courier Prime Sans](https://github.com/quoteunquoteapps/CourierPrimeSans/tree/master)"
-        type: info-text
-        markdown: true
-  
-*/
-
-
-
-
-
-
-/* ====================================================== */
-/* ------------------------------------------------------- */
-/* ================ ALTERNATE md-screenplay class ================== */
-/* ------------------------------------------------------- */
-/* ====================================================== */
-
-body {
-    --screenplay-font: 'Courier Prime';
-}
-
-
-.markdown-preview-view.md-screenplay,
-.markdown-source-view.md-screenplay {
-    
-    --font-text: var(--screenplay-font), 'Courier Final Draft', 'Courier', var(--font-monospace) !important;
-  --font-preview-view: var(--screenplay-font), 'Courier Final Draft', 'Courier', var(--font-monospace) !important;
-    --h1-font: var(--screenplay-font) !important;
-    --h2-font: var(--screenplay-font) !important;
-    --h3-font: var(--screenplay-font) !important;
-    --h4-font: var(--screenplay-font) !important;
-    --h5-font: var(--screenplay-font) !important;
-    font-size: 12pt;
-    --font-text: var(--screenplay-font);
-    line-height: 1.3;
-}
-
-
-.md-screenplay .cm-line {
-    font-family: var(--screenplay-font) !important;
-}
-
- .is-phone .markdown-preview-view.md-screenplay {
---file-margins: 0.8rem !important;
-
-
- }
-
-.is-phone .md-screenplay p {
-    max-width: 63ch !important;
-}
-.is-phone .md-screenplay {
-    font-size: 1.3ch !important;
-}
-
-/* syntax highlighting option */
-.syntax .markdown-source-view.md-screenplay {
-    --h1-color: var(--color-blue) !important;
-    --h2-color: var(--color-orange) !important;
-    --h3-color: var(--color-yellow) !important;
-    --h4-color: var(--color-purple) !important;
-    --h5-color: var(--color-green) !important;
-}
-
-.syntax .markdown-source-view.md-screenplay div:has(h2) + div:has(p),
-.syntax .markdown-source-view.md-screenplay div:has(h3) + div:has(p),
-.syntax .markdown-source-view.md-screenplay .HyperMD-header-2 + .cm-line:not(.HyperMD-header),
-.syntax .markdown-source-view.md-screenplay .HyperMD-header-3 + .cm-line {
-    color: var(--color-cyan);
-}
-
-/* active line heading indicators */
-
-.markdown-source-view.md-screenplay .cm-active.HyperMD-header-1::before,
-.markdown-source-view.md-screenplay .cm-active.HyperMD-header-2::before,
-.markdown-source-view.md-screenplay .cm-active.HyperMD-header-3::before,
-.markdown-source-view.md-screenplay .cm-active.HyperMD-header-4::before,
-.markdown-source-view.md-screenplay .cm-active.HyperMD-header-5::before,
-.markdown-source-view.md-screenplay .cm-active.HyperMD-header-6::before,
-.markdown-source-view.md-screenplay .cm-active.HyperMD-hr::before,
-.markdown-source-view.md-screenplay .cm-active::before,
-.cm-active.cm-fountain-scene-heading::before,
-.cm-active.cm-fountain-action::before,
-.cm-active.cm-fountain-character::before,
-.cm-active.cm-fountain-parenthetical::before,
-.cm-active.cm-fountain-dialogue::before,
-.cm-active.cm-fountain-page-break::before,
-.cm-active.cm-fountain-synopsis::before,
-.cm-active.cm-fountain-lyrics::before,
-.cm-active.cm-fountain-section::before
-{
-    font-size: 0.7rem;
-    width: auto;
-    margin-left: -110px;
-    position: absolute;
-    box-shadow: var(--shadow-s);
-    overflow: visible;
-    font-family: var(--font-default);
-    font-weight: 500 !important;
-    text-transform: uppercase;
-    padding: 2px 5px;
-    border-radius: var(--radius-s);
-    color: var(--background-primary);
-}
-
-.h-syntax .markdown-source-view.md-screenplay .cm-active::before,
-.h-syntax .cm-active.cm-fountain-action::before {
-    content: 'Action Line';
-    background-color: var(--color-green);
-}
-
-.h-syntax .markdown-source-view.md-screenplay .cm-active.HyperMD-header-1::before,
-.h-syntax .cm-active.cm-fountain-scene-heading::before{
-    content: 'Scene Heading';
-    background-color: var(--color-blue);
-}
-.h-syntax .markdown-source-view.md-screenplay .cm-active.HyperMD-header-2::before,
-.h-syntax .cm-active.cm-fountain-character::before{
-    content: 'Character';
-    background-color: var(--color-orange);
-}
-
-.h-syntax .markdown-source-view.md-screenplay .HyperMD-header-2 + .cm-active::before,
-.h-syntax .markdown-source-view.md-screenplay .HyperMD-header-3 + .cm-active::before,
-.h-syntax .markdown-source-view.md-screenplay .HyperMD-header-6 + .cm-active::before,
-.h-syntax .cm-active.cm-fountain-dialogue::before{
-   content: 'Dialogue';
-   background-color: var(--color-cyan);
-}
-
-.h-syntax .markdown-source-view.md-screenplay .cm-active.HyperMD-header-3::before,
-.h-syntax .cm-active.cm-fountain-parenthetical::before{
-    content: 'Parenthetical';
-    background-color: var(--color-yellow);
-}
-.h-syntax .markdown-source-view.md-screenplay .cm-active.HyperMD-header-4::before {
-    content: 'Transition';
-    background-color: var(--color-purple);
-}
-.h-syntax .markdown-source-view.md-screenplay .cm-active.HyperMD-header-5::before {
-    content: 'Act';
-    background-color: var(--color-red);
-}
-.h-syntax .markdown-source-view.md-screenplay  .cm-active.HyperMD-hr::before,
-.h-syntax .cm-active.cm-fountain-page-break::before{
-    content: 'Page Break';
-    background-color: var(--color-pink);
-}
-.h-syntax .cm-active.cm-fountain-synopsis::before {
-  content: 'Synopsis';
-  background-color: var(--color-cyan);
-}
-
-.h-syntax .cm-active.cm-fountain-lyrics::before {
-  content: 'Lyrics';
-  background-color: var(--color-pink);
-}
-.h-syntax .cm-active.cm-fountain-section::before {
-  content: 'Section';
-  background-color: var(--color-purple);
-}
-
-
-/* scene headings */
-.markdown-preview-view.md-screenplay h1, .markdown-source-view.md-screenplay .HyperMD-header-1 {
+    color: var(--h3-color) !important;
+    font-weight: var(--bold-weight)  !important;
     font-size: inherit !important;
+    text-align: right !important;
+}
+ 
+.screenplay h1, {
+    font-size: inherit;
     text-align: left;
     text-transform: uppercase; 
     font-weight: var(--bold-weight) ;
-    margin-bottom: 0 !important;
-    line-height: 1 !important;
-    padding-bottom: 0 !important;
 }
 
-/* decrease spacing below scene headings */
-.markdown-preview-view.md-screenplay div:has(h1) + div p {
-    margin-top: 5px !important;
-}
+/********* synopsis and notes */
 
-.markdown-preview-view.md-screenplay p {
-    margin-bottom: 7px !important;
-    margin-top: 7px !important;
-}
-
-/* character names */
-.markdown-preview-view.md-screenplay h2, .markdown-source-view.md-screenplay .HyperMD-header-2 {
-    font-size: inherit;
-    padding: 0 0 0 2.2in !important;
-    text-transform: uppercase;
-    margin-top: 0.2in;
-    margin-bottom: 0;
-    font-weight: var(--bold-weight) ;
-    width: fit-content;
-}
-
-/* dual dialogue (with efemkay's modular css layout) */
-.md-screenplay .callout,
-.md-screenplay .callout .callout {
-margin: 0 !important;
-padding: 0!important;
-height: flex !important;
-max-width: fit-content;
-}
-.md-screenplay .callout h2 {
-padding: 0 1in !important;
-  margin: 0 !important;
-}
-.md-screenplay .callout p {
-padding-left: 0.45in !important; 
-margin-top: 0.1in !important;
-}
-
-  
-/* dialogue */
-.markdown-preview-view.md-screenplay div:has(h2) + div:has(p),
-.markdown-preview-view.md-screenplay div:has(h3) + div:has(p),
-.markdown-source-view.md-screenplay .HyperMD-header-2 + .cm-line,
-.markdown-source-view.md-screenplay .HyperMD-header-3 + .cm-line {
-    padding-left: 1.4in !important;
-    width: fit-content;
-    margin-top: 0 !important;
-    margin-bottom: 0.1in !important;
-}
-
-/* reduce padding */ 
-.markdown-preview-view.md-screenplay div:has(h2) + div:has(p) p,
-.markdown-preview-view.md-screenplay div:has(h3) + div:has(p) p {
-margin-top: 0 !important;
-padding-top: 0 !important;
-}
-
-
-/* transitions */
-.markdown-preview-view.md-screenplay h4, .markdown-source-view.md-screenplay .HyperMD-header-4 {
-    text-align: right !important;
-    width: 100% !important;
-    text-transform: uppercase;
-    font-size: inherit;
-    font-weight: var(--bold-weight) ;
-}
-
-/* parentheticals */
-.markdown-preview-view.md-screenplay h3,
-.markdown-source-view.md-screenplay .HyperMD-header-3 {
-    padding: 0 0 0 1.6in !important; 
-    font-size: inherit;
-    margin-bottom: 0 !important;
-    margin-top: 0;
-    font-weight: normal;
+.screenplay > .synopsis, [data-type=fountain] .synopsis {
+    color: var(--text-muted);
     font-style: italic;
 }
 
-/* Acts */
-.markdown-preview-view.md-screenplay h5, 
-.markdown-source-view.md-screenplay .HyperMD-header-5 {
-    padding-left: 2.5in !important;
-    text-decoration: underline;
+.screenplay .note, [data-type=fountain] .note {
+    color: var(--text-muted);
+    font-style: italic;
 }
 
-/* highlights */
-.md-screenplay.markdown-rendered mark,
-.md-screenplay .cm-highlight {
-    background-color: transparent !important;
-    text-decoration: underline;
-    font-weight: var(--bold-weight) ;
-}
+/********* centered text */
 
-/* links */
-.md-screenplay a {
-    font-family: inherit;
-    color: var(--text-normal) !important;
-    text-decoration-color: var(--text-accent);
-}
-
-/* adjust heading styles that may be inherited from themes */
-.md-screenplay h1, .md-screenplay h2,.md-screenplay h3,.md-screenplay h4,.md-screenplay h5 {
-    border: none !important;
-    text-align: left !important;
-}
-
-
-
-
-/* ====================================================== */
-/* ------------------------------------------------------- */
-/* ================  (CANVAS) index-cards css class ================== */
-/* ------------------------------------------------------- */
-/* ====================================================== */
-
-/* ==== index cards ====*/
-/* consistent sizing */
-
-/*
-.view-content:has(.index-cards) {
-    --canvas-dot-pattern: hsla(var(--color-accent-hsl), 0.5);
-}
-.view-content:has(.index-cards) .canvas-background {
-    background-color: hsla(var(--color-accent-hsl), 0.1);
-}
-*/
-
-/* make alignment and font sizing consistent */
-.view-content:has(.index-cards) {
-    --font-text-size: 15px !important;
-}
-
-/* card-like shape */
-.view-content:has(.index-cards) .canvas-node:not(.canvas-node-group) .canvas-node-container{
-    border: none;
-    box-shadow: var(--shadow-s) !important;
-    border-radius: 0;
-    background-color: white;
-    padding: 0;
-}
-
-/* Make colors brighter */
-.view-content:has(.index-cards) .canvas-node.is-themed .canvas-node-content {
-    background-color: rgba(var(--canvas-color), 0.1);
-  }
-
-  .canvas-group-label {
-    color: white;
-  }
-
-/* remove padding */
-.view-content:has(.index-cards) .canvas-node-container .markdown-preview-view {
-    padding: 10px !important;
-}
-
-/* remove placeholder */
-.canvas-node-placeholder {
-    display: none !important;
-}
-
-/* paper lines effect */
-.view-content:has(.index-cards) .canvas-node .markdown-preview-sizer {
-    padding: 15px 30px;
-    background-color: transparent;
-    background-image:
-    linear-gradient(rgba(0, 0, 0, 0.233) .1em, transparent .1em);
-    background-size: 100% 3em;
-}
-
-/* make all text consistent*/
-.view-content:has(.index-cards) .canvas-node .markdown-embed-content *:not(a.tag) {
-    color: black;
-    --list-marker-color: black;
-    font-family: var(--screenplay-font) !important;
-}
-
-.view-content:has(.index-cards) .canvas-node [data-heading] {
-    font-size: 2.25em !important;
-    line-height: 1.3 !important;
-    text-transform: uppercase;
-    padding: inherit !important;
-    margin: inherit !important;
-    border-bottom: none !important;
-}
-
-
-
-.view-content:has(.index-cards) .canvas-node-container p,
-.view-content:has(.index-cards) .canvas-node-container .cm-line {
- font-size: 22.5px !important;
- font-family: var(--screenplay-font) !important;
- margin: auto 0 !important;
- line-height: 2 !important;
-}
-
-.view-content:has(.index-cards) li {
-    font-size: 19.5px !important;
-    font-family: var(--screenplay-font) !important;
-    margin: auto 0;
-    line-height: 0.9;
-   }
-
-   .view-content:has(.color-outline) .canvas-node:not(.canvas-node-group) .canvas-node-content {
-    background-color: transparent !important;
-   }
-
-   .view-content:has(.color-outline) .canvas-node:not(.canvas-node-group) .canvas-node-container {
-    border: 8px solid rgba(var(--canvas-color), 1) !important;   
-   }
-
-   /* fix group label color */
-   .theme-light.canvas-group-label {
-    color: rba(var(--canvas-color), 1) !important;
-   }
-
-/* ======== tags in canvas ======== */
-
-
-.view-content:has(.index-cards) .canvas-node a.tag {
-  color: white !important;
-  background-color: rgba(var(--canvas-color), 1) !important;
-  padding-top: 4.5px !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  line-height: 0px !important;
-  padding-bottom: 0 !important;
-  text-transform: uppercase;
-  font-size: 1.6em;
-}
-
-/* ==== negative, positive classes === */
-.view-content:has(.index-cards) .canvas-node-container:has(.negative) {
-    border: 5px solid var(--color-red) !important;
-    border-color: var(--color-red) !important;
-}
-.view-content:has(.index-cards) .canvas-node-container:has(.positive) {
-    border: 5px solid var(--color-green) !important;
-    border-color: var(--color-green) !important;
-}
-
-/* ====== Fountain Editor Plugin ======= */
-/* most of these just add compatibility with Fountain code blocks */
-.cm-fountain-scene-heading, .cm-fountain-character {
-  text-transform: uppercase;
-}
-.cm-fountain-character, .cm-fountain-character *  {
-  font-weight: bold;
-  padding: 0 0 0 2.2in !important;
- 
-}
-.cm-fountain-character-extension {
-    padding-left: 0 !important;
-}
- .cm-fountain-dialogue.HyperMD-codeblock.HyperMD-codeblock-bg.cm-line {
-    padding-left: 1.4in !important;
-    margin-top: 0 !important;
-    margin-bottom: 0.1in !important;
-
-}
-.cm-fountain-parenthetical * {
-    padding-left: var(--fountain-parenthesis-left);
-    padding-right: var(--fountain-parenthesis-right);
-}
-
-
-/*
-
-
-/* ================= Strip Formatting ====================== */
-
-/* export only */
-
-@media print {
-   .strip-export .screenplay *,
-   .strip-export .md-screenplay * {
-        font-style: normal !important;
-        font-weight: normal !important;
-        --bold-weight: normal !important;
-    }
-}
-
-/* all */
-.strip-all .screenplay *,
-.strip-all .md-screenplay  * {
-    font-style: normal !important;
-    --bold-weight: normal;
+p.centered {
+  text-align: center;
+  padding-left: 2.5in;
 }

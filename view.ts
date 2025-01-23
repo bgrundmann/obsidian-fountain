@@ -19,7 +19,7 @@ function fountainTokenToHtml(token: Token) {
     }
 
     switch (token.type) {
-        case 'title': return `<h1>${lexedText}</h1>`;
+        case 'title': return `<h1 class="title">${lexedText}</h1>`;
         case 'author':
         case 'authors': return `<p class="authors">${lexedText}</p>`;
         case 'contact':
@@ -31,14 +31,14 @@ function fountainTokenToHtml(token: Token) {
         case 'revision':
         case 'source': return `<p class="${token.type.replace(/_/g, '-')}">${lexedText}</p>`;
 
-        case 'scene_heading': return `<h3${(token.scene_number ? ` id="${token.scene_number}">` : `>`) + lexedText}</h3>`;
-        case 'transition': return `<h2>${lexedText}</h2>`;
+        case 'scene_heading': return `<h3 class="scene-heading"${(token.scene_number ? ` id="${token.scene_number}">` : `>`) + lexedText}</h3>`;
+        case 'transition': return `<h2 class="transition">${lexedText}</h2>`;
 
         case 'dual_dialogue_begin': return `<div class="dual-dialogue">`;
         case 'dialogue_begin': return `<div class="dialogue${token.dual ? ' ' + token.dual : ''}">`;
-        case 'character': return `<h4>${lexedText}</h4>`;
+        case 'character': return `<h4 class="character">${lexedText}</h4>`;
         case 'parenthetical': return `<p class="parenthetical">${lexedText}</p>`;
-        case 'dialogue': return `<p>${lexedText}</p>`;
+        case 'dialogue': return `<p class="words">${lexedText}</p>`;
         case 'dialogue_end': return `</div>`;
         case 'dual_dialogue_end': return `</div>`;
 
@@ -48,15 +48,15 @@ function fountainTokenToHtml(token: Token) {
           const section_marker = "#".repeat(token.depth ?? 1); // The ?? 1 is just to make typescript happy
           return `<p class="section">${section_marker} ${lexedText}</p>`;
         case 'synopsis':
-          return `<details><summary>Synopsis</summary>${lexedText}</details>`;
+          return `<p class="synopsis">= ${lexedText}</p>`;
 
         case 'note':
-          return `<i>[[${lexedText}]]</i>`;
+          return `<span class="note">[[${lexedText}]]</span>`;
           //return `<p class="synopsis">${lexedText}</p>`;
         case 'boneyard_begin': return `<!-- `;
         case 'boneyard_end': return ` -->`;
 
-        case 'action': return `<p>${lexedText}</p>`;
+        case 'action': return `<p class="action">${lexedText}</p>`;
         case 'centered': return `<p class="centered">${lexedText}</p>`;
 
         case 'lyrics': return `<p class="lyrics">${lexedText}</p>`;
