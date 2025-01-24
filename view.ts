@@ -1,17 +1,29 @@
 import { TextFileView, WorkspaceLeaf } from 'obsidian';
 import { Fountain, Token, InlineLexer } from 'fountain-js';
+import { formatWithOptions } from 'util';
 
 export const VIEW_TYPE_FOUNTAIN = 'fountain';
 
-function fountainToHtml(tokens: Token[], options: { showSynopsis: boolean }) {
-  return tokens.map(t => fountainTokenToHtml(t, options)).join('');
+enum ShowMode {
+  Everything,
+  WithoutSynopsisAndNotes,
+  IndexCards
 }
 
-function fountainTokenToHtml(token: Token, options: { showSynopsis: boolean } ) {
+function fountainToHtml(tokens: Token[], mode: ShowMode) {
+  return tokens.map(t => fountainTokenToHtml(t, mode)).join('');
+}
+
+function fountainTokenToHtml(token: Token, mode: ShowMode ) {
   // This is copied from fountain-js toHtml function
   // Why? Because it mostly does what I want, but
   // sadly not completely.
     let lexedText = '';
+    const showSynopsis = (mode != ShowMode.WithoutSynopsisAndNotes);
+    const showScript = (mode != ShowMode.IndexCards);
+    function script(s: string) {
+      return showScript ? s : "";
+    }
 
     if (token?.text) {
        // TODO: Handle inline notes 
@@ -20,9 +32,9 @@ function fountainTokenToHtml(token: Token, options: { showSynopsis: boolean } ) 
     }
 
     switch (token.type) {
-        case 'title': return `<h1 class="title">${lexedText}</h1>`;
+        case 'title': return script(`<h1 class="title">${lexedText}</h1>`);
         case 'author':
-        case 'authors': return `<p class="authors">${lexedText}</p>`;
+        case 'authors': return script(`<p class="authors">${lexedText}</p>`);
         case 'contact':
         case 'copyright':
         case 'credit':
@@ -30,18 +42,18 @@ function fountainTokenToHtml(token: Token, options: { showSynopsis: boolean } ) 
         case 'draft_date':
         case 'notes':
         case 'revision':
-        case 'source': return `<p class="${token.type.replace(/_/g, '-')}">${lexedText}</p>`;
+        case 'source': return script(`<p class="${token.type.replace(/_/g, '-')}">${lexedText}</p>`);
 
         case 'scene_heading': return `<h3 class="scene-heading"${(token.scene_number ? ` id="${token.scene_number}">` : `>`) + lexedText}</h3>`;
-        case 'transition': return `<h2 class="transition">${lexedText}</h2>`;
+        case 'transition': return script(`<h2 class="transition">${lexedText}</h2>`);
 
-        case 'dual_dialogue_begin': return `<div class="dual-dialogue">`;
-        case 'dialogue_begin': return `<div class="dialogue${token.dual ? ' ' + token.dual : ''}">`;
-        case 'character': return `<h4 class="character">${lexedText}</h4>`;
-        case 'parenthetical': return `<p class="parenthetical">${lexedText}</p>`;
-        case 'dialogue': return `<p class="words">${lexedText}</p>`;
-        case 'dialogue_end': return `</div>`;
-        case 'dual_dialogue_end': return `</div>`;
+        case 'dual_dialogue_begin': return script(`div class="dual-dialogue">`);
+        case 'dialogue_begin': return script(`<div class="dialogue${token.dual ? ' ' + token.dual : ''}">`);
+        case 'character': return script(`<h4 class="character">${lexedText}</h4>`);
+        case 'parenthetical': return script(`<p class="parenthetical">${lexedText}</p>`);
+        case 'dialogue': return script(`<p class="words">${lexedText}</p>`);
+        case 'dialogue_end': return script(`</div>`);
+        case 'dual_dialogue_end': return script(`</div>`);
 
         case 'section':
           // Reconsider this. Should maybe just use h1,h2,h3,h4 for sections
@@ -49,45 +61,52 @@ function fountainTokenToHtml(token: Token, options: { showSynopsis: boolean } ) 
           const section_marker = "#".repeat(token.depth ?? 1); // The ?? 1 is just to make typescript happy
           return `<p class="section">${section_marker} ${lexedText}</p>`;
         case 'synopsis':
-          return options.showSynopsis ? `<p class="synopsis">= ${lexedText}</p>` : "";
+          return showSynopsis ? `<p class="synopsis">= ${lexedText}</p>` : "";
 
         case 'note':
-          return `<span class="note">[[${lexedText}]]</span>`;
+          return script(`<span class="note">[[${lexedText}]]</span>`);
         case 'boneyard_begin': return `<!-- `;
         case 'boneyard_end': return ` -->`;
 
-        case 'action': return `<p class="action">${lexedText}</p>`;
-        case 'centered': return `<p class="centered">${lexedText}</p>`;
+        case 'action': return script(`<p class="action">${lexedText}</p>`);
+        case 'centered': return script(`<p class="centered">${lexedText}</p>`);
 
-        case 'lyrics': return `<p class="lyrics">${lexedText}</p>`;
+        case 'lyrics': return script(`<p class="lyrics">${lexedText}</p>`);
 
-        case 'page_break': return `<hr />`;
+        case 'page_break': return script(`<hr />`);
         case 'spaces': return;
     }
 }
 
-type FountainViewOptions = {
-  showSynopsis: boolean;
-};
 
 export class FountainView extends TextFileView {
   fountain : Fountain;
-  options: FountainViewOptions;
+  showMode: ShowMode;
   tokens: Token[];
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
     this.fountain = new Fountain();
-    this.options = { showSynopsis : true };
+    this.showMode = ShowMode.Everything;
     console.log('view created %p', this);
-    this.addAction("notebook", "Toggle show notes", evt => {
+    this.addAction("notebook", "Cycle through Show Modes", evt => {
       this.toggleShowNotes();
       this.render();
     } );
   }
 
   toggleShowNotes() {
-    this.options.showSynopsis = !this.options.showSynopsis;
+    switch (this.showMode) {
+      case ShowMode.Everything:
+        this.showMode = ShowMode.WithoutSynopsisAndNotes;
+        break;
+      case ShowMode.WithoutSynopsisAndNotes:
+        this.showMode = ShowMode.IndexCards;
+        break;
+      case ShowMode.IndexCards:
+        this.showMode = ShowMode.Everything;
+        break;
+    }
   }
 
   render() {
@@ -96,7 +115,7 @@ export class FountainView extends TextFileView {
       const mainblock = child.createDiv('screenplay');
       // Assuming nobody does a supply chain attack on the fountain library, the below
       // is fine as there is no way for the user to embed html in the fountain.
-      mainblock.innerHTML = fountainToHtml(this.tokens, this.options);
+      mainblock.innerHTML = fountainToHtml(this.tokens, this.showMode);
   }
 
   getViewType() {
