@@ -1,6 +1,5 @@
 import { TextFileView, WorkspaceLeaf } from 'obsidian';
 import { Fountain, Token, InlineLexer } from 'fountain-js';
-import { formatWithOptions } from 'util';
 
 export const VIEW_TYPE_FOUNTAIN = 'fountain';
 
