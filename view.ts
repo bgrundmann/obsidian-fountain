@@ -10,71 +10,89 @@ enum ShowMode {
 }
 
 function fountainToHtml(tokens: Token[], mode: ShowMode) {
-  return tokens.map(t => fountainTokenToHtml(t, mode)).join('');
-}
+  let isSceneOpened : boolean = false;
+  function fountainTokenToHtml(token: Token, mode: ShowMode ) {
+    // This is copied from fountain-js toHtml function
+    // Why? Because it mostly does what I want, but
+    // sadly not completely.
+      let lexedText = '';
+      const showSynopsis = (mode != ShowMode.WithoutSynopsisAndNotes);
+      const showScript = (mode != ShowMode.IndexCards);
+      function script(s: string) {
+        return showScript ? s : "";
+      }
 
-function fountainTokenToHtml(token: Token, mode: ShowMode ) {
-  // This is copied from fountain-js toHtml function
-  // Why? Because it mostly does what I want, but
-  // sadly not completely.
-    let lexedText = '';
-    const showSynopsis = (mode != ShowMode.WithoutSynopsisAndNotes);
-    const showScript = (mode != ShowMode.IndexCards);
-    function script(s: string) {
-      return showScript ? s : "";
-    }
+      function openScene(s: string) {
+        let res = '';
+        if (mode != ShowMode.IndexCards) return s;
+        if (isSceneOpened) {
+          res = '</div>';
+        }
+        isSceneOpened = true;
+        return res + `<div class="screenplay-index-card">` + s;      
+      }
 
-    if (token?.text) {
-       // TODO: Handle inline notes 
-        lexedText = InlineLexer
-                        .reconstruct(token.text, token.type === 'action');
-    }
+      if (token?.text) {
+         // TODO: Handle inline notes 
+          lexedText = InlineLexer
+                          .reconstruct(token.text, token.type === 'action');
+      }
 
-    switch (token.type) {
-        case 'title': return script(`<h1 class="title">${lexedText}</h1>`);
-        case 'author':
-        case 'authors': return script(`<p class="authors">${lexedText}</p>`);
-        case 'contact':
-        case 'copyright':
-        case 'credit':
-        case 'date':
-        case 'draft_date':
-        case 'notes':
-        case 'revision':
-        case 'source': return script(`<p class="${token.type.replace(/_/g, '-')}">${lexedText}</p>`);
+      switch (token.type) {
+          case 'title': return script(`<h1 class="title">${lexedText}</h1>`);
+          case 'author':
+          case 'authors': return script(`<p class="authors">${lexedText}</p>`);
+          case 'contact':
+          case 'copyright':
+          case 'credit':
+          case 'date':
+          case 'draft_date':
+          case 'notes':
+          case 'revision':
+          case 'source': return script(`<p class="${token.type.replace(/_/g, '-')}">${lexedText}</p>`);
 
-        case 'scene_heading': return `<h3 class="scene-heading"${(token.scene_number ? ` id="${token.scene_number}">` : `>`) + lexedText}</h3>`;
-        case 'transition': return script(`<h2 class="transition">${lexedText}</h2>`);
+          case 'scene_heading':
+            const scene_heading = `<h3 class="scene-heading"${(token.scene_number ? ` id="${token.scene_number}">` : `>`) + lexedText}</h3>`;
+            return openScene(scene_heading);
 
-        case 'dual_dialogue_begin': return script(`div class="dual-dialogue">`);
-        case 'dialogue_begin': return script(`<div class="dialogue${token.dual ? ' ' + token.dual : ''}">`);
-        case 'character': return script(`<h4 class="character">${lexedText}</h4>`);
-        case 'parenthetical': return script(`<p class="parenthetical">${lexedText}</p>`);
-        case 'dialogue': return script(`<p class="words">${lexedText}</p>`);
-        case 'dialogue_end': return script(`</div>`);
-        case 'dual_dialogue_end': return script(`</div>`);
+          case 'transition': return script(`<h2 class="transition">${lexedText}</h2>`);
 
-        case 'section':
-          // Reconsider this. Should maybe just use h1,h2,h3,h4 for sections
-          // and scene_heading and the like should get classes
-          const section_marker = "#".repeat(token.depth ?? 1); // The ?? 1 is just to make typescript happy
-          return `<p class="section">${section_marker} ${lexedText}</p>`;
-        case 'synopsis':
-          return showSynopsis ? `<p class="synopsis">= ${lexedText}</p>` : "";
+          case 'dual_dialogue_begin': return script(`div class="dual-dialogue">`);
+          case 'dialogue_begin': return script(`<div class="dialogue${token.dual ? ' ' + token.dual : ''}">`);
+          case 'character': return script(`<h4 class="character">${lexedText}</h4>`);
+          case 'parenthetical': return script(`<p class="parenthetical">${lexedText}</p>`);
+          case 'dialogue': return script(`<p class="words">${lexedText}</p>`);
+          case 'dialogue_end': return script(`</div>`);
+          case 'dual_dialogue_end': return script(`</div>`);
 
-        case 'note':
-          return script(`<span class="note">[[${lexedText}]]</span>`);
-        case 'boneyard_begin': return `<!-- `;
-        case 'boneyard_end': return ` -->`;
+          case 'section':
+            // Reconsider this. Should maybe just use h1,h2,h3,h4 for sections
+            // and scene_heading and the like should get classes
+            const section_marker = "#".repeat(token.depth ?? 1); // The ?? 1 is just to make typescript happy
+            return `<p class="section">${section_marker} ${lexedText}</p>`;
+          case 'synopsis':
+            return showSynopsis ? `<p class="synopsis">= ${lexedText}</p>` : "";
 
-        case 'action': return script(`<p class="action">${lexedText}</p>`);
-        case 'centered': return script(`<p class="centered">${lexedText}</p>`);
+          case 'note':
+            return script(`<span class="note">[[${lexedText}]]</span>`);
+          case 'boneyard_begin': return `<!-- `;
+          case 'boneyard_end': return ` -->`;
 
-        case 'lyrics': return script(`<p class="lyrics">${lexedText}</p>`);
+          case 'action': return script(`<p class="action">${lexedText}</p>`);
+          case 'centered': return script(`<p class="centered">${lexedText}</p>`);
 
-        case 'page_break': return script(`<hr />`);
-        case 'spaces': return;
-    }
+          case 'lyrics': return script(`<p class="lyrics">${lexedText}</p>`);
+
+          case 'page_break': return script(`<hr />`);
+          case 'spaces': return;
+      }
+  }
+
+  let result = tokens.map(t => fountainTokenToHtml(t, mode)).join('');
+  if (isSceneOpened) {
+    result = result + "</div>";
+  }
+  return result;
 }
 
 
@@ -111,7 +129,8 @@ export class FountainView extends TextFileView {
   render() {
       const child = this.containerEl.children[1];
       child.empty();
-      const mainblock = child.createDiv('screenplay');
+      const main_div_class = this.showMode == ShowMode.IndexCards ? 'screenplay-index-cards' : 'screenplay';
+      const mainblock = child.createDiv(main_div_class);
       // Assuming nobody does a supply chain attack on the fountain library, the below
       // is fine as there is no way for the user to embed html in the fountain.
       mainblock.innerHTML = fountainToHtml(this.tokens, this.showMode);
