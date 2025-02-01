@@ -10,8 +10,32 @@ enum ShowMode {
 }
 
 function fountainToHtml(tokens: Token[], mode: ShowMode) {
+  // This variable is only set when we are in IndexCards mode
   let isSceneOpened : boolean = false;
-  function fountainTokenToHtml(token: Token, mode: ShowMode ) {
+  let result : string[] = [];
+  function emit(s: string) {
+    result.push(s)
+  }
+  function emitUnlessIndexCardMode(s: string) {
+    if (mode == ShowMode.IndexCards) return;
+    emit(s);
+  }
+  // Only when we are doing index cards do we need
+  // divs for each scene
+  function emitCloseSceneIfNecessary() {
+    if (mode != ShowMode.IndexCards) return;
+    if (isSceneOpened) {
+      emit('</div>');
+      isSceneOpened = false;
+    }
+  }
+  function emitOpenScene() {
+    if (mode != ShowMode.IndexCards) return;
+    emitCloseSceneIfNecessary();
+    isSceneOpened = true;
+    emit('<div class="screenplay-index-card">')
+  }
+  function convert(token: Token) {
     // This is copied from fountain-js toHtml function
     // Why? Because it mostly does what I want, but
     // sadly not completely.
@@ -22,16 +46,6 @@ function fountainToHtml(tokens: Token[], mode: ShowMode) {
         return showScript ? s : "";
       }
 
-      function openScene(s: string) {
-        let res = '';
-        if (mode != ShowMode.IndexCards) return s;
-        if (isSceneOpened) {
-          res = '</div>';
-        }
-        isSceneOpened = true;
-        return res + `<div class="screenplay-index-card">` + s;      
-      }
-
       if (token?.text) {
          // TODO: Handle inline notes 
           lexedText = InlineLexer
@@ -39,9 +53,9 @@ function fountainToHtml(tokens: Token[], mode: ShowMode) {
       }
 
       switch (token.type) {
-          case 'title': return script(`<h1 class="title">${lexedText}</h1>`);
+          case 'title': emitUnlessIndexCardMode(`<h1 class="title">${lexedText}</h1>`); break;
           case 'author':
-          case 'authors': return script(`<p class="authors">${lexedText}</p>`);
+          case 'authors': emitUnlessIndexCardMode(`<p class="authors">${lexedText}</p>`); break;
           case 'contact':
           case 'copyright':
           case 'credit':
@@ -49,50 +63,88 @@ function fountainToHtml(tokens: Token[], mode: ShowMode) {
           case 'draft_date':
           case 'notes':
           case 'revision':
-          case 'source': return script(`<p class="${token.type.replace(/_/g, '-')}">${lexedText}</p>`);
+          case 'source':
+            emitUnlessIndexCardMode(`<p class="${token.type.replace(/_/g, '-')}">${lexedText}</p>`);
+            break;
 
           case 'scene_heading':
-            const scene_heading = `<h3 class="scene-heading"${(token.scene_number ? ` id="${token.scene_number}">` : `>`) + lexedText}</h3>`;
-            return openScene(scene_heading);
+            emitOpenScene();
+            emit(`<h3 class="scene-heading">${lexedText}</h3>`);
+            break;
 
-          case 'transition': return script(`<h2 class="transition">${lexedText}</h2>`);
+          case 'transition':
+            emitUnlessIndexCardMode(`<h2 class="transition">${lexedText}</h2>`);
+            break;
 
-          case 'dual_dialogue_begin': return script(`div class="dual-dialogue">`);
-          case 'dialogue_begin': return script(`<div class="dialogue${token.dual ? ' ' + token.dual : ''}">`);
-          case 'character': return script(`<h4 class="character">${lexedText}</h4>`);
-          case 'parenthetical': return script(`<p class="parenthetical">${lexedText}</p>`);
-          case 'dialogue': return script(`<p class="words">${lexedText}</p>`);
-          case 'dialogue_end': return script(`</div>`);
-          case 'dual_dialogue_end': return script(`</div>`);
+          case 'dual_dialogue_begin':
+            emitUnlessIndexCardMode(`div class="dual-dialogue">`);
+            break;
+          case 'dialogue_begin':
+            emitUnlessIndexCardMode(`<div class="dialogue${token.dual ? ' ' + token.dual : ''}">`);
+            break;
+          case 'character':
+            emitUnlessIndexCardMode(`<h4 class="character">${lexedText}</h4>`);
+            break;
+          case 'parenthetical':
+            emitUnlessIndexCardMode(`<p class="parenthetical">${lexedText}</p>`);
+            break;
+          case 'dialogue':
+            emitUnlessIndexCardMode(`<p class="words">${lexedText}</p>`);
+            break;
+          case 'dialogue_end':
+            emitUnlessIndexCardMode(`</div>`);
+            break;
+          case 'dual_dialogue_end':
+            emitUnlessIndexCardMode(`</div>`);
+            break;
 
           case 'section':
             // Reconsider this. Should maybe just use h1,h2,h3,h4 for sections
             // and scene_heading and the like should get classes
-            const section_marker = "#".repeat(token.depth ?? 1); // The ?? 1 is just to make typescript happy
-            return `<p class="section">${section_marker} ${lexedText}</p>`;
+            emitCloseSceneIfNecessary();
+            if (lexedText.toLowerCase().trim() == "boneyard") {
+              emit('<hr>');
+            }
+            emit(`<h${token.depth ?? 1} class="section">${lexedText}</h${token.depth ?? 1}>`);
+            emitOpenScene();
+            break;
+
           case 'synopsis':
-            return showSynopsis ? `<p class="synopsis">= ${lexedText}</p>` : "";
+            emit(showSynopsis ? `<p class="synopsis">= ${lexedText}</p>` : "");
+            break;
 
           case 'note':
-            return script(`<span class="note">[[${lexedText}]]</span>`);
+            emitUnlessIndexCardMode(`<span class="note">[[${lexedText}]]</span>`);
+            break;
           case 'boneyard_begin': return `<!-- `;
           case 'boneyard_end': return ` -->`;
 
-          case 'action': return script(`<p class="action">${lexedText}</p>`);
-          case 'centered': return script(`<p class="centered">${lexedText}</p>`);
+          case 'action':
+            emitUnlessIndexCardMode(`<p class="action">${lexedText}</p>`);
+            break;
 
-          case 'lyrics': return script(`<p class="lyrics">${lexedText}</p>`);
+          case 'centered':
+            emitUnlessIndexCardMode(`<p class="centered">${lexedText}</p>`);
+            break;
 
-          case 'page_break': return script(`<hr />`);
-          case 'spaces': return;
+          case 'lyrics':
+            emitUnlessIndexCardMode(`<p class="lyrics">${lexedText}</p>`);
+            break;
+
+          case 'page_break':
+            emitUnlessIndexCardMode(`<hr />`);
+            break;
+          case 'spaces':
+            break;
       }
   }
 
-  let result = tokens.map(t => fountainTokenToHtml(t, mode)).join('');
-  if (isSceneOpened) {
-    result = result + "</div>";
+  for (const t of tokens) {
+    convert(t);
   }
-  return result;
+  emitCloseSceneIfNecessary();
+
+  return result.join('');
 }
 
 
