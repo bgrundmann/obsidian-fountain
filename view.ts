@@ -9,6 +9,12 @@ enum ShowMode {
   IndexCards
 }
 
+enum Inside {
+  Nothing = 0,
+  Section,
+  Card,
+}
+
 function compile(showMode: ShowMode, tokens: Token[]) {
   let result : string[] = [];
   let sceneNumber: number = 0;
@@ -17,17 +23,27 @@ function compile(showMode: ShowMode, tokens: Token[]) {
   }
 
   function fountainToIndexCards() {
-    let isSceneOpened : boolean = false;
-    function emitCloseSceneIfNecessary() {
-      if (isSceneOpened) {
+    let state : Inside = Inside.Nothing;
+    function closeIfInside(what: Inside.Section|Inside.Card) {
+      while (state >= what) {
         emit('</div>');
-        isSceneOpened = false;
+        state--;
       }
     }
-    function emitOpenScene() {
-      emitCloseSceneIfNecessary();
-      isSceneOpened = true;
-      emit('<div class="screenplay-index-card">')
+    function emitOpenTill(what: Inside.Section|Inside.Card) {
+      while (state < what) {
+        state++;
+        switch (state) {
+          case Inside.Nothing:
+            break;
+          case Inside.Section:
+            emit('<div class="screenplay-index-cards">');
+            break;
+          case Inside.Card:
+            emit('<div class="screenplay-index-card">')
+            break;
+        }
+      }
     }
     function convert(token: Token) {
       // This is copied from fountain-js toHtml function
@@ -40,6 +56,8 @@ function compile(showMode: ShowMode, tokens: Token[]) {
             lexedText = InlineLexer
                             .reconstruct(token.text, token.type === 'action');
         }
+
+        console.log(token.type);
 
         switch (token.type) {
             case 'title':
@@ -70,22 +88,21 @@ function compile(showMode: ShowMode, tokens: Token[]) {
               break;
 
             case 'scene_heading':
-              emitOpenScene();
+              closeIfInside(Inside.Card);
+              emitOpenTill(Inside.Card);
               emit(`<h3 class="scene-heading" id="scene${sceneNumber}">${lexedText}</h3>`);
               sceneNumber++;
               break;
 
             case 'section':
-              // Reconsider this. Should maybe just use h1,h2,h3,h4 for sections
-              // and scene_heading and the like should get classes
-              emitCloseSceneIfNecessary();
-              emit('</div>'); // Close screenplay-index-cards
-              if (lexedText.toLowerCase().trim() == "boneyard") {
-                emit('<hr>');
+              // We ignore sections of depth 4 and deeper in the overview
+              if ((token.depth ?? 1) <= 3) {
+                closeIfInside(Inside.Section);
+                if (lexedText.toLowerCase().trim() == "boneyard") {
+                  emit('<hr>');
+                }
+                emit(`<h${token.depth ?? 1} class="section">${lexedText}</h${token.depth ?? 1}>`);
               }
-              emit(`<h${token.depth ?? 1} class="section">${lexedText}</h${token.depth ?? 1}>`);
-              emit('<div class="screenplay-index-cards">');
-              emitOpenScene();
               break;
 
             case 'synopsis':
@@ -96,12 +113,10 @@ function compile(showMode: ShowMode, tokens: Token[]) {
             case 'boneyard_end': emit(` -->`);
         }
     }
-    emit('<div class="screenplay-index-cards">');
     for (const t of tokens) {
       convert(t);
     }
-    emitCloseSceneIfNecessary();
-    emit('</div>');
+    closeIfInside(Inside.Section);
     return result;
   }
 
@@ -235,11 +250,14 @@ export class FountainView extends TextFileView {
     super(leaf);
     this.fountain = new Fountain();
     this.showMode = ShowMode.Everything;
-    console.log('view created %p', this);
-    this.addAction("notebook", "Cycle through Show Modes", evt => {
-      this.toggleShowNotes();
+    this.addAction("layout-grid", "Toggle Index Card View", evt => {
+      this.toggleIndexCards();
       this.render();
     } );
+  }
+
+  toggleIndexCards() {
+    this.showMode = this.showMode == ShowMode.IndexCards ? ShowMode.Everything : ShowMode.IndexCards;
   }
 
   toggleShowNotes() {

@@ -204,10 +204,11 @@ p.centered {
 .screenplay-index-card .scene-heading {
     font-size: 12px;   
     font-family: var(--screenplay-font), 'Courier Final Draft', 'Courier', var(--font-monospace) !important;
-    padding: 8px;
+    margin: 0px;
+    /* padding: 8px; */
 }
 
 .screenplay-index-card .synopsis {
     font-size: 10px;   
-    padding: 8px;
+    /* padding: 8px; */
 }
