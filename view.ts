@@ -1,5 +1,7 @@
 import { TextFileView, WorkspaceLeaf } from 'obsidian';
 import { Fountain, Token, InlineLexer } from 'fountain-js';
+import { EditorState } from '@codemirror/state';
+import { EditorView, ViewUpdate } from '@codemirror/view';
 
 export const VIEW_TYPE_FOUNTAIN = 'fountain';
 
@@ -238,94 +240,170 @@ function compile(showMode: ShowMode, tokens: Token[]) {
   return fragments.join('');
 }
 
-
-
-
-export class FountainView extends TextFileView {
-  fountain : Fountain;
-  showMode: ShowMode;
-  tokens: Token[];
-
-  constructor(leaf: WorkspaceLeaf) {
-    super(leaf);
+class ReadonlyViewState {
+  private text: string;
+  private fountain : Fountain;
+  private showMode: ShowMode;
+  private tokens: Token[];
+  private contentEl: HTMLElement;
+  
+  constructor(contentEl: HTMLElement, text: string) {
     this.fountain = new Fountain();
     this.showMode = ShowMode.Everything;
-    this.addAction("layout-grid", "Toggle Index Card View", evt => {
-      this.toggleIndexCards();
-      this.render();
-    } );
+    this.tokens = [];
+    const script = this.fountain.parse(text, true);
+    this.tokens = script.tokens;
+    this.text = text;
+    this.contentEl = contentEl;
+  }
+
+  render() {
+    /// Parent should already be empty.
+    this.contentEl.empty();
+    const mainblock = this.contentEl.createDiv(this.showMode == ShowMode.IndexCards ? undefined : 'screenplay');
+    // Assuming nobody does a supply chain attack on the fountain library, the below
+    // is fine as there is no way for the user to embed html in the fountain.
+    mainblock.innerHTML = compile(this.showMode, this.tokens);
+    mainblock.addEventListener('click', (e) => {
+      if (this.showMode == ShowMode.IndexCards && e.target != null && e.target.id != null && e.target.matches('.scene-heading')) {          
+        const id = e.target.id;
+        this.showMode = ShowMode.Everything;
+        this.render();
+        requestAnimationFrame(() => {
+          const targetElement = document.getElementById(id);
+          if (targetElement) {
+            targetElement.scrollIntoView(({
+              behavior: 'smooth',
+              block: 'start'
+            }))
+          }
+        });
+      }
+    })
   }
 
   toggleIndexCards() {
     this.showMode = this.showMode == ShowMode.IndexCards ? ShowMode.Everything : ShowMode.IndexCards;
+    this.render();
   }
 
-  toggleShowNotes() {
-    switch (this.showMode) {
-      case ShowMode.Everything:
-        this.showMode = ShowMode.WithoutSynopsisAndNotes;
-        break;
-      case ShowMode.WithoutSynopsisAndNotes:
-        this.showMode = ShowMode.IndexCards;
-        break;
-      case ShowMode.IndexCards:
-        this.showMode = ShowMode.Everything;
-        break;
+  getViewData(): string {
+    return this.text;
+  } 
+
+  setViewData(text: string, clear: boolean): void {
+    if (clear) {
+      this.showMode = ShowMode.Everything;
     }
+    this.text = text;
+    const script = this.fountain.parse(text, true);
+    this.tokens = script.tokens;
+    this.render();
   }
 
-  render() {
-      const child = this.containerEl.children[1];
-      child.empty();
-      //const main_div_class = this.showMode == ShowMode.IndexCards ? 'screenplay-index-cards' : 'screenplay';
-      const mainblock = child.createDiv(this.showMode == ShowMode.IndexCards ? undefined : 'screenplay');
-      // Assuming nobody does a supply chain attack on the fountain library, the below
-      // is fine as there is no way for the user to embed html in the fountain.
-      mainblock.innerHTML = compile(this.showMode, this.tokens);
-      mainblock.addEventListener('click', (e) => {
-        if (this.showMode == ShowMode.IndexCards && e.target != null && e.target.id != null && e.target.matches('.scene-heading')) {          
-          const id = e.target.id;
-          this.showMode = ShowMode.Everything;
-          this.render();
-          requestAnimationFrame(() => {
-            const targetElement = document.getElementById(id);
-            if (targetElement) {
-              targetElement.scrollIntoView(({
-                behavior: 'smooth',
-                block: 'start'
-              }))
-            }
-          });
+  clear(): void {
+    this.text = '';
+    this.tokens = [];
+  }
+}
+
+class EditorViewState {
+  private cmEditor: EditorView;
+
+  constructor(contentEl: HTMLElement, text: string, requestSave: () => void ) {
+    contentEl.empty();
+    const editorContainer = contentEl.createDiv('custom-editor-component');
+    const state = EditorState.create({
+      doc: text,
+      extensions: [
+        EditorView.updateListener.of((update: ViewUpdate) => {
+          if (update.docChanged) {
+            // TODO Think about reparsing the fountain
+            requestSave();
+          }
+        })
+      ]
+    } );
+    this.cmEditor = new EditorView({ state: state, parent: editorContainer})
+  }
+
+  setViewData(text: string, clear: boolean) {
+      this.cmEditor.dispatch({
+        changes: {
+          from: 0,
+          to: this.cmEditor.state.doc.length,
+          insert: text
         }
-      })
+      });
+  }
+
+  getViewData(): string {
+    return this.cmEditor.state.doc.toString();
+  } 
+
+  clear(): void {
+  }
+
+  destroy(): void {
+    this.cmEditor.destroy();
+  }
+}
+
+
+export class FountainView extends TextFileView {
+  state: ReadonlyViewState | EditorViewState;
+  indexCardAction: HTMLElement;
+
+  constructor(leaf: WorkspaceLeaf) {
+    super(leaf);
+    this.state = new ReadonlyViewState(this.contentEl, '');
+    this.addAction('edit', "Toggle Edit", evt => {
+      this.toggleEditMode();
+      
+    });
+    this.indexCardAction =  this.addAction("layout-grid", "Toggle Index Card View", evt => {
+      if (this.state instanceof ReadonlyViewState) {
+        this.state.toggleIndexCards();
+      }
+    } );
+  }
+
+
+  toggleEditMode() {
+    const text = this.state.getViewData();
+    if (this.state instanceof EditorViewState) {
+      this.state.destroy();
+      this.state = new ReadonlyViewState(this.contentEl, text);
+      this.state.render();
+      this.indexCardAction.show();
+    } else {
+      this.indexCardAction.hide();
+      this.state = new EditorViewState(this.contentEl, text, this.requestSave);
+    }
   }
 
   getViewType() {
     return VIEW_TYPE_FOUNTAIN;
   }
 
-  getDisplayText() {
+  getDisplayText(): string {
     return this.file?.basename ?? "Fountain";
   }
 
   getViewData(): string {
-      console.log('getViewData');
-      return this.data;
+    return this.state.getViewData();
   }
 
   setViewData(data: string, clear: boolean): void {
-      console.log('setViewData');
-
-      this.data = data;
-      const script = this.fountain.parse(data, true);
-      this.tokens = script.tokens;
-      this.render();
+    this.state.setViewData(data, clear);
   }
 
   clear(): void {
-      console.log('clear');
-      const viewDomContent = this.containerEl.children[1];
-      viewDomContent.empty();
-      this.data = '';
+    this.state.clear();
+    if (this.state instanceof EditorViewState) {
+      this.state.destroy();
+      this.state = new ReadonlyViewState(this.contentEl, '');
+      this.indexCardAction.show();
+    }
   }
 }
