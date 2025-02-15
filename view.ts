@@ -1,4 +1,4 @@
-import { TextFileView, WorkspaceLeaf } from 'obsidian';
+import { TextFileView, WorkspaceLeaf, setIcon } from 'obsidian';
 import { Fountain, Token, InlineLexer } from 'fountain-js';
 import { EditorState } from '@codemirror/state';
 import { EditorView, ViewUpdate } from '@codemirror/view';
@@ -316,6 +316,7 @@ class EditorViewState {
     const state = EditorState.create({
       doc: text,
       extensions: [
+        EditorView.lineWrapping,
         EditorView.updateListener.of((update: ViewUpdate) => {
           if (update.docChanged) {
             // TODO Think about reparsing the fountain
@@ -353,33 +354,40 @@ class EditorViewState {
 export class FountainView extends TextFileView {
   state: ReadonlyViewState | EditorViewState;
   indexCardAction: HTMLElement;
+  toggleEditAction: HTMLElement;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
     this.state = new ReadonlyViewState(this.contentEl, '');
-    this.addAction('edit', "Toggle Edit", evt => {
+    this.toggleEditAction = this.addAction('edit', "Toggle Edit/Readonly", _evt => {
       this.toggleEditMode();
-      
     });
-    this.indexCardAction =  this.addAction("layout-grid", "Toggle Index Card View", evt => {
+    this.indexCardAction =  this.addAction("layout-grid", "Toggle Index Card View", _evt => {
       if (this.state instanceof ReadonlyViewState) {
         this.state.toggleIndexCards();
       }
     } );
   }
 
+  isEditMode(): boolean {
+    return this.state instanceof EditorViewState
+  }
 
   toggleEditMode() {
     const text = this.state.getViewData();
     if (this.state instanceof EditorViewState) {
+      // Switch to readonly mode
       this.state.destroy();
       this.state = new ReadonlyViewState(this.contentEl, text);
       this.state.render();
       this.indexCardAction.show();
     } else {
+      // Switch to editor
       this.indexCardAction.hide();
       this.state = new EditorViewState(this.contentEl, text, this.requestSave);
     }
+    this.toggleEditAction.empty();
+    setIcon(this.toggleEditAction, this.isEditMode() ? 'book-open' : 'edit');
   }
 
   getViewType() {
