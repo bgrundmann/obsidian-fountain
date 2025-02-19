@@ -56,7 +56,7 @@ enum Inside {
 function index_cards_view(script: FountainScript): string {
   let state : Inside = Inside.Nothing;
   let result : string[] = [];
-  let sceneNumber: number = 0;
+  let sceneNumber: number = 1;
   function emit(s: string) {
     result.push(s)
   }
