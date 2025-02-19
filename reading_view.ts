@@ -32,10 +32,15 @@ function reading_view(script: FountainScript): string {
           sceneNumber++;
           return res;
         case 'synopsis':
-          return `<p class="synopsis">= ${script.extract_as_html(el.synopsis)}</p>`;
+          return `<p class="synopsis">${script.extract_as_html(el.synopsis)}</p>`;
         case 'section':
           // TODO: Handle boneyard separator
-          const html = (`<h${el.depth ?? 1} class="section">${script.extract_as_html(el.range)}</h${el.depth ?? 1}>`);
+          const title = script.extract_as_html(el.range);
+          let prefix = "";
+          if (title.toLowerCase().replace(/^ *#+ */, '').trimEnd() === "boneyard") {
+            prefix = '<hr>';
+          }
+          const html = (`${prefix}<h${el.depth ?? 1} class="section">${title}</h${el.depth ?? 1}>`);
           return html;
         case 'dialogue':
           return dialogue_to_html(el, script);
@@ -96,8 +101,7 @@ function index_cards_view(script: FountainScript): string {
         if (el.depth <= 3) {
           closeIfInside(Inside.Section);
           const title = script.extract_as_html(el.range);
-          console.log(title);
-          if (title.toLowerCase().trim() === "boneyard") {
+          if (title.toLowerCase().replace(/^ *#+ */, '').trimEnd() === "boneyard") {
             emit('<hr>');
           }
           emit(`<h${el.depth ?? 1} class="section">${title}</h${el.depth ?? 1}>`);
@@ -105,7 +109,7 @@ function index_cards_view(script: FountainScript): string {
         break;
 
       case 'synopsis':
-        emit(`<p class="synopsis">= ${script.extract_as_html(el.range)}</p>`);
+        emit(`<p class="synopsis">${script.extract_as_html(el.synopsis)}</p>`);
         break;
 
       default:
