@@ -11,10 +11,10 @@ function dialogue_to_html(dialogue: Dialogue, script: FountainScript): string {
   // TODO:
   const parenthetical =
     dialogue.parenthetical !== null ?
-      `<p class="parenthetical">${script.extract_as_html(dialogue.parenthetical)}</p>`
+      `<p class="dialogue-parenthetical">${script.extract_as_html(dialogue.parenthetical)}</p>`
       : "";
   const words = dialogue.text.map((el) => script.text_element_to_html(el, false)).join("");
-  return `<div class="dialogue"><h4 class="character">${characterLine}</h4>${parenthetical}<p class="words">${words}</p></div>`
+  return `<div class="dialogue"><h4 class="dialogue-character">${characterLine}</h4>${parenthetical}<p class="dialogue-words">${words}</p></div>`
 }
 
 /**

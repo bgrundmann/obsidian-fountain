@@ -31,16 +31,16 @@
 .screenplay {
     --screenplay-font: 'Courier Prime';
     --bold-weight: 600;
-    font-family: var(--screenplay-font), 'Courier Final Draft', 'Courier', var(--font-monospace) !important;
-    --font-text: var(--screenplay-font), 'Courier Final Draft', 'Courier', var(--font-monospace) !important;
-    --font-preview-view: var(--screenplay-font), 'Courier Final Draft', 'Courier', var(--font-monospace) !important;
-    --h1-font: var(--screenplay-font) !important;
-    --h2-font: var(--screenplay-font) !important;
-    --h3-font: var(--screenplay-font) !important;
-    --h4-font: var(--screenplay-font) !important;
-    --h5-font: var(--screenplay-font) !important;
-    --h6-font: var(--screenplay-font) !important;
-    --file-margins: 1in 1in 1in 1.5in !important;
+    font-family: var(--screenplay-font), 'Courier Final Draft', 'Courier', var(--font-monospace);
+    --font-text: var(--screenplay-font), 'Courier Final Draft', 'Courier', var(--font-monospace);
+    --font-preview-view: var(--screenplay-font), 'Courier Final Draft', 'Courier', var(--font-monospace);
+    --h1-font: var(--screenplay-font) ;
+    --h2-font: var(--screenplay-font) ;
+    --h3-font: var(--screenplay-font) ;
+    --h4-font: var(--screenplay-font) ;
+    --h5-font: var(--screenplay-font) ;
+    --h6-font: var(--screenplay-font) ;
+    --file-margins: 1in 1in 1in 1.5in ;
     --file-line-width: 6.2in !important;
     --font-text: var(--screenplay-font);
     font-size: 12pt;
@@ -64,7 +64,7 @@
 
 /**************** dialogue */
 
-.screenplay > .dual-dialogue > .character, [data-type=fountain] .dual-dialogue > h4 {
+.screenplay .dual-dialogue-character{
     text-align: left;
     text-transform: uppercase;
     color: var(--h2-color) !important;
@@ -76,7 +76,7 @@
     margin-bottom: 0 !important;
 }
 
-.screenplay > .dialogue > .character, [data-type=fountain] .dialogue > .character { 
+.screenplay .dialogue-character{ 
     text-transform: uppercase;
     color: var(--h2-color);
     font-weight: var(--bold-weight)  !important;
@@ -88,7 +88,7 @@
     text-align: left;
 }
 
-.screenplay > .dialogue > .words, [data-type=fountain] .dialogue > .words { 
+.screenplay .dialogue-words { 
     text-align: left;
     width: calc(100% - 2.3in) !important;
     max-width: calc(100% - 2.3in) !important;
@@ -98,10 +98,10 @@
 }
 
 
-.is-phone .screenplay > .dialogue > .character {
+.is-phone .screenplay .dialogue-character {
     margin: 0 0 0 -0.7in !important;
 }
-.is-phone .screenplay > .dialogue > .words {
+.is-phone .screenplay .dialogue-words {
     margin: 0 0 0 0.5in !important;
     width: calc(100% - 1in) !important;
     max-width: calc(100% - 1in) !important;
@@ -113,12 +113,12 @@
 }
 
 /* adjust for mobile */
-.is-phone .screenplay > .dialogue > .words {
+.is-phone .screenplay .dialogue-words {
     margin: 0 0 0 0.45in;
 }
 
 /* parentheticals */
-.screenplay > .dialogue > .parenthetical, [data-type=fountain] .dialogue > .parenthetical{
+.screenplay .dialogue-parenthetical {
     margin: 0 0 0 1.91in !important;
     padding: 0px !important;
     text-align: left;
@@ -126,13 +126,13 @@
 }
 
 /* adjust for phones */
-.is-phone .screenplay > .dialogue > .parenthetical {
+.is-phone .screenplay .dialogue-parenthetical {
     margin: 0 0 0 0.8in !important; 
 }
 
 /****** scene headings */
 
-.screenplay > .scene-heading, [data-type=fountain] .scene-heading {
+.screenplay .scene-heading {
     padding: 0px !important;
     text-transform: uppercase;
     font-weight: var(--bold-weight)  !important;
@@ -140,7 +140,8 @@
     text-align: left !important;
     color: var(--h1-color) !important;
 }
-.screenplay > .transition, [data-type=fountain] .transition {
+
+.screenplay .transition {
     padding: 0px !important;
     text-transform: uppercase;
     color: var(--h3-color) !important;
@@ -149,12 +150,14 @@
     text-align: right !important;
 }
  
+/*
 .screenplay h1, {
     font-size: inherit;
     text-align: left;
     text-transform: uppercase; 
     font-weight: var(--bold-weight) ;
 }
+*/
 
 /********* sections */
 
@@ -166,12 +169,12 @@
 
 /********* synopsis and notes */
 
-.screenplay > .synopsis, [data-type=fountain] .synopsis {
+.screenplay .synopsis {
     color: var(--text-muted);
     font-style: italic;
 }
 
-.screenplay .note, [data-type=fountain] .note {
+.screenplay .note {
     color: var(--text-muted);
     font-style: italic;
 }

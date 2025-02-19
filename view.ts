@@ -4,6 +4,7 @@ import { EditorView, ViewUpdate } from '@codemirror/view';
 import { parse } from './fountain_parser.js';
 import { FountainScript } from 'fountain.js';
 import { reading_view, index_cards_view } from './reading_view.js';
+import { fountainEditorPlugin } from './fountain_editor.js';
 export const VIEW_TYPE_FOUNTAIN = 'fountain';
 
 enum ShowMode {
@@ -74,6 +75,7 @@ class ReadonlyViewState {
   }
 }
 
+
 class EditorViewState {
   private cmEditor: EditorView;
 
@@ -83,10 +85,11 @@ class EditorViewState {
     const state = EditorState.create({
       doc: text,
       extensions: [
+        EditorView.editorAttributes.of({class: "screenplay"}),
         EditorView.lineWrapping,
+        fountainEditorPlugin,
         EditorView.updateListener.of((update: ViewUpdate) => {
           if (update.docChanged) {
-            // TODO Think about reparsing the fountain
             requestSave();
           }
         })
