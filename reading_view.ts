@@ -1,20 +1,19 @@
-import { Action, Dialogue, Scene, Section, extract_as_html, FountainScript, FountainElement } from './fountain.js';
+import { Action, Dialogue, Scene, Section, FountainScript, FountainElement } from './fountain.js';
 export { reading_view, index_cards_view };
 
-function action_to_html(action: Action, document: string): string {
-    const elts = action.text.map((el) => el.to_html(document, true)).join("");
+function action_to_html(action: Action, script: FountainScript): string {
+    const elts = action.text.map((el) => script.text_element_to_html(el, true)).join("");
     return `<p class="action">${elts}</p>`;
 }
 
-function dialogue_to_html(dialogue: Dialogue, document: string): string {
-  const characterLine =
-    extract_as_html(document, dialogue.characterRange);
+function dialogue_to_html(dialogue: Dialogue, script: FountainScript): string {
+  const characterLine = script.extract_as_html(dialogue.characterRange);
   // TODO:
   const parenthetical =
     dialogue.parenthetical !== null ?
-      `<p class="parenthetical">${extract_as_html(document, dialogue.parenthetical)}</p>`
+      `<p class="parenthetical">${script.extract_as_html(dialogue.parenthetical)}</p>`
       : "";
-  const words = dialogue.text.map((el) => el.to_html(document, false)).join("");
+  const words = dialogue.text.map((el) => script.text_element_to_html(el, false)).join("");
   return `<div class="dialogue"><h4 class="character">${characterLine}</h4>${parenthetical}<p class="words">${words}</p></div>`
 }
 
@@ -26,20 +25,20 @@ function reading_view(script: FountainScript): string {
     const element_to_html = (el: FountainElement): string => {
       switch (el.kind) {
         case 'action':
-          return action_to_html(el, script.document);
+          return action_to_html(el, script);
         case 'scene':
-          const text = extract_as_html(script.document, el.range);
+          const text = script.extract_as_html(el.range);
           const res = `<h3 class="scene-heading" id="scene${sceneNumber}">${text}</h3>`;
           sceneNumber++;
           return res;
         case 'synopsis':
-          return `<p class="synopsis">= ${extract_as_html(script.document, el.synopsis)}</p>`;
+          return `<p class="synopsis">= ${script.extract_as_html(el.synopsis)}</p>`;
         case 'section':
           // TODO: Handle boneyard separator
-          const html = (`<h${el.depth ?? 1} class="section">${extract_as_html(script.document, el.range)}</h${el.depth ?? 1}>`);
+          const html = (`<h${el.depth ?? 1} class="section">${script.extract_as_html(el.range)}</h${el.depth ?? 1}>`);
           return html;
         case 'dialogue':
-          return dialogue_to_html(el, script.document);
+          return dialogue_to_html(el, script);
         default:
           return `TODO: ${el.kind}`;
       }
@@ -87,7 +86,7 @@ function index_cards_view(script: FountainScript): string {
       case 'scene':
         closeIfInside(Inside.Card);
         emitOpenTill(Inside.Card);
-        emit(`<h3 class="scene-heading" id="scene${sceneNumber}">${extract_as_html(script.document, el.range)}</h3>`);
+        emit(`<h3 class="scene-heading" id="scene${sceneNumber}">${script.extract_as_html(el.range)}</h3>`);
         sceneNumber++;
         break;
 
@@ -96,7 +95,7 @@ function index_cards_view(script: FountainScript): string {
         console.log(el);
         if (el.depth <= 3) {
           closeIfInside(Inside.Section);
-          const title = extract_as_html(script.document, el.range);
+          const title = script.extract_as_html(el.range);
           console.log(title);
           if (title.toLowerCase().trim() === "boneyard") {
             emit('<hr>');
@@ -106,7 +105,7 @@ function index_cards_view(script: FountainScript): string {
         break;
 
       case 'synopsis':
-        emit(`<p class="synopsis">= ${extract_as_html(script.document, el.range)}</p>`);
+        emit(`<p class="synopsis">= ${script.extract_as_html(el.range)}</p>`);
         break;
 
       default:

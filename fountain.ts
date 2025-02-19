@@ -1,4 +1,4 @@
-export { FountainScript, TitlePage, KeyValue, TextElement, extract_as_html };
+export { FountainScript, TitlePage, KeyValue, TextElement};
 export type { Range, Synopsis, Action,Dialogue, Scene, Section, FountainElement };
 
 interface Range {
@@ -48,20 +48,6 @@ type Section = {
 
 type FountainElement = Synopsis | Action | Scene | Dialogue | Section | PageBreak;
 
-function extract_as_html(document: string, r: Range, escapeSpace: boolean = false): string {
-  let safe = 
-    document
-      .slice(r.start, r.end)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-  return escapeSpace
-    ? safe.replace(/^( +)/gm, (_, spaces) => "&nbsp;".repeat(spaces.length))
-    : safe;
-}
-
 
 type TextKind = 'text' | 'newline' | 'note' | 'boneyard' ;
 
@@ -74,19 +60,6 @@ class TextElement {
     this.kind = kind;
   }
 
-  to_html(document: string, escapeSpaces: boolean): string {
-    switch (this.kind) {
-      case 'text':
-        return extract_as_html(document, this.range, true);
-      case 'note':
-        const n = extract_as_html(document, this.range);
-        return `<span class="note">${n}</span>`;
-      case 'newline':
-        return '<br>';
-      case 'boneyard':
-        return '';
-    }    
-  }
 }
 
 class TitlePage {
@@ -113,6 +86,38 @@ class FountainScript {
   title: TitlePage|null;
   script: FountainElement[];
   document: string;
+
+  /// Extract some text from the fountain document safe to be used
+  /// as HTML source.
+  extract_as_html(r: Range, escapeLeadingSpaces:boolean = false): string {
+    let safe = 
+      this.document
+        .slice(r.start, r.end)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+    return escapeLeadingSpaces
+      ? safe.replace(/^( +)/gm, (_, spaces) => "&nbsp;".repeat(spaces.length))
+      : safe;
+  }
+
+  /// Extract a text element from the fountain document safe to be used as
+  /// HTML source.
+  text_element_to_html(el: TextElement, escapeLeadingSpaces: boolean): string {
+    switch (el.kind) {
+      case 'text':
+        return this.extract_as_html(el.range, escapeLeadingSpaces);
+      case 'note':
+        const n = this.extract_as_html(el.range);
+        return `<span class="note">${n}</span>`;
+      case 'newline':
+        return '<br>';
+      case 'boneyard':
+        return '';
+    }    
+  }
 
   constructor(document: string, title: TitlePage|null, script: FountainElement[]) {
     this.document = document;
