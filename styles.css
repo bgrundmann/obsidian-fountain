@@ -89,6 +89,7 @@
 }
 
 .screenplay .dialogue-words { 
+    display: block;
     text-align: left;
     width: calc(100% - 2.3in) !important;
     max-width: calc(100% - 2.3in) !important;
@@ -150,14 +151,12 @@
     text-align: right !important;
 }
  
-/*
-.screenplay h1, {
+.screenplay h1, .screenplay h2, .screenplay h3, .screenplay h4, .screenplay h5 {
     font-size: inherit;
     text-align: left;
     text-transform: uppercase; 
     font-weight: var(--bold-weight) ;
 }
-*/
 
 /********* sections */
 
