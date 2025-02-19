@@ -1,5 +1,4 @@
 import { TextFileView, WorkspaceLeaf, setIcon } from 'obsidian';
-import { Fountain, Token, InlineLexer } from 'fountain-js';
 import { EditorState } from '@codemirror/state';
 import { EditorView, ViewUpdate } from '@codemirror/view';
 import { parse } from './fountain_parser.js';
@@ -16,17 +15,11 @@ enum ShowMode {
 
 class ReadonlyViewState {
   private text: string;
-  private fountain : Fountain;
   private showMode: ShowMode;
-  private tokens: Token[];
   private contentEl: HTMLElement;
   
   constructor(contentEl: HTMLElement, text: string) {
-    this.fountain = new Fountain();
     this.showMode = ShowMode.Everything;
-    this.tokens = [];
-    const script = this.fountain.parse(text, true);
-    this.tokens = script.tokens;
     this.text = text;
     this.contentEl = contentEl;
   }
@@ -73,14 +66,11 @@ class ReadonlyViewState {
       this.showMode = ShowMode.Everything;
     }
     this.text = text;
-    const script = this.fountain.parse(text, true);
-    this.tokens = script.tokens;
     this.render();
   }
 
   clear(): void {
     this.text = '';
-    this.tokens = [];
   }
 }
 

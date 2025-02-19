@@ -3,7 +3,8 @@
 // It largely tries to faithfully implement the spec.
 // That said there are a few cases where it is on purpose more permissible
 // than the spec.  In particular in some cases we want to recognize partial
-// constructs, so that during interactive, the right thing happens (TM).
+// constructs, so that during interactive / incremental use, the right thing
+// happens (TM).
 
 {{
 import { FountainScript, TitlePage, KeyValue, TextElement } from './fountain.ts';
