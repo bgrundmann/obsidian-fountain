@@ -210,7 +210,8 @@ p.centered {
 
 .screenplay-index-card .scene-heading {
     font-size: 12px;   
-    font-family: var(--screenplay-font), 'Courier Final Draft', 'Courier', var(--font-monospace) !important;
+    text-transform: uppercase;
+    font-family: var(--screenplay-font), 'Courier Final Draft', 'Courier', var(--font-monospace);
     margin: 0px;
     /* padding: 8px; */
 }
