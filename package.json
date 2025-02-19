@@ -4,9 +4,11 @@
 	"description": "This is a fountain plugin for obsidian",
 	"main": "main.js",
 	"scripts": {
+	  "predev": "npm run parser",
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"version": "node version-bump.mjs && git add manifest.json versions.json"
+		"version": "node version-bump.mjs && git add manifest.json versions.json",
+		"parser": "peggy -o fountain_parser.js --format es fountain_parser.peggy"
 	},
 	"keywords": [],
 	"author": "",
@@ -18,6 +20,7 @@
 		"builtin-modules": "3.3.0",
 		"esbuild": "0.17.3",
 		"obsidian": "latest",
+		"peggy": "^4.2.0",
 		"tslib": "2.4.0",
 		"typescript": "4.7.4"
 	},
