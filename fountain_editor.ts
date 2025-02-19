@@ -48,6 +48,9 @@ class FountainEditorPlugin implements PluginValue {
     const parenthetical = Decoration.mark({class:"dialogue-parenthetical"});
     const character = Decoration.mark({class:"dialogue-character"});
     const words = Decoration.mark({class:"dialogue-words"});
+    const action = Decoration.mark({class:"action"});
+    const boneyard = Decoration.mark({class:"boneyard"});
+    const note = Decoration.mark({class:"note"});
 
     
     for (const el of fscript.script) {
@@ -74,6 +77,23 @@ class FountainEditorPlugin implements PluginValue {
           }
           break;
 
+        case 'action':
+          builder.add(el.range.start, el.range.end, action);
+          for (const tel of el.text) {
+            switch (tel.kind) {
+              case 'text':
+              case 'newline':
+                break;
+              case 'boneyard':
+                builder.add(tel.range.start, tel.range.end, boneyard);
+                break;
+              case 'note':
+                builder.add(tel.range.start, tel.range.end, note);
+                break;
+            }
+          }
+          break;
+          
         default:
           break;
       }

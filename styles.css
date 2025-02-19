@@ -109,7 +109,7 @@
 }
 
 /* prevents  a page break from interrupting dialogue */
-.dialogue {
+.screenplay .dialogue {
     break-inside: avoid !important;
 }
 
@@ -175,6 +175,11 @@
 
 .screenplay .note {
     color: var(--text-muted);
+    font-style: italic;
+}
+
+.screenplay .boneyard {
+    color: var(--text-faint);
     font-style: italic;
 }
 
