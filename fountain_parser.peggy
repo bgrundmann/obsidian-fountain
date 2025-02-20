@@ -17,7 +17,7 @@ const TextElement = fountain.TextElement;
 }}
 
 Script 
- = title:TitlePage? script:Element* { return new FountainScript(input, title, script); }
+ = title:TitlePage? script:Element* !. { return new FountainScript(input, title, script); }
 
 TitlePage 
  = @(KeyValue)+ "\n"
@@ -46,24 +46,21 @@ Element
  / Synopsis
  / Action
 
-TextBlock
- = elements:(!"\n\n" @TextElement)+  BlankLineOrEndOfInput { return elements; }
-
 TextElement
  = Boneyard                 
  / Note                     
- / (!("/*"/"\n"/"[[") .) +  { return new TextElement(range(), 'text'); }
- / "\n"                     { return new TextElement(range(), 'newline'); } 
+ / (!( "/*" / "\n" / "[[" ) .) +  { return new TextElement(range(), 'text'); }
+ / "\n"                           { return new TextElement(range(), 'newline'); } 
 
 Action 
- = text:(!"\n" @TextElement)+ { return { kind: 'action', range: range(), text: text }; }
+ = text:(!"\n\n" @TextElement)+ BlankLineOrEndOfInput { return { kind: 'action', range: range(), text: text }; }
  / "\n"                       { return { kind: 'action', range: range(), text: [new TextElement(range(), 'newline')]}; } 
 
-Note 
+Note "note"
  = "[[" (!("]]"/"\n\n") .)* "]]"?
  { return new TextElement(range(), 'note'); }
  
-Boneyard 
+Boneyard "boneyard"
  = OptionalBlanks "/*" (!"*/" .)* "*/" 
  { return new TextElement(range(), 'boneyard'); }
  
@@ -80,11 +77,14 @@ Synopsis
 NewLineOrEndOfInput
  = "\n"
  / !.
+
+Words
+ = elements:(!"\n\n" @TextElement)+  BlankLineOrEndOfInput { return elements; }
  
 Dialogue
  = OptionalBlanks character:Character exts:CharacterExtensions "\n" 
   parenthetical:(Parenthetical)? 
-  dialogue:TextBlock 
+  dialogue:Words 
  { return {
      range: range(),
      kind: 'dialogue',
@@ -105,7 +105,7 @@ Character
  / "@" [^(\n]+        { return range() }
 
 MaybeName
- = [^ \t][^(\n]* { return text() }
+ = [^ \t\n][^(\n]* { return text() }
 
 BlankLineOrEndOfInput 
  = !.

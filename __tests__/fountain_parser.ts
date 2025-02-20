@@ -38,6 +38,30 @@ describe("Parser tests", () => {
        range: { start: 12, end: 13 }
      }
     ]);
+  test_script("Basic Action at end of input",
+    `This is some action`,
+    [ { kind: 'action', source: "This is some action"},
+    ]);
+  test_script("Basic Action + newline at end of input",
+    `This is some action\n`,
+    [ { kind: 'action', source: "This is some action\n"},
+    ]);
+  test_script("Basic Action followed by blank line",
+    `This is some action\n\n`,
+    [ { kind: 'action', source: "This is some action\n\n"},
+    ]);
+  test_script("Empty lines are passed along as action(1)",
+    "\n"
+    , [ { kind: 'action', source: "\n" } ]
+      );
+  test_script("Empty lines are passed along as action(2)",
+    "\n\n"
+    , [ { kind: 'action', source: "\n\n" } ]
+      );
+  test_script("Empty lines are passed along as action(4)",
+    "\n\n\n\n"
+    , [ { kind: 'action', source: "\n\n\n\n" } 
+      ] );
 
   test_script("Simple Dialog",
     `BOB
@@ -59,9 +83,9 @@ Where is that pit boss?
 
 No luck. He has no choice to deal the cards.`,
     [ { kind: 'scene', source: "INT. CASINO - NIGHT\n\n"}
-    , { kind: 'action', source: "THE DEALER eyes the new player warily." }
-    , { kind: 'dialogue', source: "SCANNING THE AISLES...\nWhere is that pit boss?\n"}
-    , { kind: 'action'}
+    , { kind: 'action', source: "THE DEALER eyes the new player warily.\n\n" }
+    , { kind: 'dialogue', source: "SCANNING THE AISLES...\nWhere is that pit boss?\n\n"}
+    , { kind: 'action', source:"No luck. He has no choice to deal the cards."}
     ]
     );
 });

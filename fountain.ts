@@ -131,6 +131,7 @@ class FountainScript {
     // Will produce 3 action elements, one containing the first text (with newline elements)
     // and another two containing just a single newline element each.
     // This merges all subsequent action elements into a single one.
+    this.script = script;
     const merged = [];
     let prev:FountainElement|null = null;
     for (const el of script) {
