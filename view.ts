@@ -36,19 +36,22 @@ class ReadonlyViewState {
     mainblock.innerHTML = this.showMode == ShowMode.IndexCards ? index_cards_view(fp) : reading_view(fp);
     
     mainblock.addEventListener('click', (e) => {
-      if (this.showMode == ShowMode.IndexCards && e.target != null && e.target.id != null && e.target.matches('.scene-heading')) {          
-        const id = e.target.id;
-        this.showMode = ShowMode.Everything;
-        this.render();
-        requestAnimationFrame(() => {
-          const targetElement = document.getElementById(id);
-          if (targetElement) {
-            targetElement.scrollIntoView(({
-              behavior: 'smooth',
-              block: 'start'
-            }))
-          }
-        });
+      if (this.showMode == ShowMode.IndexCards && e.target != null) {
+        const target = e.target as HTMLElement;
+        if (target.id != null && target.matches('.scene-heading')) {          
+          const id = target.id;
+          this.showMode = ShowMode.Everything;
+          this.render();
+          requestAnimationFrame(() => {
+            const targetElement = document.getElementById(id);
+            if (targetElement) {
+              targetElement.scrollIntoView(({
+                behavior: 'smooth',
+                block: 'start'
+              }))
+            }
+          });
+        }
       }
     })
   }
