@@ -152,4 +152,10 @@ class FountainScript {
     if (prev !== null) merged.push(prev);
     this.script = merged;
   }
+
+  with_source(): (FountainElement & { source: string })[] {
+    return this.script.map((elt) => {
+      return { ...elt, source : this.document.slice(elt.range.start, elt.range.end) };
+    });
+  }
 }

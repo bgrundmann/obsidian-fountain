@@ -101,8 +101,11 @@ CharacterExtensions
  = ([ \t]* "(" [^)\n]* ")")*  { return range() }
  
 Character
- = [A-Z0-9][A-Z0-9 ]* { return range() }
+ = name:MaybeName &{ return name.toUpperCase() === name } { return range() }
  / "@" [^(\n]+        { return range() }
+
+MaybeName
+ = [^ \t][^(\n]* { return text() }
 
 BlankLineOrEndOfInput 
  = !.
@@ -118,7 +121,7 @@ Scene
  = SceneStart RestOfLine BlankLineOrEndOfInput { return { kind: 'scene', range: range() }; } 
 
 SceneStart
- = OptionalBlanks ('.' 
+ = OptionalBlanks ('.' &[a-zA-Z0-9] 
  / ("INT./EXT"i
  / "INT/EXT"i
  / "EXT"i
