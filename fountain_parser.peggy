@@ -7,7 +7,13 @@
 // happens (TM).
 
 {{
-import { FountainScript, TitlePage, KeyValue, TextElement } from './fountain.ts';
+const fountain = require("./fountain");
+const FountainScript = fountain.FountainScript;
+const TitlePage = fountain.TitlePage;
+const KeyValue = fountain.KeyValue;
+const TextElement = fountain.TextElement;
+
+//import { FountainScript, TitlePage, KeyValue, TextElement } from './fountain';
 }}
 
 Script 

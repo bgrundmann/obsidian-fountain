@@ -5,23 +5,35 @@
 	"main": "main.js",
 	"scripts": {
 		"predev": "npm run parser",
+		"prebuild": "npm run parser",
+		"pretest": "npm run parser",
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
-		"parser": "peggy -o fountain_parser.js --format es fountain_parser.peggy"
+		"parser": "peggy -c peggy_config.js",
+		"test": "jest"
 	},
 	"keywords": [],
 	"author": "",
 	"license": "MIT",
 	"devDependencies": {
+		"@babel/core": "^7.26.9",
+		"@babel/preset-env": "^7.26.9",
+		"@jest/globals": "^29.7.0",
+		"@types/jest": "^29.5.14",
 		"@types/node": "^16.11.6",
 		"@typescript-eslint/eslint-plugin": "5.29.0",
 		"@typescript-eslint/parser": "5.29.0",
+		"babel-jest": "^29.7.0",
 		"builtin-modules": "3.3.0",
 		"esbuild": "^0.25.0",
 		"obsidian": "latest",
 		"peggy": "^4.2.0",
+		"ts-jest": "^29.2.5",
 		"tslib": "2.4.0",
 		"typescript": "4.7.4"
+	},
+	"dependencies": {
+		"jest-environment-jsdom": "^29.7.0"
 	}
 }
