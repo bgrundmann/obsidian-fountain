@@ -84,15 +84,15 @@ describe("Parser tests", () => {
   // However if that is followed by more actions the blank lines
   // in between are part of the text
   test_script("Two actions with two blank lines in between",
-    `This is some action\n\n\nWith a blank line`,
+    `This is some action\n\n\nWith two blank lines`,
     [ { kind: 'action'
-      , source: "This is some action\n\n\nWith a blank line"
-      , range: { start: 0, end: 39 }
+      , source: "This is some action\n\n\nWith two blank lines"
+      , range: { start: 0, end: 42 }
       , text: [ { kind: 'text', range: { start: 0, end: 19 } }
               , { kind: 'newline', range: { start: 19, end: 20 } }
               , { kind: 'newline', range: { start: 20, end: 21 } }
               , { kind: 'newline', range: { start: 21, end: 22 } }
-              , { kind: 'text', range: { start: 22, end: 39 } }
+              , { kind: 'text', range: { start: 22, end: 42 } }
               ]
       }
     ]);
