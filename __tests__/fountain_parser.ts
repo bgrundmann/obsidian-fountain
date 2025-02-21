@@ -38,18 +38,65 @@ describe("Parser tests", () => {
        range: { start: 12, end: 13 }
      }
     ]);
+  // The range of the action includes the terminating
+  // blank line if any.
+  // But the blank line is not included in the text
+  // of the action.  So the next three examples all 
+  // have different .range, but the same text.
   test_script("Basic Action at end of input",
     `This is some action`,
-    [ { kind: 'action', source: "This is some action"},
+    [ { kind: 'action'
+      , source: "This is some action"
+      , range: { start: 0, end: 19 }
+      , text: [ { kind: 'text', range: { start: 0, end: 19 } } ]
+      }
     ]);
   test_script("Basic Action + newline at end of input",
     `This is some action\n`,
-    [ { kind: 'action', source: "This is some action\n"},
+    [ { kind: 'action'
+      , source: "This is some action\n"
+      , range: { start: 0, end: 20 }
+      , text: [ { kind: 'text', range: { start: 0, end: 19 } } ]
+      }
     ]);
   test_script("Basic Action followed by blank line",
     `This is some action\n\n`,
-    [ { kind: 'action', source: "This is some action\n\n"},
+    [ { kind: 'action'
+      , source: "This is some action\n\n"
+      , range: { start: 0, end: 21 }
+      , text: [ { kind: 'text', range: { start: 0, end: 19 } } ]
+      }
     ]);
+  // However if that is followed by more actions the blank lines
+  // in between are part of the text
+  test_script("Two actions with a blank line in between",
+    `This is some action\n\nWith a blank line`,
+    [ { kind: 'action'
+      , source: "This is some action\n\nWith a blank line"
+      , range: { start: 0, end: 38 }
+      , text: [ { kind: 'text', range: { start: 0, end: 19 } }
+              , { kind: 'newline', range: { start: 19, end: 20 } }
+              , { kind: 'newline', range: { start: 20, end: 21 } }
+              , { kind: 'text', range: { start: 21, end: 38 } }
+              ]
+      }
+    ]);
+  // However if that is followed by more actions the blank lines
+  // in between are part of the text
+  test_script("Two actions with two blank lines in between",
+    `This is some action\n\n\nWith a blank line`,
+    [ { kind: 'action'
+      , source: "This is some action\n\n\nWith a blank line"
+      , range: { start: 0, end: 39 }
+      , text: [ { kind: 'text', range: { start: 0, end: 19 } }
+              , { kind: 'newline', range: { start: 19, end: 20 } }
+              , { kind: 'newline', range: { start: 20, end: 21 } }
+              , { kind: 'newline', range: { start: 21, end: 22 } }
+              , { kind: 'text', range: { start: 22, end: 39 } }
+              ]
+      }
+    ]);
+
   test_script("Empty lines are passed along as action(1)",
     "\n"
     , [ { kind: 'action', source: "\n" } ]

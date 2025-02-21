@@ -52,9 +52,29 @@ TextElement
  / (!( "/*" / "\n" / "[[" ) .) +  { return new TextElement(range(), 'text'); }
  / "\n"                           { return new TextElement(range(), 'newline'); } 
 
+ LineTextElement
+   = Boneyard                 
+   / Note                     
+   / (!( "/*" / "\n" / "[[" ) .) +  { return new TextElement(range(), 'text'); }
+
+ExtraActionLine
+ = newline:NewLine elements:LineTextElement+
+ { return [new TextElement(newline, 'newline')].concat(elements); }
+ 
+Action
+ = text1:LineTextElement+ text2:ExtraActionLine* BlankLineOrEndOfInput
+   { const text = text1.concat(text2.flat());
+     return { kind: 'action', range: range(), text: text};
+   }
+ / newline:NewLine
+   { return { kind: 'action', range:newline, text: [ new TextElement(newline, 'newline') ] };
+   }
+
+/*
 Action 
  = text:(!"\n\n" @TextElement)+ BlankLineOrEndOfInput { return { kind: 'action', range: range(), text: text }; }
  / "\n"                       { return { kind: 'action', range: range(), text: [new TextElement(range(), 'newline')]}; } 
+*/
 
 Note "note"
  = "[[" (!("]]"/"\n\n") .)* "]]"?
@@ -74,6 +94,9 @@ Hashes
 Synopsis
  = OptionalBlanks "=" synopsis:RestOfLine NewLineOrEndOfInput { return { range:range(), synopsis:synopsis, kind: 'synopsis'} } 
  
+NewLine
+ = "\n" { return range() }
+
 NewLineOrEndOfInput
  = "\n"
  / !.

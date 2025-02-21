@@ -122,14 +122,9 @@ class FountainScript {
   constructor(document: string, title: TitlePage|null, script: FountainElement[]) {
     this.document = document;
     this.title = title;
-    // The way the parser works, text like this:
-    // A action line
-    // another action line
-    // { a blank line }
-    // { another blank line }
+    // The way the parser works, blank lines can cause separate action elements
+    // (as opposed to a single action element containing all the newlines).
     //
-    // Will produce 3 action elements, one containing the first text (with newline elements)
-    // and another two containing just a single newline element each.
     // This merges all subsequent action elements into a single one.
     this.script = script;
     const merged = [];
@@ -139,9 +134,24 @@ class FountainScript {
         prev = el;
       } else {
         if (prev.kind === 'action' && el.kind === 'action') {
+          let extra_newlines: TextElement[] = []
+          if (prev.text.length > 0 && prev.text[prev.text.length - 1].kind != 'newline') {
+            // Previous action does not end in a newline
+            // So this must be where the parser separated two actions
+            // which only happens at blank lines.
+            // So insert a blank line (two newlines).
+            extra_newlines = [
+              new TextElement(
+                { start:prev.range.end-2, end: prev.range.end-1 },
+              'newline')
+            ,  new TextElement(
+                { start:prev.range.end-1, end: prev.range.end },
+              'newline')
+            ]
+          }
           prev = {
             kind: 'action',
-            text: prev.text.concat(el.text),
+            text: prev.text.concat(extra_newlines, el.text),
             range: { start: prev.range.start, end: el.range.end }
           };
         } else {
