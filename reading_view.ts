@@ -34,7 +34,6 @@ function reading_view(script: FountainScript): string {
         case 'synopsis':
           return `<p class="synopsis">${script.extract_as_html(el.synopsis)}</p>`;
         case 'section':
-          // TODO: Handle boneyard separator
           const title = script.extract_as_html(el.range);
           let prefix = "";
           if (title.toLowerCase().replace(/^ *#+ */, '').trimEnd() === "boneyard") {
