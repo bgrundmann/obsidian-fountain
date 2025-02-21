@@ -41,30 +41,25 @@ MultiLineValue
  
 Element
  = Scene
- / Dialogue
+ / Transition
  / Section
  / Synopsis
+ / Dialogue
  / Action
 
-TextElement
+LineTextElement
  = Boneyard                 
  / Note                     
  / (!( "/*" / "\n" / "[[" ) .) +  { return new TextElement(range(), 'text'); }
- / "\n"                           { return new TextElement(range(), 'newline'); } 
 
- LineTextElement
-   = Boneyard                 
-   / Note                     
-   / (!( "/*" / "\n" / "[[" ) .) +  { return new TextElement(range(), 'text'); }
+Transition
+ = (!("TO:\n"/"TO:" !.) [^\n] )* "TO:" BlankLineOrEndOfInput &{ const t = text(); return t.toUpperCase() === t; }
+ { return { kind: 'transition', range: range() }; }
 
-ExtraActionLine
- = newline:NewLine elements:LineTextElement+
- { return [new TextElement(newline, 'newline')].concat(elements); }
  
 Action
- = text1:LineTextElement+ text2:ExtraActionLine* BlankLineOrEndOfInput
-   { const text = text1.concat(text2.flat());
-     return { kind: 'action', range: range(), text: text};
+ = words:Words
+   { return { kind: 'action', range: range(), text: words };
    }
  / newline:NewLine
    { return { kind: 'action', range:newline, text: [ new TextElement(newline, 'newline') ] };
@@ -101,8 +96,15 @@ NewLineOrEndOfInput
  = "\n"
  / !.
 
+ExtraLinesOfWords
+ = newline:NewLine elements:LineTextElement+
+ { return [new TextElement(newline, 'newline')].concat(elements); }
+ 
 Words
- = elements:(!"\n\n" @TextElement)+  BlankLineOrEndOfInput { return elements; }
+ = text1:LineTextElement+ text2:ExtraLinesOfWords* BlankLineOrEndOfInput
+   { const text = text1.concat(text2.flat());
+     return text;
+   }
  
 Dialogue
  = OptionalBlanks character:Character exts:CharacterExtensions "\n" 

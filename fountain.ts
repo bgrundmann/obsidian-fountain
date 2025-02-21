@@ -1,5 +1,5 @@
 export { FountainScript, TitlePage, KeyValue, TextElement};
-export type { Range, Synopsis, Action,Dialogue, Scene, Section, FountainElement };
+export type { Range, Synopsis, Transition, Action,Dialogue, Scene, Section, FountainElement };
 
 interface Range {
   start: number;
@@ -32,6 +32,11 @@ type Scene = {
   range: Range;
 }
 
+type Transition = {
+  kind: 'transition',
+  range: Range;
+}
+
 type Dialogue = {
   kind: 'dialogue';
   range: Range;   /// range of everything
@@ -46,7 +51,7 @@ type Section = {
   depth: number;
 }
 
-type FountainElement = Synopsis | Action | Scene | Dialogue | Section | PageBreak;
+type FountainElement = Synopsis | Transition | Action | Scene | Dialogue | Section | PageBreak;
 
 
 type TextKind = 'text' | 'newline' | 'note' | 'boneyard' ;

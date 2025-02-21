@@ -26,6 +26,13 @@ describe("Parser tests", () => {
       { kind: 'action', source: "...where the second-rate carnival is parked for the moment in an Alabama field." }
     ]);
 
+  // transitions
+  test_script("simple transition at end of input", "TO:", [{kind: 'transition', source:"TO:"}]);
+  test_script("simple transition + newline at end of input", "TO:\n", [{kind: 'transition', source:"TO:\n"}]);
+  test_script("simple transition with blank line at end of input", "TO:\n\n", [{kind: 'transition', source:"TO:\n\n"}]);
+  test_script("not a transition if not followed by a blank line", "TO:\nBar", [{kind: 'dialogue', source:"TO:\nBar"}]);
+  test_script("not a transition if not preceded by a blank line", "Bar\nTO:\n\n", [{kind: 'action', source:"Bar\nTO:\n\n"}]);
+
   // Sections are just the line the section is on.
   test_script("section at end of input", "# A section", [{ kind: 'section', range: { start: 0, end: 11 }}]);
   test_script("section + newline at end of input", "# A section\n", [{ kind: 'section', range: { start: 0, end: 12 }}]);
@@ -136,3 +143,46 @@ No luck. He has no choice to deal the cards.`,
     ]
     );
 });
+
+describe("Corner cases from big fish", () => {
+  // These are corner cases from big fish we got wrong at some point or the other.
+  // josephine was an example of us mistaking ALL UPPERCASE followed by blank line
+  // to be dialog instead of action.
+  test_script('josephine', 
+`CROSSFADE TO:
+
+BRIGHT SUNLIGHT
+
+filters through soft sheets.  We're under the covers, where a man's hand traces the curves of a woman's bare back.   A beat, then she turns over in bed, revealing her to be 
+
+JOSEPHINE.
+
+She blinks slowly, just waking up.  Will is watching her.  He's been up for a while.  We are actually...
+
+INT.  WILL AND JOSEPHINE'S ROOM - DAY
+
+...where the couple stays cocooned under the sheets, a kind of limbo.  A kiss good morning.  Legs entangling.  Neither wants to get up.
+
+JOSEPHINE
+I talked with your father last night.
+
+WILL
+Did you?
+`, [ { kind: 'transition', source: 'CROSSFADE TO:\n\n' }
+   , { kind: 'action', source: `BRIGHT SUNLIGHT
+
+filters through soft sheets.  We're under the covers, where a man's hand traces the curves of a woman's bare back.   A beat, then she turns over in bed, revealing her to be 
+
+JOSEPHINE.
+
+She blinks slowly, just waking up.  Will is watching her.  He's been up for a while.  We are actually...
+
+` }
+  , { kind: 'scene', source: "INT.  WILL AND JOSEPHINE'S ROOM - DAY\n\n" }
+  , { kind: 'action', source: "...where the couple stays cocooned under the sheets, a kind of limbo.  A kiss good morning.  Legs entangling.  Neither wants to get up.\n\n" }
+  , { kind: 'dialogue', source: "JOSEPHINE\nI talked with your father last night.\n\n" }
+  , { kind: 'dialogue', source: "WILL\nDid you?\n" }
+   ]
+  );
+  
+})
