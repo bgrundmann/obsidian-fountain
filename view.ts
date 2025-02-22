@@ -2,7 +2,7 @@ import { TextFileView, WorkspaceLeaf, setIcon } from 'obsidian';
 import { EditorState } from '@codemirror/state';
 import { EditorView, ViewUpdate } from '@codemirror/view';
 import { parse } from './fountain_parser.js';
-import { FountainScript } from 'fountain.js';
+import { FountainScript, Range } from 'fountain.js';
 import { reading_view, index_cards_view } from './reading_view.js';
 import { fountainEditorPlugin } from './fountain_editor.js';
 export const VIEW_TYPE_FOUNTAIN = 'fountain';
@@ -13,16 +13,31 @@ enum ShowMode {
   IndexCards
 }
 
+function getDataRange(target: HTMLElement): Range|null{
+  const rawRange = target.getAttribute("data-range");
+  if (rawRange === null) return null;
+  let r = rawRange.split(",");
+  if (r.length !== 2) return null;
+  try {
+    const start = parseInt(r[0]);
+    const end = parseInt(r[1]);
+    return { start: start, end: end };
+  } catch (error) {
+    return null;
+  }
+}
 
 class ReadonlyViewState {
   private text: string;
   private showMode: ShowMode;
   private contentEl: HTMLElement;
+  private startEditModeHere: (range:Range) => void;
   
-  constructor(contentEl: HTMLElement, text: string) {
+  constructor(contentEl: HTMLElement, text: string, startEditModeHere: (range:Range) => void) {
     this.showMode = ShowMode.Everything;
     this.text = text;
     this.contentEl = contentEl;
+    this.startEditModeHere = startEditModeHere;
   }
 
   render() {
@@ -36,9 +51,9 @@ class ReadonlyViewState {
     mainblock.innerHTML = this.showMode == ShowMode.IndexCards ? index_cards_view(fp) : reading_view(fp);
     
     mainblock.addEventListener('click', (e) => {
-      if (this.showMode == ShowMode.IndexCards && e.target != null) {
+      if (this.showMode === ShowMode.IndexCards && e.target != null) {
         const target = e.target as HTMLElement;
-        if (target.id != null && target.matches('.scene-heading')) {          
+        if (target.id !== null && target.matches('.scene-heading')) {          
           const id = target.id;
           this.showMode = ShowMode.Everything;
           this.render();
@@ -52,6 +67,11 @@ class ReadonlyViewState {
             }
           });
         }
+      } else if (this.showMode === ShowMode.Everything && e.target != null) {
+        const target = e.target as HTMLElement;
+        const r = getDataRange(target);
+        if (r === null) return;
+        this.startEditModeHere(r);
       }
     })
   }
@@ -139,6 +159,10 @@ class EditorViewState {
   destroy(): void {
     this.cmEditor.destroy();
   }
+
+  scrollToHere(r: Range): void {
+    this.cmEditor.dispatch({ effects: EditorView.scrollIntoView(r.start) })
+  }
 }
 
 
@@ -149,7 +173,7 @@ export class FountainView extends TextFileView {
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
-    this.state = new ReadonlyViewState(this.contentEl, '');
+    this.state = new ReadonlyViewState(this.contentEl, '', (r) => this.startEditModeHere(r));
     this.toggleEditAction = this.addAction('edit', "Toggle Edit/Readonly", _evt => {
       this.toggleEditMode();
     });
@@ -158,6 +182,13 @@ export class FountainView extends TextFileView {
         this.state.toggleIndexCards();
       }
     } );
+  }
+
+  startEditModeHere(r: Range): void {
+    this.toggleEditMode();
+    if (this.state instanceof EditorViewState) {
+      this.state.scrollToHere(r);
+    }
   }
 
   isEditMode(): boolean {
@@ -169,7 +200,7 @@ export class FountainView extends TextFileView {
     if (this.state instanceof EditorViewState) {
       // Switch to readonly mode
       this.state.destroy();
-      this.state = new ReadonlyViewState(this.contentEl, text);
+      this.state = new ReadonlyViewState(this.contentEl, text, (r) => this.startEditModeHere(r));
       this.state.render();
       this.indexCardAction.show();
     } else {
@@ -201,7 +232,7 @@ export class FountainView extends TextFileView {
     this.state.clear();
     if (this.state instanceof EditorViewState) {
       this.state.destroy();
-      this.state = new ReadonlyViewState(this.contentEl, '');
+      this.state = new ReadonlyViewState(this.contentEl, '', (r) => this.startEditModeHere(r));
       this.indexCardAction.show();
     }
   }

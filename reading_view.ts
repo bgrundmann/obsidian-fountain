@@ -1,9 +1,13 @@
-import { Action, Dialogue, Scene, Section, FountainScript, FountainElement } from './fountain.js';
+import { Action, Dialogue, Scene, Section, FountainScript, FountainElement, Range } from './fountain.js';
 export { reading_view, index_cards_view };
+
+function data_range(r: Range): string {
+  return `data-range="${r.start},${r.end}"`;
+}
 
 function action_to_html(action: Action, script: FountainScript): string {
     const elts = action.text.map((el) => script.text_element_to_html(el, true)).join("");
-    return `<p class="action">${elts}</p>`;
+    return `<p class="action" ${data_range(action.range)}>${elts}</p>`;
 }
 
 function dialogue_to_html(dialogue: Dialogue, script: FountainScript): string {
@@ -14,7 +18,7 @@ function dialogue_to_html(dialogue: Dialogue, script: FountainScript): string {
       `<p class="dialogue-parenthetical">${script.extract_as_html(dialogue.parenthetical)}</p>`
       : "";
   const words = dialogue.text.map((el) => script.text_element_to_html(el, false)).join("");
-  return `<div class="dialogue"><h4 class="dialogue-character">${characterLine}</h4>${parenthetical}<p class="dialogue-words">${words}</p></div>`
+  return `<div class="dialogue"><h4 class="dialogue-character" ${data_range(dialogue.characterRange)}>${characterLine}</h4>${parenthetical}<p class="dialogue-words">${words}</p></div>`
 }
 
 /**
