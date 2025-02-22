@@ -45,9 +45,9 @@
     --font-text: var(--screenplay-font);
     font-size: 12pt;
     line-height: 1.3;
-    padding: 0 !important;
-    margin: 0em auto !important;
-    max-width: 62ch !important;
+    padding: 0;
+    margin: 0em auto;
+    max-width: 62ch;
 }
 
 .screenplay:not(.is-phone) {
@@ -98,7 +98,7 @@
     margin-right: 0;
     margin-left: 1.5in;
     padding: 0px;
-    break-before: avoid-page !important;
+    break-before: avoid-page;
 }
 
 /* On the phone we don't need number of lines on the screen to
@@ -142,19 +142,19 @@
 .screenplay .scene-heading {
     padding: 0px !important;
     text-transform: uppercase;
-    font-weight: var(--bold-weight)  !important;
-    font-size: inherit !important;
-    text-align: left !important;
-    color: var(--h1-color) !important;
+    font-weight: var(--bold-weight);
+    font-size: inherit;
+    text-align: left;
+    color: var(--h1-color);
 }
 
 .screenplay .transition {
-    padding: 0px !important;
+    padding: 0px;
     text-transform: uppercase;
-    color: var(--h3-color) !important;
-    font-weight: var(--bold-weight)  !important;
-    font-size: inherit !important;
-    text-align: right !important;
+    color: var(--h3-color);
+    font-weight: var(--bold-weight) ;
+    font-size: inherit;
+    text-align: right;
 }
  
 .screenplay h1, .screenplay h2, .screenplay h3, .screenplay h4, .screenplay h5 {
