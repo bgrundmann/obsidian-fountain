@@ -85,9 +85,27 @@ class EditorViewState {
   constructor(contentEl: HTMLElement, text: string, requestSave: () => void ) {
     contentEl.empty();
     const editorContainer = contentEl.createDiv('custom-editor-component');
+    // our screenplay sets some of the styling information
+    // before the code mirror overrides them. And instead of
+    // messing with !important in the css, we force the theme
+    // to take the values from higher up.
+    const theme = EditorView.theme({
+      "&": {
+        fontSize: "12pt",
+      },
+      ".cm-content": {
+        fontFamily: "inherit",
+        lineHeight: "inherit"
+      },
+      ".cm-scroller": {
+        fontFamily: "inherit",
+        lineHeight: "inherit"
+      }
+    });
     const state = EditorState.create({
       doc: text,
       extensions: [
+        theme,
         EditorView.editorAttributes.of({class: "screenplay"}),
         EditorView.lineWrapping,
         fountainEditorPlugin,
