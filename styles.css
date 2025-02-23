@@ -103,9 +103,11 @@
 
 /* On the phone we don't need number of lines on the screen to
    match those of the printed product. We just need something
-   readable where a human still visually recognises what is what. */
+   readable where a human still visually recognises what is what.
+   So let's center it (margin 0 auto) and don't do the padding */
 .is-phone .screenplay .dialogue-character {
-    margin-left: 0.7in;
+    padding: 0.1in 0 0 0;
+    margin: 0 auto;
 }
 
 .is-phone .screenplay .dialogue-words {
