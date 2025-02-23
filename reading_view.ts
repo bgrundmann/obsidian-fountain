@@ -1,16 +1,12 @@
 import { Action, Dialogue, Scene, Section, FountainScript, FountainElement, Range } from './fountain.js';
-export { reading_view, index_cards_view };
+export { reading_view, index_cards_view, getDataRange, rangeOfFirstVisibleLine };
 
-function data_range(r: Range): string {
-  return `data-range="${r.start},${r.end}"`;
-}
-
-function action_to_html(action: Action, script: FountainScript): string {
+function actionToHtml(action: Action, script: FountainScript): string {
     const elts = action.text.map((el) => script.text_element_to_html(el, true)).join("");
-    return `<p class="action" ${data_range(action.range)}>${elts}</p>`;
+    return `<p class="action" ${dataRange(action.range)}>${elts}</p>`;
 }
 
-function dialogue_to_html(dialogue: Dialogue, script: FountainScript): string {
+function dialogueToHtml(dialogue: Dialogue, script: FountainScript): string {
   const characterLine = script.extract_as_html(dialogue.characterRange);
   // TODO:
   const parenthetical =
@@ -18,7 +14,25 @@ function dialogue_to_html(dialogue: Dialogue, script: FountainScript): string {
       `<p class="dialogue-parenthetical">${script.extract_as_html(dialogue.parenthetical)}</p>`
       : "";
   const words = dialogue.text.map((el) => script.text_element_to_html(el, false)).join("");
-  return `<div class="dialogue"><h4 class="dialogue-character" ${data_range(dialogue.characterRange)}>${characterLine}</h4>${parenthetical}<p class="dialogue-words">${words}</p></div>`
+  return `<div class="dialogue" ${dataRange(dialogue.range)}><h4 class="dialogue-character">${characterLine}</h4>${parenthetical}<p class="dialogue-words">${words}</p></div>`
+}
+
+function dataRange(r: Range): string {
+  return `data-range="${r.start},${r.end}"`;
+}
+
+function getDataRange(target: HTMLElement): Range|null{
+  const rawRange = target.getAttribute("data-range");
+  if (rawRange === null) return null;
+  let r = rawRange.split(",");
+  if (r.length !== 2) return null;
+  try {
+    const start = parseInt(r[0]);
+    const end = parseInt(r[1]);
+    return { start: start, end: end };
+  } catch (error) {
+    return null;
+  }
 }
 
 /**
@@ -29,14 +43,14 @@ function reading_view(script: FountainScript): string {
     const element_to_html = (el: FountainElement): string => {
       switch (el.kind) {
         case 'action':
-          return action_to_html(el, script);
+          return actionToHtml(el, script);
         case 'scene':
           const text = script.extract_as_html(el.range);
-          const res = `<h3 class="scene-heading" id="scene${sceneNumber}">${text}</h3>`;
+          const res = `<h3 ${dataRange(el.range)} class="scene-heading" id="scene${sceneNumber}">${text}</h3>`;
           sceneNumber++;
           return res;
         case 'synopsis':
-          return `<p class="synopsis">${script.extract_as_html(el.synopsis)}</p>`;
+          return `<p class="synopsis" ${dataRange(el.range)}>${script.extract_as_html(el.synopsis)}</p>`;
         case 'section':
           const title = script.extract_as_html(el.range);
           let prefix = "";
@@ -46,13 +60,25 @@ function reading_view(script: FountainScript): string {
           const html = (`${prefix}<h${el.depth ?? 1} class="section">${title}</h${el.depth ?? 1}>`);
           return html;
         case 'dialogue':
-          return dialogue_to_html(el, script);
+          return dialogueToHtml(el, script);
         default:
           return `TODO: ${el.kind}`;
       }
     };
 
     return script.script.map((el) => element_to_html(el)).join("");
+}
+
+/// Return the range of the first visible line on the screen. Or something close.
+function rangeOfFirstVisibleLine(screenplayElement: HTMLElement): Range|null {
+  for (const c of screenplayElement.children) {
+    const child = c as HTMLElement;
+    if (child.getBoundingClientRect().top >= 0) {
+      const r = getDataRange(child);
+      return r;
+    }
+  }
+  return null;
 }
 
 enum Inside {

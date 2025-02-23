@@ -3,7 +3,7 @@ import { EditorState } from '@codemirror/state';
 import { EditorView, ViewUpdate } from '@codemirror/view';
 import { parse } from './fountain_parser.js';
 import { FountainScript, Range } from 'fountain.js';
-import { reading_view, index_cards_view } from './reading_view.js';
+import { reading_view, index_cards_view, getDataRange, rangeOfFirstVisibleLine } from './reading_view.js';
 import { fountainEditorPlugin } from './fountain_editor.js';
 export const VIEW_TYPE_FOUNTAIN = 'fountain';
 
@@ -13,19 +13,6 @@ enum ShowMode {
   IndexCards
 }
 
-function getDataRange(target: HTMLElement): Range|null{
-  const rawRange = target.getAttribute("data-range");
-  if (rawRange === null) return null;
-  let r = rawRange.split(",");
-  if (r.length !== 2) return null;
-  try {
-    const start = parseInt(r[0]);
-    const end = parseInt(r[1]);
-    return { start: start, end: end };
-  } catch (error) {
-    return null;
-  }
-}
 
 class ReadonlyViewState {
   private text: string;
@@ -96,6 +83,12 @@ class ReadonlyViewState {
   clear(): void {
     this.text = '';
   }
+
+  rangeOfFirstVisibleLine(): Range|null {
+    const screenplay = this.contentEl.querySelector(".screenplay");
+    if (screenplay === null) return null;
+    return rangeOfFirstVisibleLine(screenplay as HTMLElement);
+  }
 }
 
 
@@ -161,7 +154,8 @@ class EditorViewState {
   }
 
   scrollToHere(r: Range): void {
-    this.cmEditor.dispatch({ effects: EditorView.scrollIntoView(r.start) })
+    console.log("scrolling to", r.start);
+    this.cmEditor.dispatch({ effects: EditorView.scrollIntoView(r.start, { y: "start", }) })
   }
 }
 
@@ -205,8 +199,10 @@ export class FountainView extends TextFileView {
       this.indexCardAction.show();
     } else {
       // Switch to editor
+      const r = this.state.rangeOfFirstVisibleLine();
       this.indexCardAction.hide();
       this.state = new EditorViewState(this.contentEl, text, this.requestSave);
+      if (r !== null)  this.state.scrollToHere(r);
     }
     this.toggleEditAction.empty();
     setIcon(this.toggleEditAction, this.isEditMode() ? 'book-open' : 'edit');
