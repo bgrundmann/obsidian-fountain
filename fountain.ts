@@ -1,4 +1,4 @@
-export { FountainScript, TitlePage, KeyValue };
+export { FountainScript, TitlePage, KeyValue, mergeText };
 export type { Range, Synopsis, Transition, TextElement, Action,Dialogue, Scene, Section, FountainElement };
 
 interface Range {
@@ -53,7 +53,6 @@ type Section = {
 
 type FountainElement = Synopsis | Transition | Action | Scene | Dialogue | Section | PageBreak;
 
-type TextKind = 'text' | 'newline' | 'note' | 'boneyard' ;
 
 type OtherTextElement = {
   range: Range;
@@ -69,7 +68,26 @@ type BasicTextElement = {
 type StyledTextElement = {
   range: Range;
   kind: 'bold' | 'italics' | 'underline';
-  elements: (BasicTextElement |StyledTextElement)[];
+  elements: (BasicTextElement | StyledTextElement)[];
+}
+
+/// This merges consecutive basic text elements into one
+function mergeText(elts: (BasicTextElement | StyledTextElement)[]): (BasicTextElement|StyledTextElement)[] {
+  let res: (BasicTextElement|StyledTextElement)[] = [];
+  if (elts.length === 0) return [];
+ 
+  let prev = elts[0];
+  for (let i=1; i<elts.length;i++) {
+    let n = elts[i];
+    if (n.kind === 'text' && prev.kind === 'text'){
+      prev = { kind: 'text', range: { start: prev.range.start, end: n.range.end } };
+    } else {
+      res.push(prev);
+      prev = n;
+    }
+  }
+  res.push(prev);
+  return res;
 }
 
 type TextElement = BasicTextElement | StyledTextElement | OtherTextElement;
@@ -121,7 +139,7 @@ class FountainScript {
     switch (el.kind) {
       case 'bold':
         return `<b>${inner}</b>`;
-      case 'italic':
+      case 'italics':
         return `<i>${inner}</i>`;
       case 'underline':
         return `<u>${inner}</u>`;
@@ -135,7 +153,7 @@ class FountainScript {
       case 'text':
         return this.extract_as_html(el.range, escapeLeadingSpaces);
       case 'bold':
-      case 'italic':
+      case 'italics':
       case 'underline':
         return this.styled_text_to_html(el);
       case 'note':

@@ -11,6 +11,7 @@ const fountain = require("./fountain");
 const FountainScript = fountain.FountainScript;
 const TitlePage = fountain.TitlePage;
 const KeyValue = fountain.KeyValue;
+const mergeText = fountain.mergeText;
 
 }}
 
@@ -46,16 +47,16 @@ Element
  / Action
 
 LineTextElement
- = Boneyard                 
- / Note                     
- / StyledTextElement
- / (!( "/*" / "\n" / "[[" ) .) +  { return { range: range(), kind: 'text' }; }
+ = boneyard:Boneyard       { return [boneyard]; }             
+ / note:Note               { return [note]; }
+ / text:StyledTextElement+ { return mergeText(text); }
+
 
 StyledTextElement
- = "**" elts:!("**"|"\n" @StyledTextElement)+ "**" { return { range: range(), kind: 'bold', elements:elts };}
- / "*" elts:!("*"|"\n" @StyledTextElement)+ "*" { return { range: range(), kind: 'italics', elements: elts };}
- / "_" elts:!("_"|"\n" @StyledTextElement)+ "_" { return { range: range(), kind: 'underline', elements: elts };}
- / (!"\n" .)+ { return { range: range(), kind: 'text' };}
+ = "**" elts:(!"**" @StyledTextElement)+ "**" { return { range: range(), kind: 'bold', elements:mergeText(elts) };}
+ / "*" elts:(!"*" @StyledTextElement)+ "*" { return { range: range(), kind: 'italics', elements: mergeText(elts) };}
+ / "_" elts:(!"_" @StyledTextElement)+ "_" { return { range: range(), kind: 'underline', elements: mergeText(elts) };}
+ / (!"\n" .)  { return { range: range(), kind: 'text' };}
 
 
 Transition
@@ -97,11 +98,11 @@ NewLineOrEndOfInput
 
 ExtraLinesOfWords
  = newline:NewLine elements:LineTextElement+
- { return [{range:newline, kind:'newline'}].concat(elements); }
+ { return [{range:newline, kind:'newline'}].concat(elements.flat()); }
  
 Words
  = text1:LineTextElement+ text2:ExtraLinesOfWords* BlankLineOrEndOfInput
-   { const text = text1.concat(text2.flat());
+   { const text = text1.flat().concat(text2.flat());
      return text;
    }
  

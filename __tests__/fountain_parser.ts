@@ -144,6 +144,29 @@ No luck. He has no choice to deal the cards.`,
     );
 });
 
+describe("Emphasis in actions", () => {
+  test_script('From the spec', "From what seems like only INCHES AWAY. _Steel’s face FILLS the *Leupold Mark 4* scope_.",
+    [ { kind: 'action', text: [
+        {kind:'text'},
+        {kind:'underline', elements:[
+          {kind:'text'},
+          {kind:'italics', elements:[{kind:'text'}
+          ]},
+          {kind:'text'}
+        ]},
+        {kind:'text'}]
+      }]
+  );
+  test_script("Unclosed emphasis is passed along as is", "This **is not _closed_, but",
+      [ { kind: 'action', text: [
+            {kind:'text'},
+            {kind:'underline', elements:[{kind:'text'}]},
+            {kind:'text'}
+        ] }
+      ]
+  )
+})
+
 describe("Corner cases from big fish", () => {
   // These are corner cases from big fish we got wrong at some point or the other.
   // josephine was an example of us mistaking ALL UPPERCASE followed by blank line
