@@ -1,5 +1,5 @@
-export { FountainScript, TitlePage, KeyValue, TextElement};
-export type { Range, Synopsis, Transition, Action,Dialogue, Scene, Section, FountainElement };
+export { FountainScript, TitlePage, KeyValue };
+export type { Range, Synopsis, Transition, TextElement, Action,Dialogue, Scene, Section, FountainElement };
 
 interface Range {
   start: number;
@@ -53,18 +53,11 @@ type Section = {
 
 type FountainElement = Synopsis | Transition | Action | Scene | Dialogue | Section | PageBreak;
 
-
 type TextKind = 'text' | 'newline' | 'note' | 'boneyard' ;
 
-class TextElement {
+type TextElement = {
   range: Range;
   kind: TextKind;
-
-  constructor(range: Range, kind: TextKind) {
-    this.range = range;
-    this.kind = kind;
-  }
-
 }
 
 class TitlePage {
@@ -146,12 +139,12 @@ class FountainScript {
             // which only happens at blank lines.
             // So insert a blank line (two newlines).
             extra_newlines = [
-              new TextElement(
-                { start:prev.range.end-2, end: prev.range.end-1 },
-              'newline')
-            ,  new TextElement(
-                { start:prev.range.end-1, end: prev.range.end },
-              'newline')
+                { range: { start:prev.range.end-2, end: prev.range.end-1 },
+                  kind: 'newline'
+                },
+                { range: { start:prev.range.end-1, end: prev.range.end },
+                  kind:  'newline'
+                }
             ]
           }
           prev = {

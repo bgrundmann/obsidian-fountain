@@ -11,9 +11,7 @@ const fountain = require("./fountain");
 const FountainScript = fountain.FountainScript;
 const TitlePage = fountain.TitlePage;
 const KeyValue = fountain.KeyValue;
-const TextElement = fountain.TextElement;
 
-//import { FountainScript, TitlePage, KeyValue, TextElement } from './fountain';
 }}
 
 Script 
@@ -50,34 +48,27 @@ Element
 LineTextElement
  = Boneyard                 
  / Note                     
- / (!( "/*" / "\n" / "[[" ) .) +  { return new TextElement(range(), 'text'); }
+ / (!( "/*" / "\n" / "[[" ) .) +  { return { range: range(), kind: 'text' }; }
 
 Transition
  = (!("TO:\n"/"TO:" !.) [^\n] )* "TO:" BlankLineOrEndOfInput &{ const t = text(); return t.toUpperCase() === t; }
  { return { kind: 'transition', range: range() }; }
 
- 
 Action
  = words:Words
    { return { kind: 'action', range: range(), text: words };
    }
  / newline:NewLine
-   { return { kind: 'action', range:newline, text: [ new TextElement(newline, 'newline') ] };
+   { return { kind: 'action', range:newline, text: [ { range:newline, kind: 'newline' } ] };
    }
-
-/*
-Action 
- = text:(!"\n\n" @TextElement)+ BlankLineOrEndOfInput { return { kind: 'action', range: range(), text: text }; }
- / "\n"                       { return { kind: 'action', range: range(), text: [new TextElement(range(), 'newline')]}; } 
-*/
 
 Note "note"
  = "[[" (!("]]"/"\n\n") .)* "]]"?
- { return new TextElement(range(), 'note'); }
+ { return { range: range(), kind: 'note' }; }
  
 Boneyard "boneyard"
  = OptionalBlanks "/*" (!"*/" .)* "*/" 
- { return new TextElement(range(), 'boneyard'); }
+ { return { range: range(), kind: 'boneyard' }; }
  
 Section
  = OptionalBlanks hashes:Hashes RestOfLine NewLineOrEndOfInput
@@ -98,7 +89,7 @@ NewLineOrEndOfInput
 
 ExtraLinesOfWords
  = newline:NewLine elements:LineTextElement+
- { return [new TextElement(newline, 'newline')].concat(elements); }
+ { return [{range:newline, kind:'newline'}].concat(elements); }
  
 Words
  = text1:LineTextElement+ text2:ExtraLinesOfWords* BlankLineOrEndOfInput
