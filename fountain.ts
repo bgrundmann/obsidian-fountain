@@ -119,7 +119,7 @@ class FountainScript {
 
   /// Extract some text from the fountain document safe to be used
   /// as HTML source.
-  extract_as_html(r: Range, escapeLeadingSpaces:boolean = false): string {
+  extractAsHtml(r: Range, escapeLeadingSpaces:boolean = false): string {
     let safe = 
       this.document
         .slice(r.start, r.end)
@@ -151,13 +151,13 @@ class FountainScript {
   text_element_to_html(el: TextElement, escapeLeadingSpaces: boolean): string {
     switch (el.kind) {
       case 'text':
-        return this.extract_as_html(el.range, escapeLeadingSpaces);
+        return this.extractAsHtml(el.range, escapeLeadingSpaces);
       case 'bold':
       case 'italics':
       case 'underline':
         return this.styled_text_to_html(el);
       case 'note':
-        const n = this.extract_as_html(el.range);
+        const n = this.extractAsHtml(el.range);
         return `<span class="note">${n}</span>`;
       case 'newline':
         return '<br>';

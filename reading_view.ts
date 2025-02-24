@@ -7,11 +7,11 @@ function actionToHtml(action: Action, script: FountainScript): string {
 }
 
 function dialogueToHtml(dialogue: Dialogue, script: FountainScript): string {
-  const characterLine = script.extract_as_html(dialogue.characterRange);
+  const characterLine = script.extractAsHtml(dialogue.characterRange);
   // TODO:
   const parenthetical =
     dialogue.parenthetical !== null ?
-      `<p class="dialogue-parenthetical">${script.extract_as_html(dialogue.parenthetical)}</p>`
+      `<p class="dialogue-parenthetical">${script.extractAsHtml(dialogue.parenthetical)}</p>`
       : "";
   const words = dialogue.text.map((el) => script.text_element_to_html(el, false)).join("");
   return `<div class="dialogue" ${dataRange(dialogue.range)}><h4 class="dialogue-character">${characterLine}</h4>${parenthetical}<p class="dialogue-words">${words}</p></div>`
@@ -45,14 +45,14 @@ function reading_view(script: FountainScript): string {
         case 'action':
           return actionToHtml(el, script);
         case 'scene':
-          const text = script.extract_as_html(el.range);
+          const text = script.extractAsHtml(el.range);
           const res = `<h3 ${dataRange(el.range)} class="scene-heading" id="scene${sceneNumber}">${text}</h3>`;
           sceneNumber++;
           return res;
         case 'synopsis':
-          return `<p class="synopsis" ${dataRange(el.range)}>${script.extract_as_html(el.synopsis)}</p>`;
+          return `<p class="synopsis" ${dataRange(el.range)}>${script.extractAsHtml(el.synopsis)}</p>`;
         case 'section':
-          const title = script.extract_as_html(el.range);
+          const title = script.extractAsHtml(el.range);
           let prefix = "";
           if (title.toLowerCase().replace(/^ *#+ */, '').trimEnd() === "boneyard") {
             prefix = '<hr>';
@@ -120,7 +120,7 @@ function index_cards_view(script: FountainScript): string {
       case 'scene':
         closeIfInside(Inside.Card);
         emitOpenTill(Inside.Card);
-        emit(`<h3 class="scene-heading" id="scene${sceneNumber}">${script.extract_as_html(el.range)}</h3>`);
+        emit(`<h3 class="scene-heading" id="scene${sceneNumber}">${script.extractAsHtml(el.range)}</h3>`);
         sceneNumber++;
         break;
 
@@ -129,7 +129,7 @@ function index_cards_view(script: FountainScript): string {
         console.log(el);
         if (el.depth <= 3) {
           closeIfInside(Inside.Section);
-          const title = script.extract_as_html(el.range);
+          const title = script.extractAsHtml(el.range);
           if (title.toLowerCase().replace(/^ *#+ */, '').trimEnd() === "boneyard") {
             emit('<hr>');
           }
@@ -138,7 +138,7 @@ function index_cards_view(script: FountainScript): string {
         break;
 
       case 'synopsis':
-        emit(`<p class="synopsis">${script.extract_as_html(el.synopsis)}</p>`);
+        emit(`<p class="synopsis">${script.extractAsHtml(el.synopsis)}</p>`);
         break;
 
       default:

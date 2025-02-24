@@ -1,5 +1,5 @@
 import { parse } from '../fountain_parser';
-import { FountainElement, FountainScript } from '../fountain';
+import { FountainScript } from '../fountain';
 import {describe, expect, test} from '@jest/globals';
 
 
