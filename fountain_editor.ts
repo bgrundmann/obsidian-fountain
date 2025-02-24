@@ -36,11 +36,14 @@ class FountainEditorPlugin implements PluginValue {
   buildDecorations(view: EditorView): DecorationSet {
     const builder = new RangeSetBuilder<Decoration>();
     // TODO: Figure out if there is a good way to parse only part of the document.
-    // Basically search for blank lines before and after the viewport would do it
-    // if it weren't for boneyards. But one could also search for unclosed
-    // boneyards...
-    // But before I do that let's profile how bad this is.  At least for the
+    // Basically search for blank lines before and after the viewport (and then only
+    // parse that range) would do it if it weren't for boneyards. But one could also
+    // search for unclosed boneyards...
+    //     // But before I do that let's profile how bad this is.  At least for the
     // kinds of scripts I normally write this should be totally fine.
+    //
+    // Another optimization would be to just skip the building of the
+    // decorations for everything outside the relevant range.
     const fscript : FountainScript = parse(view.state.doc.toString());
     const scene = Decoration.mark({class: "scene-heading"});
     const section =  Decoration.mark({class: "section"});

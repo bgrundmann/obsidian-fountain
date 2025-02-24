@@ -48,7 +48,15 @@ Element
 LineTextElement
  = Boneyard                 
  / Note                     
+ / StyledTextElement
  / (!( "/*" / "\n" / "[[" ) .) +  { return { range: range(), kind: 'text' }; }
+
+StyledTextElement
+ = "**" elts:!("**"|"\n" @StyledTextElement)+ "**" { return { range: range(), kind: 'bold', elements:elts };}
+ / "*" elts:!("*"|"\n" @StyledTextElement)+ "*" { return { range: range(), kind: 'italics', elements: elts };}
+ / "_" elts:!("_"|"\n" @StyledTextElement)+ "_" { return { range: range(), kind: 'underline', elements: elts };}
+ / (!"\n" .)+ { return { range: range(), kind: 'text' };}
+
 
 Transition
  = (!("TO:\n"/"TO:" !.) [^\n] )* "TO:" BlankLineOrEndOfInput &{ const t = text(); return t.toUpperCase() === t; }

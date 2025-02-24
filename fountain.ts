@@ -55,10 +55,24 @@ type FountainElement = Synopsis | Transition | Action | Scene | Dialogue | Secti
 
 type TextKind = 'text' | 'newline' | 'note' | 'boneyard' ;
 
-type TextElement = {
+type OtherTextElement = {
   range: Range;
-  kind: TextKind;
+  kind: 'newline' | 'note' | 'boneyard';
 }
+
+/// The type of a piece of text. Text never contains any newlines!
+type BasicTextElement = {
+  range: Range;
+  kind: 'text';
+}
+
+type StyledTextElement = {
+  range: Range;
+  kind: 'bold' | 'italics' | 'underline';
+  elements: (BasicTextElement |StyledTextElement)[];
+}
+
+type TextElement = BasicTextElement | StyledTextElement | OtherTextElement;
 
 class TitlePage {
   data: KeyValue[];
@@ -101,12 +115,29 @@ class FountainScript {
       : safe;
   }
 
+  
+  styled_text_to_html(el: StyledTextElement): string {
+    const inner = el.elements.map((e) => this.text_element_to_html(e, false)).join("");
+    switch (el.kind) {
+      case 'bold':
+        return `<b>${inner}</b>`;
+      case 'italic':
+        return `<i>${inner}</i>`;
+      case 'underline':
+        return `<u>${inner}</u>`;
+    }
+  }
+
   /// Extract a text element from the fountain document safe to be used as
   /// HTML source.
   text_element_to_html(el: TextElement, escapeLeadingSpaces: boolean): string {
     switch (el.kind) {
       case 'text':
         return this.extract_as_html(el.range, escapeLeadingSpaces);
+      case 'bold':
+      case 'italic':
+      case 'underline':
+        return this.styled_text_to_html(el);
       case 'note':
         const n = this.extract_as_html(el.range);
         return `<span class="note">${n}</span>`;
