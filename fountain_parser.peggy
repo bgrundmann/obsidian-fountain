@@ -68,7 +68,7 @@ EndOfCenteredLine
  = [ \t]* ("<" !. / "<\n")
 
 ActionLine
- = ">" [ \t]* elements:(!EndOfCenteredLine @LineTextElement)+ EndOfCenteredLine
+ = [ \t]*  ">" [ \t]* elements:(!EndOfCenteredLine @LineTextElement)+ EndOfCenteredLine
    { return { range: range(), centered: true, elements:mergeText(elements) } }
  / Line
 
@@ -135,7 +135,7 @@ Character
  / "@" [^(\n]+        { return range() }
 
 MaybeName
- = [^ \t\n][^(\n]* { return text() }
+ = [^ >\t\n][^(\n]* { return text() }
 
 BlankLineOrEndOfInput 
  = !.

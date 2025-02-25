@@ -76,13 +76,13 @@ describe("Parser tests", () => {
       ]
       }
     ]);
-  test_script("CenteredAction whitespace excluded", "> CS <",
+  test_script("CenteredAction whitespace excluded and indenting allowed", " > CS <",
     [ { kind: 'action'
-      , source: "> CS <"
-      , range: { start: 0, end: 6 }
+      , source: " > CS <"
+      , range: { start: 0, end: 7 }
       , lines: [
-        { range: { start: 0, end: 6 }
-        , elements: [ { kind: 'text', range: { start: 2, end: 4 }} ]
+        { range: { start: 0, end: 7 }
+        , elements: [ { kind: 'text', range: { start: 3, end: 5 }} ]
         , centered: true
         },
       ]

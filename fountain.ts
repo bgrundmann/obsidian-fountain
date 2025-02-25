@@ -178,7 +178,8 @@ class FountainScript {
       } else {
         innerHtml = line.elements.map((el) => this.textElementToHtml(el, escapeLeadingSpaces)).join("");
       }
-      return `<div>${innerHtml}</div>`;
+      const centered = line.centered ? ' class="centered"' : '';
+      return `<div${centered}>${innerHtml}</div>`;
     }).join("");
   }
 
