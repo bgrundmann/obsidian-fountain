@@ -47,9 +47,9 @@ Element
  / Action
 
 LineTextElement
- = boneyard:Boneyard       { return [boneyard]; }             
- / note:Note               { return [note]; }
- / text:StyledTextElement+ { return mergeText(text); }
+ = boneyard:Boneyard      { return boneyard; }             
+ / note:Note              { return note; }
+ / text:StyledTextElement { return text; }
 
 StyledTextElement
  = "**" elts:(!"**" @StyledTextElement)+ "**" { return { range: range(), kind: 'bold', elements:mergeText(elts) };}
@@ -59,22 +59,32 @@ StyledTextElement
 
 Line
  = elements:LineTextElement+ newline:("\n" / !.)
- { return { range:range(), elements:elements.flat() } }
- 
+ { return { range:range(), centered: false, elements:mergeText(elements) } }
+
 Lines
  = @lines:Line+ NewLineOrEndOfInput
- 
+
+EndOfCenteredLine
+ = [ \t]* ("<" !. / "<\n")
+
+ActionLine
+ = ">" [ \t]* elements:(!EndOfCenteredLine @LineTextElement)+ EndOfCenteredLine
+   { return { range: range(), centered: true, elements:mergeText(elements) } }
+ / Line
+
+ActionLines
+ = @lines:ActionLine+ NewLineOrEndOfInput
 
 Transition
  = (!("TO:\n"/"TO:" !.) [^\n] )* "TO:" BlankLineOrEndOfInput &{ const t = text(); return t.toUpperCase() === t; }
  { return { kind: 'transition', range: range() }; }
 
 Action
- = lines:Lines
+ = lines:ActionLines
    { return { kind: 'action', range: range(), lines:lines };
    }
  / newline:NewLine
-   { return { kind: 'action', range:newline, lines: [{range:newline, elements:[]}] } };
+   { return { kind: 'action', range:newline, lines: [{range:newline, centered: false, elements:[]}] } };
 
 Note "note"
  = "[[" (!("]]"/"\n\n") .)* "]]"?

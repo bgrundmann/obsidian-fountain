@@ -40,6 +40,7 @@ type Transition = {
 type Line = {
   range: Range;
   elements: TextElement[];
+  centered: boolean;
 }
 
 type Dialogue = {
@@ -201,7 +202,7 @@ class FountainScript {
             // Previous action ended in a blank line, but because the next thing
             // after the blank line is a action again, let's insert that blank line
             // as an action and go on.
-            extra_newline = [{range: { start: prev.range.end-1, end: prev.range.end }, elements: [] }]
+            extra_newline = [{range: { start: prev.range.end-1, end: prev.range.end }, elements: [], centered: false }]
           }
           prev = {
             kind: 'action',

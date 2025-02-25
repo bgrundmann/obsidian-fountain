@@ -59,10 +59,52 @@ describe("Parser tests", () => {
       , lines:  [
           { range: { start: 0, end: 19 }
           , elements: [ {  kind: 'text', range: { start: 0, end: 19 } } ] 
+          , centered: false
           }
         ] 
       }
     ]);
+  test_script("CenteredAction", ">A centered action<",
+    [ { kind: 'action'
+      , source: ">A centered action<"
+      , range: { start: 0, end: 19 }
+      , lines: [
+        { range: { start: 0, end: 19 }
+        , elements: [ { kind: 'text', range: { start: 1, end: 18 }} ]
+        , centered: true
+        },
+      ]
+      }
+    ]);
+  test_script("CenteredAction whitespace excluded", "> CS <",
+    [ { kind: 'action'
+      , source: "> CS <"
+      , range: { start: 0, end: 6 }
+      , lines: [
+        { range: { start: 0, end: 6 }
+        , elements: [ { kind: 'text', range: { start: 2, end: 4 }} ]
+        , centered: true
+        },
+      ]
+      }
+    ]);
+  test_script("CenteredActionAndRegularAction", ">A centered action<\nFollowed by a regular action",
+    [ { kind: 'action'
+      , source: ">A centered action<\nFollowed by a regular action"
+      , range: { start: 0, end: 48 }
+      , lines: [
+        { range: { start: 0, end: 20 }
+        , elements: [ { kind: 'text', range: { start: 1, end: 18 }} ]
+        , centered: true
+        },
+        { range: { start: 20, end: 48 }
+        , elements: [ { kind: 'text', range: { start: 20, end: 48 }} ]
+        , centered: false
+        }
+      ]
+      }
+    ]);
+  
   test_script("Basic Action + newline at end of input",
     `This is some action\n`,
     [ { kind: 'action'
