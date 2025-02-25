@@ -100,7 +100,6 @@ class FountainEditorPlugin implements PluginValue {
         case 'action':
           builder.add(el.range.start, el.range.end, action);
           for (const line of el.lines) {
-            console.log(line.elements);
             for (const tel of line.elements) {
               switch (tel.kind) {
                 case 'text':

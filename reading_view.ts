@@ -131,7 +131,6 @@ function indexCardsView(script: FountainScript): string {
 
       case 'section':
         // We ignore sections of depth 4 and deeper in the overview
-        console.log(el);
         if (el.depth <= 3) {
           closeIfInside(Inside.Section);
           const title = script.extractAsHtml(el.range);
