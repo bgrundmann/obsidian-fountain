@@ -198,6 +198,20 @@
   text-align: center;
 }
 
+/******** text decoration */
+
+.screenplay .bold {
+    font-weight: bold;
+}
+
+.screenplay .italics {
+    font-style: italic;
+}
+
+.screenplay .underline {
+    text-decoration: underline;
+}
+
 /****************************** index view */
 
 .screenplay-index-cards {

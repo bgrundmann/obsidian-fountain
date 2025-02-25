@@ -1,5 +1,5 @@
 export { FountainScript, TitlePage, KeyValue, mergeText };
-export type { Range, Synopsis, Transition, TextElement, Action,Dialogue, Scene, Section, FountainElement };
+export type { Range, Synopsis, Transition, StyledTextElement, TextElement, Action,Dialogue, Scene, Section, FountainElement };
 
 interface Range {
   start: number;
@@ -141,14 +141,7 @@ class FountainScript {
   
   private styledTextElementToHtml(el: StyledTextElement): string {
     const inner = el.elements.map((e) => this.textElementToHtml(e, false)).join("");
-    switch (el.kind) {
-      case 'bold':
-        return `<b>${inner}</b>`;
-      case 'italics':
-        return `<i>${inner}</i>`;
-      case 'underline':
-        return `<u>${inner}</u>`;
-    }
+    return `<span class="${el.kind}">${inner}</span>`;
   }
 
   /// Extract a text element from the fountain document safe to be used as
