@@ -137,10 +137,9 @@ class FountainScript {
       ? safe.replace(/^( +)/gm, (_, spaces) => "&nbsp;".repeat(spaces.length))
       : safe;
   }
-
   
-  styled_text_to_html(el: StyledTextElement): string {
-    const inner = el.elements.map((e) => this.text_element_to_html(e, false)).join("");
+  private styledTextElementToHtml(el: StyledTextElement): string {
+    const inner = el.elements.map((e) => this.textElementToHtml(e, false)).join("");
     switch (el.kind) {
       case 'bold':
         return `<b>${inner}</b>`;
@@ -153,14 +152,14 @@ class FountainScript {
 
   /// Extract a text element from the fountain document safe to be used as
   /// HTML source.
-  text_element_to_html(el: TextElement, escapeLeadingSpaces: boolean): string {
+  private textElementToHtml(el: TextElement, escapeLeadingSpaces: boolean): string {
     switch (el.kind) {
       case 'text':
         return this.extractAsHtml(el.range, escapeLeadingSpaces);
       case 'bold':
       case 'italics':
       case 'underline':
-        return this.styled_text_to_html(el);
+        return this.styledTextElementToHtml(el);
       case 'note':
         const n = this.extractAsHtml(el.range);
         return `<span class="note">${n}</span>`;
@@ -173,7 +172,7 @@ class FountainScript {
 
   linesToHtml(lines: Line[], escapeLeadingSpaces: boolean): string {
     return lines.map((line) => {
-      return line.elements.map((el) => this.text_element_to_html(el, escapeLeadingSpaces)).join("");
+      return line.elements.map((el) => this.textElementToHtml(el, escapeLeadingSpaces)).join("");
     }).join("<br>");
   }
 
