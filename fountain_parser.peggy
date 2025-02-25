@@ -51,25 +51,30 @@ LineTextElement
  / note:Note               { return [note]; }
  / text:StyledTextElement+ { return mergeText(text); }
 
-
 StyledTextElement
  = "**" elts:(!"**" @StyledTextElement)+ "**" { return { range: range(), kind: 'bold', elements:mergeText(elts) };}
  / "*" elts:(!"*" @StyledTextElement)+ "*" { return { range: range(), kind: 'italics', elements: mergeText(elts) };}
  / "_" elts:(!"_" @StyledTextElement)+ "_" { return { range: range(), kind: 'underline', elements: mergeText(elts) };}
  / (!"\n" .)  { return { range: range(), kind: 'text' };}
 
+Line
+ = elements:LineTextElement+ newline:("\n" / !.)
+ { return { range:range(), elements:elements.flat() } }
+ 
+Lines
+ = @lines:Line+ NewLineOrEndOfInput
+ 
 
 Transition
  = (!("TO:\n"/"TO:" !.) [^\n] )* "TO:" BlankLineOrEndOfInput &{ const t = text(); return t.toUpperCase() === t; }
  { return { kind: 'transition', range: range() }; }
 
 Action
- = words:Words
-   { return { kind: 'action', range: range(), text: words };
+ = lines:Lines
+   { return { kind: 'action', range: range(), lines:lines };
    }
  / newline:NewLine
-   { return { kind: 'action', range:newline, text: [ { range:newline, kind: 'newline' } ] };
-   }
+   { return { kind: 'action', range:newline, lines: [{range:newline, elements:[]}] } };
 
 Note "note"
  = "[[" (!("]]"/"\n\n") .)* "]]"?
@@ -96,26 +101,16 @@ NewLineOrEndOfInput
  = "\n"
  / !.
 
-ExtraLinesOfWords
- = newline:NewLine elements:LineTextElement+
- { return [{range:newline, kind:'newline'}].concat(elements.flat()); }
- 
-Words
- = text1:LineTextElement+ text2:ExtraLinesOfWords* BlankLineOrEndOfInput
-   { const text = text1.flat().concat(text2.flat());
-     return text;
-   }
- 
 Dialogue
  = OptionalBlanks character:Character exts:CharacterExtensions "\n" 
   parenthetical:(Parenthetical)? 
-  dialogue:Words 
+  dialogue:Lines 
  { return {
      range: range(),
      kind: 'dialogue',
      characterRange: { start:character.start, end: exts.end },
      parenthetical: parenthetical,
-     text: dialogue
+     lines: dialogue
    }
  }
 

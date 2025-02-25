@@ -24,7 +24,7 @@ type Synopsis = {
 type Action = {
   kind: 'action';
   range: Range;
-  text: TextElement[];
+  lines: Line[];
 }
 
 type Scene = {
@@ -37,12 +37,17 @@ type Transition = {
   range: Range;
 }
 
+type Line = {
+  range: Range;
+  elements: TextElement[];
+}
+
 type Dialogue = {
   kind: 'dialogue';
   range: Range;   /// range of everything
   characterRange: Range; /// range of the character line incl extensions excl whitespace at the beginning.
   parenthetical: Range|null;
-  text: TextElement[];
+  lines: Line[];
 }
 
 type Section = {
@@ -166,6 +171,12 @@ class FountainScript {
     }    
   }
 
+  linesToHtml(lines: Line[], escapeLeadingSpaces: boolean): string {
+    return lines.map((line) => {
+      return line.elements.map((el) => this.text_element_to_html(el, escapeLeadingSpaces)).join("");
+    }).join("<br>");
+  }
+
   constructor(document: string, title: TitlePage|null, script: FountainElement[]) {
     this.document = document;
     this.title = title;
@@ -180,25 +191,17 @@ class FountainScript {
       if (prev === null) {
         prev = el;
       } else {
-        if (prev.kind === 'action' && el.kind === 'action') {
-          let extra_newlines: TextElement[] = []
-          if (prev.text.length > 0 && prev.text[prev.text.length - 1].kind != 'newline') {
-            // Previous action does not end in a newline
-            // So this must be where the parser separated two actions
-            // which only happens at blank lines.
-            // So insert a blank line (two newlines).
-            extra_newlines = [
-                { range: { start:prev.range.end-2, end: prev.range.end-1 },
-                  kind: 'newline'
-                },
-                { range: { start:prev.range.end-1, end: prev.range.end },
-                  kind:  'newline'
-                }
-            ]
+          let extra_newline: Line[] = [];
+          if (prev.kind === 'action' && el.kind === 'action') {
+          if (prev.lines.length > 0 && prev.range.end > prev.lines[prev.lines.length-1].range.end) {
+            // Previous action ended in a blank line, but because the next thing
+            // after the blank line is a action again, let's insert that blank line
+            // as an action and go on.
+            extra_newline = [{range: { start: prev.range.end-1, end: prev.range.end }, elements: [] }]
           }
           prev = {
             kind: 'action',
-            text: prev.text.concat(extra_newlines, el.text),
+            lines: prev.lines.concat(extra_newline, el.lines),
             range: { start: prev.range.start, end: el.range.end }
           };
         } else {

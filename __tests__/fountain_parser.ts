@@ -41,7 +41,8 @@ describe("Parser tests", () => {
     [{ kind: 'section',
       range: { start: 0, end: 12 }
      },
-     { kind: 'action', text:[{kind: 'newline'}],
+     { kind: 'action',
+       lines:[{range: { start: 12, end: 13}, elements:[]}],
        range: { start: 12, end: 13 }
      }
     ]);
@@ -55,7 +56,11 @@ describe("Parser tests", () => {
     [ { kind: 'action'
       , source: "This is some action"
       , range: { start: 0, end: 19 }
-      , text: [ { kind: 'text', range: { start: 0, end: 19 } } ]
+      , lines:  [
+          { range: { start: 0, end: 19 }
+          , elements: [ {  kind: 'text', range: { start: 0, end: 19 } } ] 
+          }
+        ] 
       }
     ]);
   test_script("Basic Action + newline at end of input",
@@ -63,7 +68,13 @@ describe("Parser tests", () => {
     [ { kind: 'action'
       , source: "This is some action\n"
       , range: { start: 0, end: 20 }
-      , text: [ { kind: 'text', range: { start: 0, end: 19 } } ]
+      , lines: [
+          { range: { start: 0, end: 20 }
+          , elements: [
+             { kind: 'text', range: { start: 0, end: 19 } }
+            ]
+          }
+      ]
       }
     ]);
   test_script("Basic Action followed by blank line",
@@ -71,7 +82,13 @@ describe("Parser tests", () => {
     [ { kind: 'action'
       , source: "This is some action\n\n"
       , range: { start: 0, end: 21 }
-      , text: [ { kind: 'text', range: { start: 0, end: 19 } } ]
+      , lines: [
+          { range: { start: 0, end: 20 }
+          , elements: [
+             { kind: 'text', range: { start: 0, end: 19 } }
+            ]
+          }
+        ] 
       }
     ]);
   // However if that is followed by more actions the blank lines
@@ -81,11 +98,13 @@ describe("Parser tests", () => {
     [ { kind: 'action'
       , source: "This is some action\n\nWith a blank line"
       , range: { start: 0, end: 38 }
-      , text: [ { kind: 'text', range: { start: 0, end: 19 } }
-              , { kind: 'newline', range: { start: 19, end: 20 } }
-              , { kind: 'newline', range: { start: 20, end: 21 } }
-              , { kind: 'text', range: { start: 21, end: 38 } }
-              ]
+      , lines: [ { range: { start: 0, end: 20 } }
+               , { range: { start: 20, end: 21 } } 
+               , { range: { start: 21, end: 38 } } 
+               ]
+               // , { range: { start: 20, end: 21 } }
+               // , { range: { start: 21, end: 38 } }
+               // ]
       }
     ]);
   // However if that is followed by more actions the blank lines
@@ -95,12 +114,11 @@ describe("Parser tests", () => {
     [ { kind: 'action'
       , source: "This is some action\n\n\nWith two blank lines"
       , range: { start: 0, end: 42 }
-      , text: [ { kind: 'text', range: { start: 0, end: 19 } }
-              , { kind: 'newline', range: { start: 19, end: 20 } }
-              , { kind: 'newline', range: { start: 20, end: 21 } }
-              , { kind: 'newline', range: { start: 21, end: 22 } }
-              , { kind: 'text', range: { start: 22, end: 42 } }
-              ]
+      , lines: [ { range: { start: 0, end: 20 } }
+               , { range: { start: 20, end: 21 } } 
+               , { range: { start: 21, end: 22 } } 
+               , { range: { start: 22, end: 42} } 
+               ]
       }
     ]);
 
@@ -146,26 +164,30 @@ No luck. He has no choice to deal the cards.`,
 
 describe("Emphasis in actions", () => {
   test_script('From the spec', "From what seems like only INCHES AWAY. _Steel’s face FILLS the *Leupold Mark 4* scope_.",
-    [ { kind: 'action', text: [
-        {kind:'text'},
-        {kind:'underline', elements:[
+    [ { kind: 'action', lines: [
+        { elements: [
           {kind:'text'},
-          {kind:'italics', elements:[{kind:'text'}
+          {kind:'underline', elements:[
+            {kind:'text'},
+            {kind:'italics', elements:[{kind:'text'}]},
+            {kind:'text'}
           ]},
           {kind:'text'}
         ]},
-        {kind:'text'}]
-      }]
+      ]}
+    ]
   );
-  test_script("Unclosed emphasis is passed along as is", "This **is not _closed_, but",
-      [ { kind: 'action', text: [
+  test_script("Unclosed emphasis is passed along as is", "This **is not _closed_, but", 
+      [ { kind: 'action', lines: [
+          { elements: [
             {kind:'text'},
             {kind:'underline', elements:[{kind:'text'}]},
             {kind:'text'}
-        ] }
+          ]}
+        ]}
       ]
-  )
-})
+  );
+});
 
 describe("Corner cases from big fish", () => {
   // These are corner cases from big fish we got wrong at some point or the other.

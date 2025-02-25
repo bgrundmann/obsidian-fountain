@@ -2,8 +2,8 @@ import { Action, Dialogue, Scene, Section, FountainScript, FountainElement, Rang
 export { reading_view, index_cards_view, getDataRange, rangeOfFirstVisibleLine };
 
 function actionToHtml(action: Action, script: FountainScript): string {
-    const elts = action.text.map((el) => script.text_element_to_html(el, true)).join("");
-    return `<p class="action" ${dataRange(action.range)}>${elts}</p>`;
+  const html = script.linesToHtml(action.lines, true);
+  return `<p class="action" ${dataRange(action.range)}>${html}</p>`;
 }
 
 function dialogueToHtml(dialogue: Dialogue, script: FountainScript): string {
@@ -13,7 +13,7 @@ function dialogueToHtml(dialogue: Dialogue, script: FountainScript): string {
     dialogue.parenthetical !== null ?
       `<p class="dialogue-parenthetical">${script.extractAsHtml(dialogue.parenthetical)}</p>`
       : "";
-  const words = dialogue.text.map((el) => script.text_element_to_html(el, false)).join("");
+  const words = script.linesToHtml(dialogue.lines, false);
   return `<div class="dialogue" ${dataRange(dialogue.range)}><h4 class="dialogue-character">${characterLine}</h4>${parenthetical}<p class="dialogue-words">${words}</p></div>`
 }
 
