@@ -1,5 +1,5 @@
 import { Action, Dialogue, Scene, Section, FountainScript, FountainElement, Range } from './fountain.js';
-export { reading_view, index_cards_view, getDataRange, rangeOfFirstVisibleLine };
+export { readingView, indexCardsView as indexCardsView, getDataRange, rangeOfFirstVisibleLine };
 
 function actionToHtml(action: Action, script: FountainScript): string {
   const html = script.linesToHtml(action.lines, true);
@@ -38,7 +38,7 @@ function getDataRange(target: HTMLElement): Range|null{
 /**
  Converts the parsed document to a html representation (aka the regular reading view).
  */
-function reading_view(script: FountainScript): string {
+function readingView(script: FountainScript): string {
     let sceneNumber = 1;
     const element_to_html = (el: FountainElement): string => {
       switch (el.kind) {
@@ -87,7 +87,7 @@ enum Inside {
   Card,
 }
 
-function index_cards_view(script: FountainScript): string {
+function indexCardsView(script: FountainScript): string {
   let state : Inside = Inside.Nothing;
   let result : string[] = [];
   let sceneNumber: number = 1;

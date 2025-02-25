@@ -3,7 +3,7 @@ import { EditorState } from '@codemirror/state';
 import { EditorView, ViewUpdate } from '@codemirror/view';
 import { parse } from './fountain_parser.js';
 import { FountainScript, Range } from 'fountain.js';
-import { reading_view, index_cards_view, getDataRange, rangeOfFirstVisibleLine } from './reading_view.js';
+import { readingView, indexCardsView, getDataRange, rangeOfFirstVisibleLine } from './reading_view.js';
 import { fountainEditorPlugin } from './fountain_editor.js';
 export const VIEW_TYPE_FOUNTAIN = 'fountain';
 
@@ -35,7 +35,7 @@ class ReadonlyViewState {
     // Assuming nobody does a supply chain attack on the fountain library, the below
     // is fine as there is no way for the user to embed html in the fountain.
     //mainblock.innerHTML = compile(this.showMode, this.tokens);
-    mainblock.innerHTML = this.showMode == ShowMode.IndexCards ? index_cards_view(fp) : reading_view(fp);
+    mainblock.innerHTML = this.showMode == ShowMode.IndexCards ? indexCardsView(fp) : readingView(fp);
     
     mainblock.addEventListener('click', (e) => {
       if (this.showMode === ShowMode.IndexCards && e.target != null) {
