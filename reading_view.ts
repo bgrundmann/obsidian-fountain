@@ -1,9 +1,11 @@
 import { Action, Dialogue, Scene, Section, FountainScript, FountainElement, Range } from './fountain.js';
 export { readingView, indexCardsView as indexCardsView, getDataRange, rangeOfFirstVisibleLine };
 
+const BLANK_LINE: string = "<div>&nbsp;</div>"
+
 function actionToHtml(action: Action, script: FountainScript): string {
-  const html = script.linesToHtml(action.lines, true);
-  return `<p class="action" ${dataRange(action.range)}>${html}</p>`;
+  const html = `<div class="action" ${dataRange(action.range)}>${script.linesToHtml(action.lines, true)}${BLANK_LINE}</div>`;
+  return html;
 }
 
 function dialogueToHtml(dialogue: Dialogue, script: FountainScript): string {
@@ -11,10 +13,10 @@ function dialogueToHtml(dialogue: Dialogue, script: FountainScript): string {
   // TODO:
   const parenthetical =
     dialogue.parenthetical !== null ?
-      `<p class="dialogue-parenthetical">${script.extractAsHtml(dialogue.parenthetical)}</p>`
+      `<div class="dialogue-parenthetical">${script.extractAsHtml(dialogue.parenthetical)}</div>`
       : "";
   const words = script.linesToHtml(dialogue.lines, false);
-  return `<div class="dialogue" ${dataRange(dialogue.range)}><h4 class="dialogue-character">${characterLine}</h4>${parenthetical}<p class="dialogue-words">${words}</p></div>`
+  return `<div class="dialogue" ${dataRange(dialogue.range)}><h4 class="dialogue-character">${characterLine}</h4>${parenthetical}<div class="dialogue-words">${words}${BLANK_LINE}</div></div>`
 }
 
 function dataRange(r: Range): string {

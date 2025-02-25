@@ -172,8 +172,15 @@ class FountainScript {
 
   linesToHtml(lines: Line[], escapeLeadingSpaces: boolean): string {
     return lines.map((line) => {
-      return line.elements.map((el) => this.textElementToHtml(el, escapeLeadingSpaces)).join("");
-    }).join("<br>");
+      let innerHtml: string;
+      if (line.elements.length == 0) {
+        // Need a nbsp so that the div is not empty and gets regular text height
+        innerHtml = "&nbsp;";
+      } else {
+        innerHtml = line.elements.map((el) => this.textElementToHtml(el, escapeLeadingSpaces)).join("");
+      }
+      return `<div>${innerHtml}</div>`;
+    }).join("");
   }
 
   constructor(document: string, title: TitlePage|null, script: FountainElement[]) {
