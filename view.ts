@@ -132,7 +132,7 @@ class EditorViewState {
     this.cmEditor = new EditorView({ state: state, parent: editorContainer})
   }
 
-  setViewData(text: string, clear: boolean) {
+  setViewData(text: string, _clear: boolean) {
       this.cmEditor.dispatch({
         changes: {
           from: 0,

@@ -164,6 +164,7 @@
     text-align: left;
     text-transform: uppercase; 
     font-weight: var(--bold-weight) ;
+    margin: 0;
 }
 
 /********* sections */

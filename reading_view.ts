@@ -1,4 +1,4 @@
-import { Action, Dialogue, Scene, Section, FountainScript, FountainElement, Range } from './fountain.js';
+import { Action, Dialogue, FountainScript, FountainElement, Range } from './fountain.js';
 export { readingView, indexCardsView as indexCardsView, getDataRange, rangeOfFirstVisibleLine };
 
 const BLANK_LINE: string = "<div>&nbsp;</div>"
@@ -48,7 +48,7 @@ function readingView(script: FountainScript): string {
           return actionToHtml(el, script);
         case 'scene':
           const text = script.extractAsHtml(el.range);
-          const res = `<h3 ${dataRange(el.range)} class="scene-heading" id="scene${sceneNumber}">${text}</h3>`;
+          const res = `<h3 ${dataRange(el.range)} class="scene-heading" id="scene${sceneNumber}">${text}</h3>${BLANK_LINE}`;
           sceneNumber++;
           return res;
         case 'synopsis':
@@ -63,6 +63,9 @@ function readingView(script: FountainScript): string {
           return html;
         case 'dialogue':
           return dialogueToHtml(el, script);
+        case 'transition':
+          const transitionText = script.extractAsHtml(el.range);
+          return `<div class="transition">${transitionText}</div>${BLANK_LINE}`;
         default:
           return `TODO: ${el.kind}`;
       }
