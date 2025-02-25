@@ -73,6 +73,18 @@ class FountainEditorPlugin implements PluginValue {
     const boneyard = Decoration.mark({class:"boneyard"});
     const note = Decoration.mark({class:"note"});
 
+    if (fscript.titlePage !== null) {
+      for (const kv of fscript.titlePage) {
+        for (const styledText of kv.values) {
+          for (const st of styledText) {
+            if (st.kind !== 'text') {
+              this.applyTextDecoration(builder, st);
+            }
+          }
+        }
+      }
+    }
+
     for (const el of fscript.script) {
       switch (el.kind) {
         case 'scene':
@@ -94,6 +106,26 @@ class FountainEditorPlugin implements PluginValue {
           }
           if (el.lines.length > 0) {
             builder.add(el.lines[0].range.start, el.lines[el.lines.length-1].range.end, words)
+            for (const line of el.lines) {
+              for (const tel of line.elements) {
+                switch (tel.kind) {
+                  case 'text':
+                    break;
+                  case 'bold':
+                  case 'italics':
+                  case 'underline':
+                    this.applyTextDecoration(builder, tel);
+                    break;
+                  
+                  case 'boneyard':
+                    builder.add(tel.range.start, tel.range.end, boneyard);
+                    break;
+                  case 'note':
+                    builder.add(tel.range.start, tel.range.end, note);
+                    break;
+                }
+              }
+            }
           }
           break;
 

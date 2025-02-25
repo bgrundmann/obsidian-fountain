@@ -1,5 +1,5 @@
-export { FountainScript, TitlePage, KeyValue, mergeText };
-export type { Range, Synopsis, Transition, StyledTextElement, TextElement, Action,Dialogue, Scene, Section, FountainElement };
+export { FountainScript, KeyValue, mergeText };
+export type { Range, Synopsis, Transition, StyledTextElement, TextElementWithNotesAndBoneyard, Action,Dialogue, Scene, Section, FountainElement };
 
 interface Range {
   start: number;
@@ -39,7 +39,7 @@ type Transition = {
 
 type Line = {
   range: Range;
-  elements: TextElement[];
+  elements: TextElementWithNotesAndBoneyard[];
   centered: boolean;
 }
 
@@ -77,8 +77,12 @@ type StyledTextElement = {
   elements: (BasicTextElement | StyledTextElement)[];
 }
 
+type TextElement = BasicTextElement | StyledTextElement;
+
+type StyledText = TextElement[]
+
 /// This merges consecutive basic text elements into one
-function mergeText(elts: (BasicTextElement | StyledTextElement)[]): (BasicTextElement|StyledTextElement)[] {
+function mergeText(elts: StyledText): StyledText {
   let res: (BasicTextElement|StyledTextElement)[] = [];
   if (elts.length === 0) return [];
  
@@ -96,22 +100,14 @@ function mergeText(elts: (BasicTextElement | StyledTextElement)[]): (BasicTextEl
   return res;
 }
 
-type TextElement = BasicTextElement | StyledTextElement | OtherTextElement;
-
-class TitlePage {
-  data: KeyValue[];
-
-  constructor(values: KeyValue[]) {
-    this.data = values;
-  }
-}
+type TextElementWithNotesAndBoneyard = BasicTextElement | StyledTextElement | OtherTextElement;
 
 class KeyValue {
   key: string;
-  values: Range[];
+  values: StyledText[];
   range: Range;
 
-  constructor(range: Range, key: string, values: Range[]) {
+  constructor(range: Range, key: string, values: StyledText[]) {
     this.range = range;
     this.key = key;
     this.values = values;
@@ -119,7 +115,7 @@ class KeyValue {
 }
 
 class FountainScript {
-  title: TitlePage|null;
+  titlePage: KeyValue[];
   script: FountainElement[];
   document: string;
 
@@ -146,7 +142,7 @@ class FountainScript {
 
   /// Extract a text element from the fountain document safe to be used as
   /// HTML source.
-  private textElementToHtml(el: TextElement, escapeLeadingSpaces: boolean): string {
+  private textElementToHtml(el: TextElementWithNotesAndBoneyard, escapeLeadingSpaces: boolean): string {
     switch (el.kind) {
       case 'text':
         return this.extractAsHtml(el.range, escapeLeadingSpaces);
@@ -176,9 +172,9 @@ class FountainScript {
     }).join("");
   }
 
-  constructor(document: string, title: TitlePage|null, script: FountainElement[]) {
+  constructor(document: string, titlePage: KeyValue[], script: FountainElement[]) {
     this.document = document;
-    this.title = title;
+    this.titlePage = titlePage;
     // The way the parser works, blank lines can cause separate action elements
     // (as opposed to a single action element containing all the newlines).
     //

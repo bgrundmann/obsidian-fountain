@@ -16,13 +16,13 @@ const mergeText = fountain.mergeText;
 }}
 
 Script 
- = title:TitlePage? script:Element* !. { return new FountainScript(input, title, script); }
+ = title:TitlePage? script:Element* !. { return new FountainScript(input, title ? title : [], script); }
 
 TitlePage 
- = @(KeyValue)+ "\n"
+ = values:KeyValue+ "\n" { return values; }
  
 KeyValue
- = key:Key ":" " "* value:(@InlineValue / @MultiLineValues) { return new KeyValue(range(),  key, value); }
+ = key:Key ":" " "* values:(@InlineValue / @MultiLineValues) { return new KeyValue(range(),  key, values); }
 
 Key
  = [a-zA-Z0-9_][a-zA-Z0-9_ ]* { return text() }
@@ -30,13 +30,13 @@ Key
 InlineValue = value:Value "\n" { return [value] }
 
 Value
- = [^\n]+ { return range(); } 
+ = value:StyledTextElement+ { return mergeText(value); } 
 
 MultiLineValues
- = "\n" (@MultiLineValue "\n")+ 
+ = "\n" values:(@MultiLineValue "\n")+ { return values; }
  
 MultiLineValue 
- = (" "|3..| / "\t") value:Value { return value }
+ = (" "|3..| / "\t") value:Value { return value; }
  
 Element
  = Scene
