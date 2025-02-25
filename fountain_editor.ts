@@ -86,8 +86,6 @@ class FountainEditorPlugin implements PluginValue {
             for (const tel of line.elements) {
               switch (tel.kind) {
                 case 'text':
-                case 'newline':
-                  break;
                 case 'boneyard':
                   builder.add(tel.range.start, tel.range.end, boneyard);
                   break;

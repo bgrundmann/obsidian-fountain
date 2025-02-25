@@ -61,7 +61,7 @@ type FountainElement = Synopsis | Transition | Action | Scene | Dialogue | Secti
 
 type OtherTextElement = {
   range: Range;
-  kind: 'newline' | 'note' | 'boneyard';
+  kind: 'note' | 'boneyard';
 }
 
 /// The type of a piece of text. Text never contains any newlines!
@@ -163,8 +163,6 @@ class FountainScript {
       case 'note':
         const n = this.extractAsHtml(el.range);
         return `<span class="note">${n}</span>`;
-      case 'newline':
-        return '<br>';
       case 'boneyard':
         return '';
     }    
