@@ -72,8 +72,12 @@ EndOfCenteredLine
 ActionLine
  = [ \t]*  ">" [ \t]* elements:(!EndOfCenteredLine @LineTextElement)+ EndOfCenteredLine
    { return { range: range(), centered: true, elements:mergeText(elements) } }
+ / ForcedActionLine
  / Line
 
+ForcedActionLine
+ = "!" line:Line  { line.range.start = line.range.start - 1; return line; }
+ 
 ActionLines
  = @lines:ActionLine+ NewLineOrEndOfInput
 

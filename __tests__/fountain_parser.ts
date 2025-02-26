@@ -172,6 +172,20 @@ describe("Parser tests", () => {
       ]
       }
     ]);
+  test_script("ForcedAction + newline at end of input",
+    `!This is some action\n`,
+    [ { kind: 'action'
+      , source: "!This is some action\n"
+      , range: { start: 0, end: 21 }
+      , lines: [
+          { range: { start: 0, end: 21 }
+          , elements: [
+             { kind: 'text', range: { start: 1, end: 20 } }
+            ]
+          }
+      ]
+      }
+    ]);
   test_script("Basic Action followed by blank line",
     `This is some action\n\n`,
     [ { kind: 'action'
