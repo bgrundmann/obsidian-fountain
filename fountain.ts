@@ -1,6 +1,8 @@
 export { FountainScript, mergeText, escapeHtml };
 export type { Range, Synopsis, Transition, KeyValue, StyledTextElement, TextElementWithNotesAndBoneyard, Action,Dialogue, Scene, Section, FountainElement };
 
+
+
 interface Range {
   start: number;
   end: number;
@@ -40,6 +42,8 @@ type Transition = {
 type Line = {
   range: Range;
   elements: TextElementWithNotesAndBoneyard[];
+
+  
   centered: boolean;
 }
 
@@ -59,11 +63,17 @@ type Section = {
 
 type FountainElement = Synopsis | Transition | Action | Scene | Dialogue | Section | PageBreak;
 
-
-type OtherTextElement = {
+type Note = {
+  kind: 'note';
   range: Range;
-  kind: 'note' | 'boneyard';
+  elements: StyledText;
 }
+
+type Boneyard = {
+  kind: 'boneyard';
+  range: Range;
+}
+
 
 /// The type of a piece of text. Text never contains any newlines!
 type BasicTextElement = {
@@ -74,7 +84,7 @@ type BasicTextElement = {
 type StyledTextElement = {
   range: Range;
   kind: 'bold' | 'italics' | 'underline';
-  elements: (BasicTextElement | StyledTextElement)[];
+  elements: StyledText;
 }
 
 type TextElement = BasicTextElement | StyledTextElement;
@@ -100,7 +110,8 @@ function mergeText(elts: StyledText): StyledText {
   return res;
 }
 
-type TextElementWithNotesAndBoneyard = BasicTextElement | StyledTextElement | OtherTextElement;
+type TextElementWithNotesAndBoneyard = BasicTextElement | StyledTextElement | Note | Boneyard;
+
 
 type KeyValue = {
   key: string;
@@ -139,6 +150,8 @@ class FountainScript {
   /// Extract a text element from the fountain document safe to be used as
   /// HTML source.
   private textElementToHtml(el: TextElementWithNotesAndBoneyard, escapeLeadingSpaces: boolean): string {
+
+    
     switch (el.kind) {
       case 'text':
         return this.extractAsHtml(el.range, escapeLeadingSpaces);

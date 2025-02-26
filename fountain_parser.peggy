@@ -93,8 +93,8 @@ Action
    { return { kind: 'action', range:newline, lines: [{range:newline, centered: false, elements:[]}] } };
 
 Note "note"
- = "[[" (!("]]"/"\n\n") .)* "]]"?
- { return { range: range(), kind: 'note' }; }
+ = "[[" elements:(!("]]"/"\n\n") @StyledTextElement)* "]]"?
+ { return { range: range(), kind: 'note', elements:mergeText(elements)  }; }
  
 Boneyard "boneyard"
  = OptionalBlanks "/*" (!"*/" .)* "*/" 

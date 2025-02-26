@@ -126,6 +126,57 @@ describe("Parser tests", () => {
         ] 
       }
     ]);
+  test_script("simple note", "[[A simple note]]",
+    [ { kind: 'action'
+      , range: { start: 0, end: 17 }
+      , lines:
+        [ { range: { start: 0, end: 17 }
+          , centered: false
+          , elements:
+            [ { kind:'note'
+              , range: { start: 0, end: 17 }
+              , elements:
+              [ { kind:'text', range: { start: 2, end: 15 }}
+              ]
+              }
+            ]
+          }
+        ]
+      }
+      
+    ]
+  );
+  test_script("notes contain styles", "[[+:**PLUS**]][[-:Minus]]",
+    [ { kind: 'action'
+      , range: { start: 0, end: 25 }
+      , lines:
+        [ { range: { start: 0, end: 25 }
+          , centered: false
+          , elements:
+            [ { kind:'note'
+              , range: { start: 0, end: 14 }
+              , elements:
+                [ { kind:'text', range: { start: 2, end: 4 }}
+                , { kind:'bold', range: { start: 4, end: 12}
+                  , elements:
+                    [ { kind: 'text', range: { start: 6, end: 10 }}
+                    ] 
+                  }
+                ]
+              },
+              { kind:'note'
+              , range: { start: 14, end: 25 }
+              , elements:
+                [ { kind:'text', range: { start: 16, end: 23 }}
+                ]
+              }
+            ]
+          }
+        ]
+      }
+      
+    ]
+  );
   test_script("CenteredAction", ">A centered action<",
     [ { kind: 'action'
       , source: ">A centered action<"
