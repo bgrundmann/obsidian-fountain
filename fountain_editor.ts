@@ -72,6 +72,7 @@ class FountainEditorPlugin implements PluginValue {
     const action = Decoration.mark({class:"action"});
     const boneyard = Decoration.mark({class:"boneyard"});
     const note = Decoration.mark({class:"note"});
+    const pageBreak = Decoration.mark({class:"page-break"});
 
     if (fscript.titlePage !== null) {
       for (const kv of fscript.titlePage) {
@@ -97,6 +98,10 @@ class FountainEditorPlugin implements PluginValue {
 
         case 'synopsis':
           builder.add(el.range.start, el.range.end, synopsis);
+          break;
+
+        case 'page-break':
+          builder.add(el.range.start, el.range.end, pageBreak);
           break;
 
         case 'dialogue':

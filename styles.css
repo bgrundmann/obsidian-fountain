@@ -212,6 +212,16 @@
     text-decoration: underline;
 }
 
+/**************** page break */
+/* For now we generate hr in the reading view, so this
+   is specific to the editor */
+
+.screenplay .cm-line .page-break  {
+    background: linear-gradient(0deg, transparent 45%, var(--text-faint) 45%, var(--text-faint) 55%, transparent 55%)
+}
+
+
+
 /****************************** index view */
 
 .screenplay-index-cards {
