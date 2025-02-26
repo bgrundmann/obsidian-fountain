@@ -59,6 +59,15 @@ Copyright: (c) 2003 Columbia Pictures
 
 This is a Southern story, full of lies and fabrications, but truer for their inclusion.`,
   [ { key: "Title", htmlValues: [ "Big Fish"] }
+  , { key: "Credit", htmlValues: [ "written by" ] }
+  , { key: "Author", htmlValues: [ "John August" ] }
+  , { key: "Source", htmlValues: [ "based on the novel by Daniel Wallace" ] }
+  , { key: "Notes", htmlValues:
+      [ "FINAL PRODUCTION DRAFT"
+      , "includes post-production dialogue "
+      , "and omitted scenes"
+      ] }
+  , { key: "Copyright", htmlValues: [ "(c) 2003 Columbia Pictures" ] }
   ]);
   
 })

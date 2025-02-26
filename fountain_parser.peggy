@@ -20,7 +20,7 @@ TitlePage
  = values:KeyValue+ "\n" { return values; }
  
 KeyValue
- = key:Key ":" " "* values:(@InlineValue / @MultiLineValues) { return { range: range(), key: key, values: values }; }
+ = key:Key ":" [ \t]* values:(@InlineValue / @MultiLineValues) { return { range: range(), key: key, values: values }; }
 
 Key
  = [a-zA-Z0-9_][a-zA-Z0-9_ ]* { return text() }
