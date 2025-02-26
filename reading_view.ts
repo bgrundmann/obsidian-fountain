@@ -52,7 +52,7 @@ function readingView(script: FountainScript): string {
           sceneNumber++;
           return res;
         case 'synopsis':
-          return `<p class="synopsis" ${dataRange(el.range)}>${script.extractAsHtml(el.synopsis)}</p>`;
+          return `<div class="synopsis" ${dataRange(el.range)}>${script.extractAsHtml(el.synopsis)}</div>`;
         case 'section':
           const title = script.extractAsHtml(el.range);
           let prefix = "";
@@ -80,7 +80,6 @@ function readingView(script: FountainScript): string {
       titlePageHtml = 
         titlePage
           .map((kv) => {
-            console.log(kv);
             if (kv.htmlValues.length === 1) {
               return `<div>${escapeHtml(kv.key)}: ${kv.htmlValues[0]}</div>`;
             } else {
@@ -163,7 +162,7 @@ function indexCardsView(script: FountainScript): string {
         break;
 
       case 'synopsis':
-        emit(`<p class="synopsis">${script.extractAsHtml(el.synopsis)}</p>`);
+        emit(`<div class="synopsis">${script.extractAsHtml(el.synopsis)}</div>`);
         break;
 
       default:
