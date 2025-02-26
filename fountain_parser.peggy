@@ -38,8 +38,12 @@ MultiLineValues
 MultiLineValue 
  = (" "|3..| / "\t") value:Value { return value; }
  
+PageBreak 
+ = OptionalBlanks "="|3..| NewLineOrEndOfInput { return { range: range(), kind: 'page-break' } }
+
 Element
  = Scene
+ / PageBreak
  / Transition
  / Section
  / Synopsis
@@ -76,7 +80,7 @@ ActionLines
  = @lines:ActionLine+ NewLineOrEndOfInput
 
 Transition
- = (!("TO:\n"/"TO:" !.) [^\n] )* "TO:" BlankLineOrEndOfInput &{ const t = text(); return t.toUpperCase() === t; }
+ = OptionalBlanks (!("TO:\n"/"TO:" !.) [^\n] )* "TO:" BlankLineOrEndOfInput &{ const t = text(); return t.toUpperCase() === t; }
  { return { kind: 'transition', range: range() }; }
 
 Action

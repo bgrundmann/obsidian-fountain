@@ -66,8 +66,8 @@ function readingView(script: FountainScript): string {
         case 'transition':
           const transitionText = script.extractAsHtml(el.range);
           return `<div class="transition">${transitionText}</div>${BLANK_LINE}`;
-        default:
-          return `TODO: ${el.kind}`;
+        case 'page-break':
+          return "<hr>";
       }
     };
 
