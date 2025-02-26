@@ -9,8 +9,6 @@
 {{
 const fountain = require("./fountain");
 const FountainScript = fountain.FountainScript;
-const TitlePage = fountain.TitlePage;
-const KeyValue = fountain.KeyValue;
 const mergeText = fountain.mergeText;
 
 }}
@@ -22,7 +20,7 @@ TitlePage
  = values:KeyValue+ "\n" { return values; }
  
 KeyValue
- = key:Key ":" " "* values:(@InlineValue / @MultiLineValues) { return new KeyValue(range(),  key, values); }
+ = key:Key ":" " "* values:(@InlineValue / @MultiLineValues) { return { range: range(), key: key, values: values }; }
 
 Key
  = [a-zA-Z0-9_][a-zA-Z0-9_ ]* { return text() }

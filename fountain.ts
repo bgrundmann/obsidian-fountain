@@ -1,5 +1,5 @@
-export { FountainScript, KeyValue, mergeText };
-export type { Range, Synopsis, Transition, StyledTextElement, TextElementWithNotesAndBoneyard, Action,Dialogue, Scene, Section, FountainElement };
+export { FountainScript, mergeText, escapeHtml };
+export type { Range, Synopsis, Transition, KeyValue, StyledTextElement, TextElementWithNotesAndBoneyard, Action,Dialogue, Scene, Section, FountainElement };
 
 interface Range {
   start: number;
@@ -102,16 +102,19 @@ function mergeText(elts: StyledText): StyledText {
 
 type TextElementWithNotesAndBoneyard = BasicTextElement | StyledTextElement | OtherTextElement;
 
-class KeyValue {
+type KeyValue = {
   key: string;
   values: StyledText[];
   range: Range;
+}
 
-  constructor(range: Range, key: string, values: StyledText[]) {
-    this.range = range;
-    this.key = key;
-    this.values = values;
-  }
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 class FountainScript {
@@ -122,14 +125,7 @@ class FountainScript {
   /// Extract some text from the fountain document safe to be used
   /// as HTML source.
   extractAsHtml(r: Range, escapeLeadingSpaces:boolean = false): string {
-    let safe = 
-      this.document
-        .slice(r.start, r.end)
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#039;");
+    let safe =  escapeHtml(this.document.slice(r.start, r.end));
     return escapeLeadingSpaces
       ? safe.replace(/^( +)/gm, (_, spaces) => "&nbsp;".repeat(spaces.length))
       : safe;
@@ -214,4 +210,14 @@ class FountainScript {
       return { ...elt, source : this.document.slice(elt.range.start, elt.range.end) };
     });
   }
+
+  titlePageWithHtmlValues(): (KeyValue & { htmlValues: string[] })[] {
+    return this.titlePage.map((kv) => {
+      return { ...kv, htmlValues: kv.values.map((v) => {
+          return v.map((st) => this.textElementToHtml(st, false)).join("");
+        })
+      }
+    });
+  }
+
 }

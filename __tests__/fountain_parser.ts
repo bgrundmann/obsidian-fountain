@@ -10,6 +10,59 @@ function test_script(label: string, input: string, expected: Array<Record<string
   });
 }
 
+function testTitlePage(label: string, input: string, expected: Array<Record<string, unknown>>): void {
+  test(label, () => {
+    const script: FountainScript = parse(input, {});
+    expect(script.titlePageWithHtmlValues()).toMatchObject(expected);
+  });
+}
+
+
+describe("title page", () => {
+  testTitlePage("Brick and Steel", `Title:
+	_**BRICK & STEEL**_
+	_**FULL RETIRED**_
+Credit: Written by
+Author: Stu Maschwitz
+Source: Story by KTM
+Draft date: 1/27/2012
+Contact:
+	Next Level Productions
+	1588 Mission Dr.
+	Solvang, CA 93463
+
+`,  [ { key: "Title", htmlValues:
+        [ `<span class="underline"><span class="bold">BRICK &amp; STEEL</span></span>`
+        , `<span class="underline"><span class="bold">FULL RETIRED</span></span>`
+        ]
+      },
+      { key: "Credit", htmlValues: ["Written by"] },
+      { key: "Author", htmlValues: ["Stu Maschwitz"] },
+      { key: "Source", htmlValues: ["Story by KTM"] },
+      { key: "Draft date", htmlValues: ["1/27/2012"] },
+      { key: "Contact", htmlValues:
+        [ "Next Level Productions"
+        , "1588 Mission Dr."
+        , "Solvang, CA 93463"
+        ]
+      },
+  ]);
+  testTitlePage("Big Fish title", `Title: Big Fish
+Credit: written by
+Author: John August
+Source: based on the novel by Daniel Wallace
+Notes:	
+	FINAL PRODUCTION DRAFT
+	includes post-production dialogue 
+	and omitted scenes
+Copyright: (c) 2003 Columbia Pictures
+
+This is a Southern story, full of lies and fabrications, but truer for their inclusion.`,
+  [ { key: "Title", htmlValues: [ "Big Fish"] }
+  ]);
+  
+})
+
 describe("Parser tests", () => {
   // range is always the complete element.
   // That is in particular for elements that include a mandatory

@@ -1,4 +1,4 @@
-import { Action, Dialogue, FountainScript, FountainElement, Range } from './fountain.js';
+import { Action, Dialogue, FountainScript, FountainElement, Range, escapeHtml } from './fountain.js';
 export { readingView, indexCardsView as indexCardsView, getDataRange, rangeOfFirstVisibleLine };
 
 const BLANK_LINE: string = "<div>&nbsp;</div>"
@@ -71,7 +71,28 @@ function readingView(script: FountainScript): string {
       }
     };
 
-    return script.script.map((el) => element_to_html(el)).join("");
+    const titlePage = script.titlePageWithHtmlValues();
+    let titlePageHtml: string;
+
+    if (titlePage.length == 0) {
+      titlePageHtml = "";
+    } else {
+      titlePageHtml = 
+        titlePage
+          .map((kv) => {
+            console.log(kv);
+            if (kv.htmlValues.length === 1) {
+              return `<div>${escapeHtml(kv.key)}: ${kv.htmlValues[0]}</div>`;
+            } else {
+              return `<div>${escapeHtml(kv.key)}:</div>` + kv.htmlValues.map((h) => {
+                return `<div>&nbsp;&nbsp;&nbsp;${h}</div>`;
+              }).join("");
+            }
+          } ).join("") + BLANK_LINE + "<hr>" + BLANK_LINE;
+    }
+
+    const content = script.script.map((el) => element_to_html(el)).join("");
+    return titlePageHtml + content;
 }
 
 /// Return the range of the first visible line on the screen. Or something close.
