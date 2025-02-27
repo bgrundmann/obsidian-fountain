@@ -1,5 +1,5 @@
 export { FountainScript, mergeText, escapeHtml };
-export type { Range, Synopsis, Transition, KeyValue,
+export type { Range, Synopsis, Transition, KeyValue, Line,
   StyledTextElement, TextElementWithNotesAndBoneyard, Action,Dialogue, Scene, Section, FountainElement };
 
 
@@ -150,7 +150,7 @@ class FountainScript {
     return `<span class="${el.kind}">${inner}</span>`;
   }
 
-  private styledTextToHtml(st: StyledTextWithNotesAndBoneyard, escapeLeadingSpaces: boolean): string {
+  styledTextToHtml(st: StyledTextWithNotesAndBoneyard, escapeLeadingSpaces: boolean): string {
     return st.map((el) => this.textElementToHtml(el, escapeLeadingSpaces)).join("");
   }
 
@@ -181,20 +181,6 @@ class FountainScript {
       case 'boneyard':
         return '';
     }    
-  }
-
-  linesToHtml(lines: Line[], escapeLeadingSpaces: boolean): string {
-    return lines.map((line) => {
-      let innerHtml: string;
-      if (line.elements.length == 0) {
-        // Need a nbsp so that the div is not empty and gets regular text height
-        innerHtml = "&nbsp;";
-      } else {
-        innerHtml = this.styledTextToHtml(line.elements, escapeLeadingSpaces);
-      }
-      const centered = line.centered ? ' class="centered"' : '';
-      return `<div${centered}>${innerHtml}</div>`;
-    }).join("");
   }
 
   constructor(document: string, titlePage: KeyValue[], script: FountainElement[]) {
