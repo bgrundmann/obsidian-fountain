@@ -1,5 +1,6 @@
 export { FountainScript, mergeText, escapeHtml };
-export type { Range, Synopsis, Transition, KeyValue, StyledTextElement, TextElementWithNotesAndBoneyard, Action,Dialogue, Scene, Section, FountainElement };
+export type { Range, Synopsis, Transition, KeyValue,
+  StyledTextElement, TextElementWithNotesAndBoneyard, Action,Dialogue, Scene, Section, FountainElement };
 
 
 
@@ -112,6 +113,7 @@ function mergeText(elts: StyledText): StyledText {
 }
 
 type TextElementWithNotesAndBoneyard = BasicTextElement | StyledTextElement | Note | Boneyard;
+type StyledTextWithNotesAndBoneyard = TextElementWithNotesAndBoneyard[]
 
 
 type KeyValue = {
@@ -148,11 +150,13 @@ class FountainScript {
     return `<span class="${el.kind}">${inner}</span>`;
   }
 
+  private styledTextToHtml(st: StyledTextWithNotesAndBoneyard, escapeLeadingSpaces: boolean): string {
+    return st.map((el) => this.textElementToHtml(el, escapeLeadingSpaces)).join("");
+  }
+
   /// Extract a text element from the fountain document safe to be used as
   /// HTML source.
   private textElementToHtml(el: TextElementWithNotesAndBoneyard, escapeLeadingSpaces: boolean): string {
-
-    
     switch (el.kind) {
       case 'text':
         return this.extractAsHtml(el.range, escapeLeadingSpaces);
@@ -161,8 +165,19 @@ class FountainScript {
       case 'underline':
         return this.styledTextElementToHtml(el);
       case 'note':
-        const n = this.extractAsHtml(el.range);
-        return `<span class="note">${n}</span>`;
+        let noteKindClass = "";
+        switch (el.noteKind) {
+          case '+':
+            noteKindClass = "note-symbol-plus";
+            break;
+          case '-':
+            noteKindClass = "note-symbol-minus";
+            break;
+          default:
+            noteKindClass = "note";
+            break;
+        }
+        return `<span class="${noteKindClass}">${this.styledTextToHtml(el.elements, false)}</span>`;
       case 'boneyard':
         return '';
     }    
@@ -175,7 +190,7 @@ class FountainScript {
         // Need a nbsp so that the div is not empty and gets regular text height
         innerHtml = "&nbsp;";
       } else {
-        innerHtml = line.elements.map((el) => this.textElementToHtml(el, escapeLeadingSpaces)).join("");
+        innerHtml = this.styledTextToHtml(line.elements, escapeLeadingSpaces);
       }
       const centered = line.centered ? ' class="centered"' : '';
       return `<div${centered}>${innerHtml}</div>`;

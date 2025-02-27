@@ -73,6 +73,8 @@ class FountainEditorPlugin implements PluginValue {
     const boneyard = Decoration.mark({class:"boneyard"});
     const note = Decoration.mark({class:"note"});
     const pageBreak = Decoration.mark({class:"page-break"});
+    const noteSymbolPlus = Decoration.mark({class:"note-symbol-plus"});
+    const noteSymbolMinus = Decoration.mark({class:"note-symbol-minus"});
 
     if (fscript.titlePage !== null) {
       for (const kv of fscript.titlePage) {
@@ -126,7 +128,13 @@ class FountainEditorPlugin implements PluginValue {
                     builder.add(tel.range.start, tel.range.end, boneyard);
                     break;
                   case 'note':
-                    builder.add(tel.range.start, tel.range.end, note);
+                    let noteDeco: Decoration = note;
+                    if (tel.noteKind == "+") {
+                      noteDeco = noteSymbolPlus;
+                    } else if (tel.noteKind == "-") {
+                      noteDeco = noteSymbolMinus;
+                    }
+                    builder.add(tel.range.start, tel.range.end, noteDeco);
                     break;
                 }
               }

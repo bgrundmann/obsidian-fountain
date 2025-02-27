@@ -184,12 +184,9 @@
     font-style: italic;
     margin-left: var(--synopsis-margin);
     margin-right: var(--synopsis-margin);
+    background-color: var(--background-primary-alt);
 }
 
-.screenplay .note {
-    color: var(--text-muted);
-    font-style: italic;
-}
 
 .screenplay .boneyard {
     color: var(--text-faint);
@@ -214,6 +211,21 @@
 
 .screenplay .underline {
     text-decoration: underline;
+}
+
+.screenplay .note-symbol-minus {
+    text-decoration: line-through;
+    color: var(--color-red);
+}
+
+.screenplay .note-symbol-plus {
+    color: var(--color-green);
+}
+
+.screenplay .note {
+    color: var(--text-muted);
+    font-style: italic;
+    background-color: var(--background-primary-alt);
 }
 
 /**************** page break */
