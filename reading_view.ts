@@ -26,6 +26,11 @@ function dataRange(r: Range): string {
   return `data-range="${r.start},${r.end}"`;
 }
 
+function classes(c: string[]): string {
+  if (c.length === 0) return "";
+  return `class="${c.join(" ")}"`;
+}
+
 function getDataRange(target: HTMLElement): Range|null{
   const rawRange = target.getAttribute("data-range");
   if (rawRange === null) return null;
@@ -49,8 +54,8 @@ function linesToHtml(script:FountainScript, lineClass: string, lines: Line[], es
     } else {
       innerHtml = script.styledTextToHtml(line.elements, escapeLeadingSpaces);
     }
-    const centered = line.centered ? ' class="centered"' : '';
-    return `<div ${dataRange(line.range)} class="${lineClass}"><div${centered}>${innerHtml}</div></div>`;
+    const centered = line.centered ? "centered" : '';
+    return `<div ${dataRange(line.range)}><div ${classes([centered, lineClass])}>${innerHtml}</div></div>`;
   }).join("");
 }
 
