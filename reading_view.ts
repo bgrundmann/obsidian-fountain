@@ -81,15 +81,15 @@ function readingView(script: FountainScript): string {
           if (title.toLowerCase().replace(/^ *#+ */, '').trimEnd() === "boneyard") {
             prefix = '<hr>';
           }
-          const html = (`${prefix}<h${el.depth ?? 1} class="section">${title}</h${el.depth ?? 1}>`);
+          const html = (`${prefix}<h${el.depth ?? 1} class="section" ${dataRange(el.range)}>${title}</h${el.depth ?? 1}>`);
           return html;
         case 'dialogue':
           return dialogueToHtml(el, script);
         case 'transition':
           const transitionText = script.extractAsHtml(el.range);
-          return `<div class="transition">${transitionText}</div>${BLANK_LINE}`;
+          return `<div class="transition" ${dataRange(el.range)}>${transitionText}</div>${BLANK_LINE}`;
         case 'page-break':
-          return "<hr>";
+          return `<hr ${dataRange(el.range)}>`;
       }
     };
 
@@ -118,10 +118,19 @@ function readingView(script: FountainScript): string {
 
 /// Return the range of the first visible line on the screen. Or something close.
 function rangeOfFirstVisibleLine(screenplayElement: HTMLElement): Range|null {
+  // screenplay is the element that is the complete document
+  // it's parent is the one that scrolls the screenplay.
+  // getBoundingClientRect gives us the coordinates of the elements on the viewport (aka screen)
+  // so the first child whose top >= parent of screenplay top, is the one actually scrolled into view
+  // Well actually that would be the first one fully in view. But as we sometimes have longer paragraphs
+  // we want to get those too. So we find the first whose bottom is visible
+  const top = (screenplayElement.parentNode as HTMLElement).getBoundingClientRect().top;
   for (const c of screenplayElement.children) {
     const child = c as HTMLElement;
-    if (child.getBoundingClientRect().top >= 0) {
+    if (child.getBoundingClientRect().bottom >= top) {
       const r = getDataRange(child);
+      if (r === null) continue;
+      console.log(child, r);
       return r;
     }
   }

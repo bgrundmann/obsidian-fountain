@@ -154,7 +154,8 @@ class EditorViewState {
   }
 
   scrollToHere(r: Range): void {
-    this.cmEditor.dispatch({ effects: EditorView.scrollIntoView(r.start, { y: "start", }) })
+    this.cmEditor.dispatch({ effects: EditorView.scrollIntoView(r.start, { y: "start", }) });
+    this.cmEditor.focus();
   }
 }
 
