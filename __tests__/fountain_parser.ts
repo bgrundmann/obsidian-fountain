@@ -134,6 +134,7 @@ describe("Parser tests", () => {
           , centered: false
           , elements:
             [ { kind:'note'
+              , noteKind: ""
               , range: { start: 0, end: 17 }
               , elements:
               [ { kind:'text', range: { start: 2, end: 15 }}
@@ -146,28 +147,29 @@ describe("Parser tests", () => {
       
     ]
   );
-  test_script("notes contain styles", "[[+:**PLUS**]][[-:Minus]]",
+  test_script("notes contain styles", "[[+**PLUS**]][[-Minus]]",
     [ { kind: 'action'
-      , range: { start: 0, end: 25 }
+      , range: { start: 0, end: 23 }
       , lines:
-        [ { range: { start: 0, end: 25 }
+        [ { range: { start: 0, end: 23 }
           , centered: false
           , elements:
             [ { kind:'note'
-              , range: { start: 0, end: 14 }
+              , noteKind: "+"
+              , range: { start: 0, end: 13 }
               , elements:
-                [ { kind:'text', range: { start: 2, end: 4 }}
-                , { kind:'bold', range: { start: 4, end: 12}
+                [ { kind:'bold', range: { start: 3, end: 11}
                   , elements:
-                    [ { kind: 'text', range: { start: 6, end: 10 }}
+                    [ { kind: 'text', range: { start: 5, end: 9 }}
                     ] 
                   }
                 ]
               },
               { kind:'note'
-              , range: { start: 14, end: 25 }
+              , noteKind: "-"
+              , range: { start: 13, end: 23 }
               , elements:
-                [ { kind:'text', range: { start: 16, end: 23 }}
+                [ { kind:'text', range: { start: 16, end: 21 }}
                 ]
               }
             ]

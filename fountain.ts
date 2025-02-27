@@ -65,6 +65,7 @@ type FountainElement = Synopsis | Transition | Action | Scene | Dialogue | Secti
 
 type Note = {
   kind: 'note';
+  noteKind: string;
   range: Range;
   elements: StyledText;
 }

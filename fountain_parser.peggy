@@ -93,8 +93,15 @@ Action
    { return { kind: 'action', range:newline, lines: [{range:newline, centered: false, elements:[]}] } };
 
 Note "note"
- = "[[" elements:(!("]]"/"\n\n") @StyledTextElement)* "]]"?
- { return { range: range(), kind: 'note', elements:mergeText(elements)  }; }
+ = "[[" noteKind:NoteKind? elements:(!("]]"/"\n\n") @StyledTextElement)* "]]"?
+ { return { range: range(), kind: 'note', noteKind:(noteKind ?? ""), elements:mergeText(elements)  }; }
+
+NoteKind
+ = "+"   { return "+"; }
+ / "-"   { return "-"; }
+ / kind:NoteKindName ":" { return kind }
+
+NoteKindName = [a-zA-Z0-9]+ { return text() }
  
 Boneyard "boneyard"
  = OptionalBlanks "/*" (!"*/" .)* "*/" 
