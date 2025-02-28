@@ -3,8 +3,14 @@ export { readingView, indexCardsView as indexCardsView, getDataRange, rangeOfFir
 
 const BLANK_LINE: string = "<div>&nbsp;</div>"
 
+/// Generate the blank line at the end of a range.
+function blankLineAtEnd(r: Range): string {
+  const end = { start: r.end, end: r.end };
+  return `<div ${dataRange(end)}>&nbsp;</div>`;
+}
+
 function actionToHtml(action: Action, script: FountainScript): string {
-  const html = `${linesToHtml(script, "action", action.lines, true)}${BLANK_LINE}`;
+  const html = `${linesToHtml(script, "action", action.lines, true)}${blankLineAtEnd(action.range)}`;
   return html;
 }
 
@@ -19,7 +25,7 @@ function dialogueToHtml(dialogue: Dialogue, script: FountainScript): string {
   return `<div ${dataRange(dialogue.characterRange)}><h4 class="dialogue-character">${characterLine}</h4></div>
 ${parenthetical}
 ${words}
-${BLANK_LINE}`
+${blankLineAtEnd(dialogue.range)}`
 }
 
 function dataRange(r: Range): string {

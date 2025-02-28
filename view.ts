@@ -64,8 +64,7 @@ class ReadonlyViewState {
   }
 
   scrollLineIntoView(r: Range) {
-    const targetElement = document.querySelector(`[data-range="${r.start},${r.end}"]`);
-    console.log("scrolling to", targetElement);
+    const targetElement = document.querySelector(`[data-range^="${r.start},"]`);
     targetElement?.scrollIntoView();
   }
 
@@ -178,13 +177,10 @@ class EditorViewState {
 
   firstVisibleLine(): Range {
     let scrollContainer = firstScrollableElement(this.cmEditor.scrollDOM) ?? this.cmEditor.scrollDOM;
-    console.log(scrollContainer);
     let bounds = scrollContainer.getBoundingClientRect();
-    const pos = this.cmEditor.posAtCoords({ x: bounds.x, y: bounds.y });
-    console.log("POS", pos);
+    const pos = this.cmEditor.posAtCoords({ x: bounds.x, y: bounds.y + 5 });
     const lp =  this.cmEditor.lineBlockAt(pos ?? 0);
-    console.log("LP", lp);
-    return { start: lp.from, end: lp.to } 
+    return { start: lp.from, end: lp.to + 1} 
   }
 }
 
@@ -223,7 +219,6 @@ export class FountainView extends TextFileView {
     if (this.state instanceof EditorViewState) {
       // Switch to readonly mode
       const firstLine = this.state.firstVisibleLine();
-      console.log(firstLine);
       this.state.destroy();
       this.state = new ReadonlyViewState(this.contentEl, text, (r) => this.startEditModeHere(r));
       this.state.render();
