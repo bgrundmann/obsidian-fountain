@@ -63,6 +63,12 @@ class ReadonlyViewState {
     })
   }
 
+  scrollLineIntoView(r: Range) {
+    const targetElement = document.querySelector(`[data-range="${r.start},${r.end}"]`);
+    console.log("scrolling to", targetElement);
+    targetElement?.scrollIntoView();
+  }
+
   toggleIndexCards() {
     this.showMode = this.showMode == ShowMode.IndexCards ? ShowMode.Everything : ShowMode.IndexCards;
     this.render();
@@ -89,6 +95,18 @@ class ReadonlyViewState {
     if (screenplay === null) return null;
     return rangeOfFirstVisibleLine(screenplay as HTMLElement);
   }
+}
+
+/// Returns the first scrollable element starting at the current element up to the DOM tree.
+function firstScrollableElement(node: HTMLElement): HTMLElement|null {
+  let current: HTMLElement | null = node;
+  while (current !== null) {
+    if (current.scrollHeight > current.clientHeight) {
+      return current;
+    }
+    current = current.parentNode as HTMLElement;
+  }
+  return (document.scrollingElement as HTMLElement) || document.documentElement;
 }
 
 
@@ -157,6 +175,17 @@ class EditorViewState {
     this.cmEditor.dispatch({ effects: EditorView.scrollIntoView(r.start, { y: "start", }) });
     this.cmEditor.focus();
   }
+
+  firstVisibleLine(): Range {
+    let scrollContainer = firstScrollableElement(this.cmEditor.scrollDOM) ?? this.cmEditor.scrollDOM;
+    console.log(scrollContainer);
+    let bounds = scrollContainer.getBoundingClientRect();
+    const pos = this.cmEditor.posAtCoords({ x: bounds.x, y: bounds.y });
+    console.log("POS", pos);
+    const lp =  this.cmEditor.lineBlockAt(pos ?? 0);
+    console.log("LP", lp);
+    return { start: lp.from, end: lp.to } 
+  }
 }
 
 
@@ -193,10 +222,16 @@ export class FountainView extends TextFileView {
     const text = this.state.getViewData();
     if (this.state instanceof EditorViewState) {
       // Switch to readonly mode
+      const firstLine = this.state.firstVisibleLine();
+      console.log(firstLine);
       this.state.destroy();
       this.state = new ReadonlyViewState(this.contentEl, text, (r) => this.startEditModeHere(r));
       this.state.render();
       this.indexCardAction.show();
+      const es = this.state;
+      requestAnimationFrame(() => {
+        es.scrollLineIntoView(firstLine);
+      });
     } else {
       // Switch to editor
       const r = this.state.rangeOfFirstVisibleLine();
