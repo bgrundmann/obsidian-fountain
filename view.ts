@@ -9,7 +9,6 @@ export const VIEW_TYPE_FOUNTAIN = 'fountain';
 
 enum ShowMode {
   Script,
-  WithoutSynopsisAndNotes,
   IndexCards
 }
 
