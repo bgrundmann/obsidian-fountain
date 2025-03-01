@@ -8,9 +8,10 @@ import { fountainEditorPlugin } from './fountain_editor.js';
 export const VIEW_TYPE_FOUNTAIN = 'fountain';
 
 enum ShowMode {
-  Script,
-  IndexCards
+  Script = "script",
+  IndexCards = "index-cards"
 }
+
 
 
 class ReadonlyViewState {
