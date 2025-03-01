@@ -8,7 +8,7 @@ import { fountainEditorPlugin } from './fountain_editor.js';
 export const VIEW_TYPE_FOUNTAIN = 'fountain';
 
 enum ShowMode {
-  Everything,
+  Script,
   WithoutSynopsisAndNotes,
   IndexCards
 }
@@ -21,7 +21,7 @@ class ReadonlyViewState {
   private startEditModeHere: (range:Range) => void;
   
   constructor(contentEl: HTMLElement, text: string, startEditModeHere: (range:Range) => void) {
-    this.showMode = ShowMode.Everything;
+    this.showMode = ShowMode.Script;
     this.text = text;
     this.contentEl = contentEl;
     this.startEditModeHere = startEditModeHere;
@@ -42,7 +42,7 @@ class ReadonlyViewState {
         const target = e.target as HTMLElement;
         if (target.id !== null && target.matches('.scene-heading')) {          
           const id = target.id;
-          this.showMode = ShowMode.Everything;
+          this.showMode = ShowMode.Script;
           this.render();
           requestAnimationFrame(() => {
             const targetElement = document.getElementById(id);
@@ -54,7 +54,7 @@ class ReadonlyViewState {
             }
           });
         }
-      } else if (this.showMode === ShowMode.Everything && e.target != null) {
+      } else if (this.showMode === ShowMode.Script && e.target != null) {
         const target = e.target as HTMLElement;
         const r = getDataRange(target);
         if (r === null) return;
@@ -69,7 +69,7 @@ class ReadonlyViewState {
   }
 
   toggleIndexCards() {
-    this.showMode = this.showMode == ShowMode.IndexCards ? ShowMode.Everything : ShowMode.IndexCards;
+    this.showMode = this.showMode == ShowMode.IndexCards ? ShowMode.Script : ShowMode.IndexCards;
     this.render();
   }
 
@@ -79,7 +79,7 @@ class ReadonlyViewState {
 
   setViewData(text: string, clear: boolean): void {
     if (clear) {
-      this.showMode = ShowMode.Everything;
+      this.showMode = ShowMode.Script;
     }
     this.text = text;
     this.render();
