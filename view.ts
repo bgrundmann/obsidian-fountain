@@ -1,6 +1,6 @@
-import { TextFileView, WorkspaceLeaf, setIcon } from 'obsidian';
+import { TextFileView, WorkspaceLeaf, ViewStateResult, setIcon, TFile } from 'obsidian';
 import { EditorState } from '@codemirror/state';
-import { EditorView, ViewUpdate } from '@codemirror/view';
+import { EditorView, ViewUpdate, } from '@codemirror/view';
 import { parse } from './fountain_parser.js';
 import { FountainScript, Range } from 'fountain.js';
 import { readingView, indexCardsView, getDataRange, rangeOfFirstVisibleLine } from './reading_view.js';
@@ -12,11 +12,9 @@ enum ShowMode {
   IndexCards = "index-cards"
 }
 
-
-
 class ReadonlyViewState {
   private text: string;
-  private showMode: ShowMode;
+  public showMode: ShowMode;
   private contentEl: HTMLElement;
   private startEditModeHere: (range:Range) => void;
   
@@ -77,10 +75,7 @@ class ReadonlyViewState {
     return this.text;
   } 
 
-  setViewData(text: string, clear: boolean): void {
-    if (clear) {
-      this.showMode = ShowMode.Script;
-    }
+  setViewData(text: string, _clear: boolean): void {
     this.text = text;
     this.render();
   }
@@ -184,6 +179,17 @@ class EditorViewState {
   }
 }
 
+type FountainViewPersistedState = {
+  fountain: ReadonlyViewPersistedState | EditorPersistedState;
+}
+
+type ReadonlyViewPersistedState = {
+  mode: ShowMode;
+}
+
+type EditorPersistedState = {
+  mode: "editing";
+}
 
 export class FountainView extends TextFileView {
   state: ReadonlyViewState | EditorViewState;
@@ -195,10 +201,12 @@ export class FountainView extends TextFileView {
     this.state = new ReadonlyViewState(this.contentEl, '', (r) => this.startEditModeHere(r));
     this.toggleEditAction = this.addAction('edit', "Toggle Edit/Readonly", _evt => {
       this.toggleEditMode();
+      this.app.workspace.requestSaveLayout();
     });
     this.indexCardAction =  this.addAction("layout-grid", "Toggle Index Card View", _evt => {
       if (this.state instanceof ReadonlyViewState) {
         this.state.toggleIndexCards();
+        this.app.workspace.requestSaveLayout();
       }
     } );
   }
@@ -238,6 +246,10 @@ export class FountainView extends TextFileView {
     setIcon(this.toggleEditAction, this.isEditMode() ? 'book-open' : 'edit');
   }
 
+  onLoadFile(file: TFile): Promise<void> {
+      return super.onLoadFile(file);
+  }
+
   getViewType() {
     return VIEW_TYPE_FOUNTAIN;
   }
@@ -252,6 +264,42 @@ export class FountainView extends TextFileView {
 
   setViewData(data: string, clear: boolean): void {
     this.state.setViewData(data, clear);
+  }
+
+  getState(): Record<string, unknown> {
+    const textFileState = super.getState();
+    if (this.state instanceof EditorViewState) {
+      textFileState["fountain"] = { mode: "editing" };
+    } else {
+      textFileState["fountain"] = { mode: this.state.showMode };
+    }
+    return textFileState;
+  }
+
+  async setState(f: Record<string, unknown>, result: ViewStateResult) {
+    super.setState(f, result);
+    if ('fountain' in f) {
+      // TODO: Should probably run proper deserialise code here
+      // and deal with invalid state.
+      const state = (f.fountain as ReadonlyViewPersistedState | EditorPersistedState)
+      if (state.mode === "editing" ) {
+        if (!(this.state instanceof EditorView)) {
+          this.toggleEditMode();
+        }
+
+      } else {
+        if (!(this.state instanceof ReadonlyViewState)) {
+          this.toggleEditMode();
+        }
+        if (this.state instanceof ReadonlyViewState) {
+          if (this.state.showMode !== state.mode ) {
+            this.state.toggleIndexCards();
+          }
+        }
+      }
+    } else {
+      // TODO: What should we do here?
+    }
   }
 
   clear(): void {
