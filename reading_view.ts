@@ -129,25 +129,21 @@ function readingView(script: FountainScript): string {
     titlePageHtml = "";
   } else {
     titlePageHtml =
-      titlePage
+      `${titlePage
         .map((kv) => {
           if (kv.htmlValues.length === 1) {
             return `<div>${escapeHtml(kv.key)}: ${kv.htmlValues[0]}</div>`;
-          } else {
+          }
             return (
-              `<div>${escapeHtml(kv.key)}:</div>` +
-              kv.htmlValues
+              `<div>${escapeHtml(kv.key)}:</div>${kv.htmlValues
                 .map((h) => {
                   return `<div>&nbsp;&nbsp;&nbsp;${h}</div>`;
                 })
-                .join("")
+                .join("")}`
             );
-          }
         })
         .join("") +
-      BLANK_LINE +
-      "<hr>" +
-      BLANK_LINE;
+      BLANK_LINE}<hr>${BLANK_LINE}`;
   }
 
   const content = script.script.map((el) => element_to_html(el)).join("");

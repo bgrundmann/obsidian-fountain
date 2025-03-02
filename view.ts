@@ -306,9 +306,9 @@ export class FountainView extends TextFileView {
   getState(): Record<string, unknown> {
     const textFileState = super.getState();
     if (this.state instanceof EditorViewState) {
-      textFileState["fountain"] = { mode: "editing" };
+      textFileState.fountain = { mode: "editing" };
     } else {
-      textFileState["fountain"] = { mode: this.state.showMode };
+      textFileState.fountain = { mode: this.state.showMode };
     }
     return textFileState;
   }
