@@ -73,7 +73,7 @@ function linesToHtml(
   return lines
     .map((line) => {
       let innerHtml: string;
-      if (line.elements.length == 0) {
+      if (line.elements.length === 0) {
         // Need a nbsp so that the div is not empty and gets regular text height
         innerHtml = "&nbsp;";
       } else {
@@ -127,7 +127,7 @@ function readingView(script: FountainScript): string {
   const titlePage = script.titlePageWithHtmlValues();
   let titlePageHtml: string;
 
-  if (titlePage.length == 0) {
+  if (titlePage.length === 0) {
     titlePageHtml = "";
   } else {
     titlePageHtml =

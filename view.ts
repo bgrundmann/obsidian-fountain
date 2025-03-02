@@ -45,13 +45,13 @@ class ReadonlyViewState {
     this.contentEl.empty();
     const fp: FountainScript = parse(this.text);
     const mainblock = this.contentEl.createDiv(
-      this.showMode == ShowMode.IndexCards ? undefined : "screenplay",
+      this.showMode === ShowMode.IndexCards ? undefined : "screenplay",
     );
     // Assuming nobody does a supply chain attack on the fountain library, the below
     // is fine as there is no way for the user to embed html in the fountain.
     //mainblock.innerHTML = compile(this.showMode, this.tokens);
     mainblock.innerHTML =
-      this.showMode == ShowMode.IndexCards
+      this.showMode === ShowMode.IndexCards
         ? indexCardsView(fp)
         : readingView(fp);
 
@@ -88,7 +88,7 @@ class ReadonlyViewState {
 
   toggleIndexCards() {
     this.showMode =
-      this.showMode == ShowMode.IndexCards
+      this.showMode === ShowMode.IndexCards
         ? ShowMode.Script
         : ShowMode.IndexCards;
     this.render();

@@ -140,9 +140,9 @@ class FountainEditorPlugin implements PluginValue {
                     break;
                   case "note":
                     let noteDeco: Decoration = note;
-                    if (tel.noteKind == "+") {
+                    if (tel.noteKind === "+") {
                       noteDeco = noteSymbolPlus;
-                    } else if (tel.noteKind == "-") {
+                    } else if (tel.noteKind === "-") {
                       noteDeco = noteSymbolMinus;
                     }
                     builder.add(tel.range.start, tel.range.end, noteDeco);
