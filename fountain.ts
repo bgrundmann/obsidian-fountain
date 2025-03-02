@@ -195,7 +195,7 @@ class FountainScript {
       case "italics":
       case "underline":
         return this.styledTextElementToHtml(el);
-      case "note":
+      case "note": {
         let noteKindClass = "";
         switch (el.noteKind) {
           case "+":
@@ -209,6 +209,7 @@ class FountainScript {
             break;
         }
         return `<span class="${noteKindClass}">${this.styledTextToHtml(el.elements, false)}</span>`;
+      }
       case "boneyard":
         return "";
     }

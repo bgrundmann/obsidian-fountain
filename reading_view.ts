@@ -1,18 +1,13 @@
 import {
   type Action,
   type Dialogue,
-  type FountainScript,
   type FountainElement,
-  type Range,
+  type FountainScript,
   type Line,
+  type Range,
   escapeHtml,
 } from "./fountain.js";
-export {
-  readingView,
-  indexCardsView,
-  getDataRange,
-  rangeOfFirstVisibleLine,
-};
+export { readingView, indexCardsView, getDataRange, rangeOfFirstVisibleLine };
 
 const BLANK_LINE: string = "<div>&nbsp;</div>";
 
@@ -94,14 +89,15 @@ function readingView(script: FountainScript): string {
     switch (el.kind) {
       case "action":
         return actionToHtml(el, script);
-      case "scene":
+      case "scene": {
         const text = script.extractAsHtml(el.range);
         const res = `<h3 ${dataRange(el.range)} class="scene-heading" id="scene${sceneNumber}">${text}</h3>${BLANK_LINE}`;
         sceneNumber++;
         return res;
+      }
       case "synopsis":
         return `<div class="synopsis" ${dataRange(el.range)}>${script.extractAsHtml(el.synopsis)}</div>`;
-      case "section":
+      case "section": {
         const title = script.extractAsHtml(el.range);
         let prefix = "";
         if (
@@ -114,11 +110,13 @@ function readingView(script: FountainScript): string {
         }
         const html = `${prefix}<h${el.depth ?? 1} class="section" ${dataRange(el.range)}>${title}</h${el.depth ?? 1}>`;
         return html;
+      }
       case "dialogue":
         return dialogueToHtml(el, script);
-      case "transition":
+      case "transition": {
         const transitionText = script.extractAsHtml(el.range);
         return `<div class="transition" ${dataRange(el.range)}>${transitionText}</div>${BLANK_LINE}`;
+      }
       case "page-break":
         return `<hr ${dataRange(el.range)}>`;
     }

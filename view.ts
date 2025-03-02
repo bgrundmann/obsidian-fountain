@@ -1,21 +1,21 @@
-import {
-  TextFileView,
-  type WorkspaceLeaf,
-  type ViewStateResult,
-  setIcon,
-  type TFile,
-} from "obsidian";
 import { EditorState } from "@codemirror/state";
 import { EditorView, type ViewUpdate } from "@codemirror/view";
-import { parse } from "./fountain_parser.js";
 import type { FountainScript, Range } from "fountain.js";
 import {
-  readingView,
-  indexCardsView,
-  getDataRange,
-  rangeOfFirstVisibleLine,
-} from "./reading_view.js";
+  type TFile,
+  TextFileView,
+  type ViewStateResult,
+  type WorkspaceLeaf,
+  setIcon,
+} from "obsidian";
 import { fountainEditorPlugin } from "./fountain_editor.js";
+import { parse } from "./fountain_parser.js";
+import {
+  getDataRange,
+  indexCardsView,
+  rangeOfFirstVisibleLine,
+  readingView,
+} from "./reading_view.js";
 export const VIEW_TYPE_FOUNTAIN = "fountain";
 
 enum ShowMode {

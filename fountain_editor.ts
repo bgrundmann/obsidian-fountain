@@ -1,15 +1,15 @@
 import { RangeSetBuilder } from "@codemirror/state";
 import {
   Decoration,
-  type EditorView,
   type DecorationSet,
-  type PluginValue,
-  type ViewUpdate,
-  ViewPlugin,
+  type EditorView,
   type PluginSpec,
+  type PluginValue,
+  ViewPlugin,
+  type ViewUpdate,
 } from "@codemirror/view";
-import { parse } from "./fountain_parser.js";
 import type { FountainScript, StyledTextElement } from "./fountain.js";
+import { parse } from "./fountain_parser.js";
 export { fountainEditorPlugin };
 
 class FountainEditorPlugin implements PluginValue {
@@ -138,7 +138,7 @@ class FountainEditorPlugin implements PluginValue {
                   case "boneyard":
                     builder.add(tel.range.start, tel.range.end, boneyard);
                     break;
-                  case "note":
+                  case "note": {
                     let noteDeco: Decoration = note;
                     if (tel.noteKind === "+") {
                       noteDeco = noteSymbolPlus;
@@ -147,6 +147,7 @@ class FountainEditorPlugin implements PluginValue {
                     }
                     builder.add(tel.range.start, tel.range.end, noteDeco);
                     break;
+                  }
                 }
               }
             }
