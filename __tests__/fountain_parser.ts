@@ -163,7 +163,7 @@ describe("Parser tests", () => {
   // But the blank line is not included in the text
   // of the action.  So the next three examples all
   // have different .range, but the same text.
-  test_script("Basic Action at end of input", `This is some action`, [
+  test_script("Basic Action at end of input", "This is some action", [
     {
       kind: "action",
       source: "This is some action",
@@ -287,7 +287,7 @@ describe("Parser tests", () => {
 
   test_script(
     "Basic Action + newline at end of input",
-    `This is some action\n`,
+    "This is some action\n",
     [
       {
         kind: "action",
@@ -304,7 +304,7 @@ describe("Parser tests", () => {
   );
   test_script(
     "ForcedAction + newline at end of input",
-    `!This is some action\n`,
+    "!This is some action\n",
     [
       {
         kind: "action",
@@ -321,7 +321,7 @@ describe("Parser tests", () => {
   );
   test_script(
     "Basic Action followed by blank line",
-    `This is some action\n\n`,
+    "This is some action\n\n",
     [
       {
         kind: "action",
@@ -340,7 +340,7 @@ describe("Parser tests", () => {
   // in between are part of the text
   test_script(
     "Two actions with a blank line in between",
-    `This is some action\n\nWith a blank line`,
+    "This is some action\n\nWith a blank line",
     [
       {
         kind: "action",
@@ -361,7 +361,7 @@ describe("Parser tests", () => {
   // in between are part of the text
   test_script(
     "Two actions with two blank lines in between",
-    `This is some action\n\n\nWith two blank lines`,
+    "This is some action\n\n\nWith two blank lines",
     [
       {
         kind: "action",
