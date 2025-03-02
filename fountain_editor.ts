@@ -8,10 +8,18 @@ import {
   ViewPlugin,
   type ViewUpdate,
 } from "@codemirror/view";
-import type { FountainScript, StyledTextElement } from "./fountain.js";
+import {
+  type FountainScript,
+  type StyledTextElement,
+  intersect,
+} from "./fountain.js";
 import { parse } from "./fountain_parser.js";
 export { fountainEditorPlugin };
 
+/// This extends CodeMirror 6 to syntax highlight fountain.
+/// Note that we are using a custom Code Mirror instance,
+/// so we do not have any of the obsidian customizations.
+/// That is both bad and good.
 class FountainEditorPlugin implements PluginValue {
   decorations: DecorationSet;
 
@@ -21,8 +29,6 @@ class FountainEditorPlugin implements PluginValue {
 
   update(update: ViewUpdate) {
     if (update.docChanged || update.viewportChanged) {
-      // TODO: Probably don't need viewportChanged if I always syntax
-      // hightlight the whole document
       this.decorations = this.buildDecorations(update.view);
     }
   }
@@ -87,7 +93,13 @@ class FountainEditorPlugin implements PluginValue {
       }
     }
 
+    const viewPortRange = { start: view.viewport.from, end: view.viewport.to };
+
     for (const el of fscript.script) {
+      if (!intersect(el.range, viewPortRange)) {
+        // Don't decorate things that are not in the viewport at all
+        continue;
+      }
       switch (el.kind) {
         case "scene":
           builder.add(el.range.start, el.range.end, scene);

@@ -1,4 +1,4 @@
-export { FountainScript, mergeText, escapeHtml };
+export { FountainScript, mergeText, escapeHtml, intersect };
 export type {
   Range,
   Synopsis,
@@ -17,6 +17,10 @@ export type {
 interface Range {
   start: number;
   end: number;
+}
+
+function intersect(r1: Range, r2: Range): boolean {
+  return r1.start < r2.end && r2.start < r1.end;
 }
 
 // In all the fountain element AST types, range is always
@@ -112,7 +116,6 @@ type StyledText = TextElement[];
 function mergeText(elts: StyledText): StyledText {
   const res: (BasicTextElement | StyledTextElement)[] = [];
   if (elts.length === 0) return [];
-
   let prev = elts[0];
   for (let i = 1; i < elts.length; i++) {
     const n = elts[i];
