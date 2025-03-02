@@ -1,6 +1,4 @@
-import {
-  RangeSetBuilder,
-} from '@codemirror/state';
+import { RangeSetBuilder } from "@codemirror/state";
 import {
   Decoration,
   EditorView,
@@ -9,9 +7,9 @@ import {
   ViewUpdate,
   ViewPlugin,
   PluginSpec,
-} from '@codemirror/view';
-import { parse } from './fountain_parser.js';
-import { FountainScript, StyledTextElement } from './fountain.js';
+} from "@codemirror/view";
+import { parse } from "./fountain_parser.js";
+import { FountainScript, StyledTextElement } from "./fountain.js";
 export { fountainEditorPlugin };
 
 class FountainEditorPlugin implements PluginValue {
@@ -29,23 +27,24 @@ class FountainEditorPlugin implements PluginValue {
     }
   }
 
-  destroy() {
-    
-  }
+  destroy() {}
 
-  private applyTextDecoration(builder: RangeSetBuilder<Decoration>, st: StyledTextElement) {
-    const bold = Decoration.mark({class:"bold"});
-    const italics = Decoration.mark({class:"italics"});
-    const underline = Decoration.mark({class:"underline"});
+  private applyTextDecoration(
+    builder: RangeSetBuilder<Decoration>,
+    st: StyledTextElement,
+  ) {
+    const bold = Decoration.mark({ class: "bold" });
+    const italics = Decoration.mark({ class: "italics" });
+    const underline = Decoration.mark({ class: "underline" });
     const deco = {
       bold: bold,
       italics: italics,
-      underline: underline
+      underline: underline,
     };
 
     builder.add(st.range.start, st.range.end, deco[st.kind]);
     for (const cel of st.elements) {
-      if (cel.kind !== 'text') {
+      if (cel.kind !== "text") {
         this.applyTextDecoration(builder, cel);
       }
     }
@@ -62,25 +61,25 @@ class FountainEditorPlugin implements PluginValue {
     //
     // Another optimization would be to just skip the building of the
     // decorations for everything outside the relevant range.
-    const fscript : FountainScript = parse(view.state.doc.toString());
-    const scene = Decoration.mark({class: "scene-heading"});
-    const section =  Decoration.mark({class: "section"});
-    const synopsis = Decoration.mark({class:"synopsis"});
-    const parenthetical = Decoration.mark({class:"dialogue-parenthetical"});
-    const character = Decoration.mark({class:"dialogue-character"});
-    const words = Decoration.mark({class:"dialogue-words"});
-    const action = Decoration.mark({class:"action"});
-    const boneyard = Decoration.mark({class:"boneyard"});
-    const note = Decoration.mark({class:"note"});
-    const pageBreak = Decoration.mark({class:"page-break"});
-    const noteSymbolPlus = Decoration.mark({class:"note-symbol-plus"});
-    const noteSymbolMinus = Decoration.mark({class:"note-symbol-minus"});
+    const fscript: FountainScript = parse(view.state.doc.toString());
+    const scene = Decoration.mark({ class: "scene-heading" });
+    const section = Decoration.mark({ class: "section" });
+    const synopsis = Decoration.mark({ class: "synopsis" });
+    const parenthetical = Decoration.mark({ class: "dialogue-parenthetical" });
+    const character = Decoration.mark({ class: "dialogue-character" });
+    const words = Decoration.mark({ class: "dialogue-words" });
+    const action = Decoration.mark({ class: "action" });
+    const boneyard = Decoration.mark({ class: "boneyard" });
+    const note = Decoration.mark({ class: "note" });
+    const pageBreak = Decoration.mark({ class: "page-break" });
+    const noteSymbolPlus = Decoration.mark({ class: "note-symbol-plus" });
+    const noteSymbolMinus = Decoration.mark({ class: "note-symbol-minus" });
 
     if (fscript.titlePage !== null) {
       for (const kv of fscript.titlePage) {
         for (const styledText of kv.values) {
           for (const st of styledText) {
-            if (st.kind !== 'text') {
+            if (st.kind !== "text") {
               this.applyTextDecoration(builder, st);
             }
           }
@@ -90,44 +89,56 @@ class FountainEditorPlugin implements PluginValue {
 
     for (const el of fscript.script) {
       switch (el.kind) {
-        case 'scene':
+        case "scene":
           builder.add(el.range.start, el.range.end, scene);
           break;
 
-        case 'section':
+        case "section":
           builder.add(el.range.start, el.range.end, section);
           break;
 
-        case 'synopsis':
+        case "synopsis":
           builder.add(el.range.start, el.range.end, synopsis);
           break;
 
-        case 'page-break':
+        case "page-break":
           builder.add(el.range.start, el.range.end, pageBreak);
           break;
 
-        case 'dialogue':
-          builder.add(el.characterRange.start, el.characterRange.end, character);
+        case "dialogue":
+          builder.add(
+            el.characterRange.start,
+            el.characterRange.end,
+            character,
+          );
           if (el.parenthetical !== null) {
-            builder.add(el.parenthetical.start, el.parenthetical.end, parenthetical);
+            builder.add(
+              el.parenthetical.start,
+              el.parenthetical.end,
+              parenthetical,
+            );
           }
           if (el.lines.length > 0) {
-            builder.add(el.lines[0].range.start, el.lines[el.lines.length-1].range.end, words)
+            builder.add(
+              el.lines[0].range.start,
+              el.lines[el.lines.length - 1].range.end,
+              words,
+            );
             for (const line of el.lines) {
               for (const tel of line.elements) {
                 switch (tel.kind) {
-                  case 'text':
+                  case "text":
                     break;
-                  case 'bold':
-                  case 'italics':
-                  case 'underline':
+                  case "bold":
+                  case "italics":
+                  case "underline":
                     this.applyTextDecoration(builder, tel);
                     break;
-                  
-                  case 'boneyard':
+
+                  case "boneyard":
                     builder.add(tel.range.start, tel.range.end, boneyard);
                     break;
-                  case 'note':
+                  case "note":
                     let noteDeco: Decoration = note;
                     if (tel.noteKind == "+") {
                       noteDeco = noteSymbolPlus;
@@ -142,30 +153,30 @@ class FountainEditorPlugin implements PluginValue {
           }
           break;
 
-        case 'action':
+        case "action":
           builder.add(el.range.start, el.range.end, action);
           for (const line of el.lines) {
             for (const tel of line.elements) {
               switch (tel.kind) {
-                case 'text':
+                case "text":
                   break;
-                case 'bold':
-                case 'italics':
-                case 'underline':
+                case "bold":
+                case "italics":
+                case "underline":
                   this.applyTextDecoration(builder, tel);
                   break;
-                  
-                case 'boneyard':
+
+                case "boneyard":
                   builder.add(tel.range.start, tel.range.end, boneyard);
                   break;
-                case 'note':
+                case "note":
                   builder.add(tel.range.start, tel.range.end, note);
                   break;
               }
             }
           }
           break;
-          
+
         default:
           break;
       }
@@ -175,7 +186,10 @@ class FountainEditorPlugin implements PluginValue {
 }
 
 const pluginSpec: PluginSpec<FountainEditorPlugin> = {
-	decorations: (value: FountainEditorPlugin) => value.decorations,
+  decorations: (value: FountainEditorPlugin) => value.decorations,
 };
 
-const fountainEditorPlugin = ViewPlugin.fromClass(FountainEditorPlugin, pluginSpec);
+const fountainEditorPlugin = ViewPlugin.fromClass(
+  FountainEditorPlugin,
+  pluginSpec,
+);
