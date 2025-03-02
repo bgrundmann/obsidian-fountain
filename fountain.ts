@@ -110,12 +110,12 @@ type StyledText = TextElement[];
 
 /// This merges consecutive basic text elements into one
 function mergeText(elts: StyledText): StyledText {
-  let res: (BasicTextElement | StyledTextElement)[] = [];
+  const res: (BasicTextElement | StyledTextElement)[] = [];
   if (elts.length === 0) return [];
 
   let prev = elts[0];
   for (let i = 1; i < elts.length; i++) {
-    let n = elts[i];
+    const n = elts[i];
     if (n.kind === "text" && prev.kind === "text") {
       prev = {
         kind: "text",
@@ -159,8 +159,8 @@ class FountainScript {
 
   /// Extract some text from the fountain document safe to be used
   /// as HTML source.
-  extractAsHtml(r: Range, escapeLeadingSpaces: boolean = false): string {
-    let safe = escapeHtml(this.document.slice(r.start, r.end));
+  extractAsHtml(r: Range, escapeLeadingSpaces = false): string {
+    const safe = escapeHtml(this.document.slice(r.start, r.end));
     return escapeLeadingSpaces
       ? safe.replace(/^( +)/gm, (_, spaces) => "&nbsp;".repeat(spaces.length))
       : safe;

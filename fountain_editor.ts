@@ -1,15 +1,15 @@
 import { RangeSetBuilder } from "@codemirror/state";
 import {
   Decoration,
-  EditorView,
-  DecorationSet,
-  PluginValue,
-  ViewUpdate,
+  type EditorView,
+  type DecorationSet,
+  type PluginValue,
+  type ViewUpdate,
   ViewPlugin,
-  PluginSpec,
+  type PluginSpec,
 } from "@codemirror/view";
 import { parse } from "./fountain_parser.js";
-import { FountainScript, StyledTextElement } from "./fountain.js";
+import type { FountainScript, StyledTextElement } from "./fountain.js";
 export { fountainEditorPlugin };
 
 class FountainEditorPlugin implements PluginValue {

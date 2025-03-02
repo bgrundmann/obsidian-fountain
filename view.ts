@@ -1,14 +1,14 @@
 import {
   TextFileView,
-  WorkspaceLeaf,
-  ViewStateResult,
+  type WorkspaceLeaf,
+  type ViewStateResult,
   setIcon,
-  TFile,
+  type TFile,
 } from "obsidian";
 import { EditorState } from "@codemirror/state";
-import { EditorView, ViewUpdate } from "@codemirror/view";
+import { EditorView, type ViewUpdate } from "@codemirror/view";
 import { parse } from "./fountain_parser.js";
-import { FountainScript, Range } from "fountain.js";
+import type { FountainScript, Range } from "fountain.js";
 import {
   readingView,
   indexCardsView,
@@ -194,10 +194,10 @@ class EditorViewState {
   }
 
   firstVisibleLine(): Range {
-    let scrollContainer =
+    const scrollContainer =
       firstScrollableElement(this.cmEditor.scrollDOM) ??
       this.cmEditor.scrollDOM;
-    let bounds = scrollContainer.getBoundingClientRect();
+    const bounds = scrollContainer.getBoundingClientRect();
     const pos = this.cmEditor.posAtCoords({ x: bounds.x, y: bounds.y + 5 });
     const lp = this.cmEditor.lineBlockAt(pos ?? 0);
     return { start: lp.from, end: lp.to + 1 };

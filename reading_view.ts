@@ -1,15 +1,15 @@
 import {
-  Action,
-  Dialogue,
-  FountainScript,
-  FountainElement,
-  Range,
-  Line,
+  type Action,
+  type Dialogue,
+  type FountainScript,
+  type FountainElement,
+  type Range,
+  type Line,
   escapeHtml,
 } from "./fountain.js";
 export {
   readingView,
-  indexCardsView as indexCardsView,
+  indexCardsView,
   getDataRange,
   rangeOfFirstVisibleLine,
 };
@@ -53,11 +53,11 @@ function classes(c: string[]): string {
 function getDataRange(target: HTMLElement): Range | null {
   const rawRange = target.getAttribute("data-range");
   if (rawRange === null) return null;
-  let r = rawRange.split(",");
+  const r = rawRange.split(",");
   if (r.length !== 2) return null;
   try {
-    const start = parseInt(r[0]);
-    const end = parseInt(r[1]);
+    const start = Number.parseInt(r[0]);
+    const end = Number.parseInt(r[1]);
     return { start: start, end: end };
   } catch (error) {
     return null;
@@ -181,14 +181,14 @@ function rangeOfFirstVisibleLine(screenplayElement: HTMLElement): Range | null {
 
 enum Inside {
   Nothing = 0,
-  Section,
-  Card,
+  Section = 1,
+  Card = 2,
 }
 
 function indexCardsView(script: FountainScript): string {
   let state: Inside = Inside.Nothing;
-  let result: string[] = [];
-  let sceneNumber: number = 1;
+  const result: string[] = [];
+  let sceneNumber = 1;
   function emit(s: string) {
     result.push(s);
   }
