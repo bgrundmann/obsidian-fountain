@@ -23,6 +23,32 @@ enum ShowMode {
   IndexCards = "index-cards",
 }
 
+/// Move the range of text to a new position. The newStart position is required
+/// to not be within range.
+function moveText(text: string, range: Range, newStart: number): string {
+  // Extract the text to be moved
+  const movedPortion = text.slice(range.start, range.end);
+  const beforeRange = text.slice(0, range.start);
+  const afterRange = text.slice(range.end);
+
+  // If moving forward
+  if (newStart >= range.end) {
+    return (
+      beforeRange +
+      afterRange.slice(0, newStart - range.end) +
+      movedPortion +
+      afterRange.slice(newStart - range.end)
+    );
+  }
+  // If moving backward
+  return (
+    text.slice(0, newStart) +
+    movedPortion +
+    text.slice(newStart, range.start) +
+    afterRange
+  );
+}
+
 class ReadonlyViewState {
   private text: string;
   public showMode: ShowMode;
@@ -40,6 +66,104 @@ class ReadonlyViewState {
     this.startEditModeHere = startEditModeHere;
   }
 
+  private getDragData(evt: DragEvent): Range | null {
+    try {
+      const json = evt.dataTransfer?.getData("application/json");
+      console.log(json);
+      if (!json) return null;
+      const r: Range = JSON.parse(json);
+      return r;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  private installDragAndDropHandler(mainblock: HTMLDivElement) {
+    const indexCards = mainblock.querySelectorAll(".screenplay-index-card");
+    const starts = Array.from(mainblock.querySelectorAll("[data-start]"))
+      .map((e: Element) => {
+        return Number.parseInt(e.getAttribute("data-start") || "-1");
+      })
+      .filter((v) => v !== -1);
+    function rangeFromStart(start: number): Range {
+      const ndx = starts.findIndex((r) => r === start);
+      return { start: start, end: starts[ndx + 1] };
+    }
+    for (const indexCard of indexCards) {
+      const d = indexCard.querySelector("[data-start]");
+      if (d === null) continue;
+      const start = Number.parseInt(d.getAttribute("data-start") || "-1");
+      const indexCardRange = rangeFromStart(start);
+      indexCard.addEventListener("dragstart", (evt: DragEvent) => {
+        this.dragstartHandler(mainblock, indexCardRange, evt);
+      });
+      indexCard.addEventListener("dragover", (evt: DragEvent) => {
+        this.dragoverHandler(indexCard, indexCardRange, evt);
+      });
+      indexCard.addEventListener("dragleave", (e: DragEvent) => {
+        indexCard.classList.remove("drop-left");
+        indexCard.classList.remove("drop-right");
+      });
+      indexCard.addEventListener("drop", (e: DragEvent) => {
+        this.dropHandler(indexCard, indexCardRange, e);
+      });
+    }
+  }
+
+  private dropHandler(dropZone: Element, dropZoneRange: Range, evt: DragEvent) {
+    const draggedRange = this.getDragData(evt);
+    if (!draggedRange) return;
+    if (draggedRange.start === dropZoneRange.start) return;
+    const before = dropZone.classList.contains("drop-left");
+    if (!before && !dropZone.classList.contains("drop-right")) return;
+    dropZone.classList.remove("drop-left");
+    dropZone.classList.remove("drop-right");
+    evt.preventDefault();
+    this.text = moveText(
+      this.text,
+      draggedRange,
+      before ? dropZoneRange.start : dropZoneRange.end,
+    );
+    this.render();
+  }
+
+  private dragoverHandler(
+    dropZone: Element,
+    dropZoneRange: Range,
+    evt: DragEvent,
+  ) {
+    evt.preventDefault();
+    const rect = dropZone.getBoundingClientRect();
+    const mouseX = evt.clientX;
+
+    // Clamp mouseX to element boundaries
+    const clampedX = Math.min(Math.max(mouseX, rect.left), rect.right);
+    //
+    // Calculate percentage within bounds
+    const percentage = ((clampedX - rect.left) / rect.width) * 100;
+
+    if (percentage > 70) {
+      dropZone.classList.add("drop-right");
+      dropZone.classList.remove("drop-left");
+    } else if (percentage < 30) {
+      dropZone.classList.add("drop-left");
+      dropZone.classList.remove("drop-right");
+    } else {
+      dropZone.classList.remove("drop-left");
+      dropZone.classList.remove("drop-right");
+    }
+  }
+
+  private dragstartHandler(
+    mainblock: HTMLDivElement,
+    range: Range,
+    evt: DragEvent,
+  ): void {
+    if (!evt.dataTransfer) return;
+    evt.dataTransfer.clearData();
+    evt.dataTransfer.setData("application/json", JSON.stringify(range));
+  }
+
   render() {
     /// Parent should already be empty.
     this.contentEl.empty();
@@ -54,6 +178,10 @@ class ReadonlyViewState {
       this.showMode === ShowMode.IndexCards
         ? indexCardsView(fp)
         : readingView(fp);
+
+    if (this.showMode === ShowMode.IndexCards) {
+      this.installDragAndDropHandler(mainblock);
+    }
 
     mainblock.addEventListener("click", (e) => {
       if (this.showMode === ShowMode.IndexCards && e.target != null) {

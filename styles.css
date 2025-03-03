@@ -256,6 +256,16 @@
     overflow: hidden;
 }
 
+.screenplay-index-card.drop-right {
+    transform: translate(-5px);
+    background-color: var(--background-modifier-hover);
+}
+
+.screenplay-index-card.drop-left {
+    transform: translate(5px);
+    background-color: var(--background-modifier-hover);
+}
+
 .screenplay-index-card .scene-heading {
     font-size: 12px;   
     text-transform: uppercase;

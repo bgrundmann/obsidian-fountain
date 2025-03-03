@@ -128,22 +128,20 @@ function readingView(script: FountainScript): string {
   if (titlePage.length === 0) {
     titlePageHtml = "";
   } else {
-    titlePageHtml =
-      `${titlePage
+    titlePageHtml = `${
+      titlePage
         .map((kv) => {
           if (kv.htmlValues.length === 1) {
             return `<div>${escapeHtml(kv.key)}: ${kv.htmlValues[0]}</div>`;
           }
-            return (
-              `<div>${escapeHtml(kv.key)}:</div>${kv.htmlValues
-                .map((h) => {
-                  return `<div>&nbsp;&nbsp;&nbsp;${h}</div>`;
-                })
-                .join("")}`
-            );
+          return `<div>${escapeHtml(kv.key)}:</div>${kv.htmlValues
+            .map((h) => {
+              return `<div>&nbsp;&nbsp;&nbsp;${h}</div>`;
+            })
+            .join("")}`;
         })
-        .join("") +
-      BLANK_LINE}<hr>${BLANK_LINE}`;
+        .join("") + BLANK_LINE
+    }<hr>${BLANK_LINE}`;
   }
 
   const content = script.script.map((el) => element_to_html(el)).join("");
@@ -202,7 +200,7 @@ function indexCardsView(script: FountainScript): string {
           emit('<div class="screenplay-index-cards">');
           break;
         case Inside.Card:
-          emit('<div class="screenplay-index-card">');
+          emit('<div class="screenplay-index-card" draggable="true">');
           break;
       }
     }
@@ -213,7 +211,7 @@ function indexCardsView(script: FountainScript): string {
         closeIfInside(Inside.Card);
         emitOpenTill(Inside.Card);
         emit(
-          `<h3 class="scene-heading" id="scene${sceneNumber}">${script.extractAsHtml(el.range)}</h3>`,
+          `<h3 class="scene-heading" id="scene${sceneNumber}" data-start="${el.range.start}">${script.extractAsHtml(el.range)}</h3>`,
         );
         sceneNumber++;
         break;
@@ -232,7 +230,7 @@ function indexCardsView(script: FountainScript): string {
             emit("<hr>");
           }
           emit(
-            `<h${el.depth ?? 1} class="section">${title}</h${el.depth ?? 1}>`,
+            `<h${el.depth ?? 1} class="section" data-start="${el.range.start}">${title}</h${el.depth ?? 1}>`,
           );
         }
         break;
@@ -248,5 +246,7 @@ function indexCardsView(script: FountainScript): string {
     }
   }
   closeIfInside(Inside.Section);
+  // emit one data-start containing the end of the document.
+  emit(`<div data-start="${script.document.length}"></div>`);
   return result.join("");
 }
