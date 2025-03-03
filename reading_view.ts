@@ -201,6 +201,9 @@ function indexCardsView(script: FountainScript): string {
           break;
         case Inside.Card:
           emit('<div class="screenplay-index-card" draggable="true">');
+          emit(
+            '<div class="index-card-buttons"><button class="copy"></button></div>',
+          );
           break;
       }
     }

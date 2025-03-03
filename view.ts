@@ -69,7 +69,6 @@ class ReadonlyViewState {
   private getDragData(evt: DragEvent): Range | null {
     try {
       const json = evt.dataTransfer?.getData("application/json");
-      console.log(json);
       if (!json) return null;
       const r: Range = JSON.parse(json);
       return r;
@@ -78,7 +77,7 @@ class ReadonlyViewState {
     }
   }
 
-  private installDragAndDropHandler(mainblock: HTMLDivElement) {
+  private installIndexCardEventHandlers(mainblock: HTMLDivElement) {
     const indexCards = mainblock.querySelectorAll(".screenplay-index-card");
     const starts = Array.from(mainblock.querySelectorAll("[data-start]"))
       .map((e: Element) => {
@@ -107,7 +106,20 @@ class ReadonlyViewState {
       indexCard.addEventListener("drop", (e: DragEvent) => {
         this.dropHandler(indexCard, indexCardRange, e);
       });
+      const bt = indexCard.querySelector("button.copy") as HTMLElement;
+      setIcon(bt, "copy-plus");
+      bt.addEventListener("click", (_ev) => {
+        this.copyScene(indexCardRange);
+      });
     }
+  }
+
+  private copyScene(range: Range): void {
+    this.text =
+      this.text.slice(0, range.end) +
+      this.text.slice(range.start, range.end) +
+      this.text.slice(range.end);
+    this.render();
   }
 
   private dropHandler(dropZone: Element, dropZoneRange: Range, evt: DragEvent) {
@@ -180,7 +192,7 @@ class ReadonlyViewState {
         : readingView(fp);
 
     if (this.showMode === ShowMode.IndexCards) {
-      this.installDragAndDropHandler(mainblock);
+      this.installIndexCardEventHandlers(mainblock);
     }
 
     mainblock.addEventListener("click", (e) => {
