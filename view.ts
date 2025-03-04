@@ -96,22 +96,34 @@ class ReadonlyViewState {
       indexCard.addEventListener("dragstart", (evt: DragEvent) => {
         this.dragstartHandler(mainblock, indexCardRange, evt);
       });
-      indexCard.addEventListener("dragover", (evt: DragEvent) => {
-        this.dragoverHandler(indexCard, indexCardRange, evt);
-      });
-      indexCard.addEventListener("dragleave", (e: DragEvent) => {
-        indexCard.classList.remove("drop-left");
-        indexCard.classList.remove("drop-right");
-      });
-      indexCard.addEventListener("drop", (e: DragEvent) => {
-        this.dropHandler(indexCard, indexCardRange, e);
-      });
+      this.addDragOverLeaveDropHandlers(indexCard, indexCardRange);
       const bt = indexCard.querySelector("button.copy") as HTMLElement;
       setIcon(bt, "copy-plus");
       bt.addEventListener("click", (_ev) => {
         this.copyScene(indexCardRange);
       });
     }
+    const sections = mainblock.querySelectorAll(".section");
+    console.log(sections);
+    for (const section of sections) {
+      const start = Number.parseInt(section.getAttribute("data-start") || "-1");
+      // TODO think about if that is always the right thing for sections
+      const range = rangeFromStart(start);
+      this.addDragOverLeaveDropHandlers(section, range);
+    }
+  }
+
+  private addDragOverLeaveDropHandlers(el: Element, range: Range) {
+    el.addEventListener("dragover", (evt: DragEvent) => {
+      this.dragoverHandler(el, range, evt);
+    });
+    el.addEventListener("dragleave", (e: DragEvent) => {
+      el.classList.remove("drop-left");
+      el.classList.remove("drop-right");
+    });
+    el.addEventListener("drop", (e: DragEvent) => {
+      this.dropHandler(el, range, e);
+    });
   }
 
   private copyScene(range: Range): void {

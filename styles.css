@@ -269,12 +269,12 @@
     opacity: 1;
 }
 
-.screenplay-index-card.drop-right {
+.screenplay-index-cards .drop-right {
     transform: translate(-5px);
     background-color: var(--background-modifier-hover);
 }
 
-.screenplay-index-card.drop-left {
+.screenplay-index-cards .drop-left {
     transform: translate(5px);
     background-color: var(--background-modifier-hover);
 }
