@@ -223,6 +223,7 @@ class FountainScript {
         return this.styledTextElementToHtml(el);
       case "note": {
         let noteKindClass = "";
+        let prefix = '';
         switch (el.noteKind) {
           case "+":
             noteKindClass = "note-symbol-plus";
@@ -230,11 +231,15 @@ class FountainScript {
           case "-":
             noteKindClass = "note-symbol-minus";
             break;
+          case "todo":
+            prefix = "<b>TODO: </b>";
+            noteKindClass = "note-todo";
+            break;
           default:
             noteKindClass = "note";
             break;
         }
-        return `<span class="${noteKindClass}">${this.extractAsHtml(el.textRange, true)}</span>`;
+        return `<span class="${noteKindClass}">${prefix}${this.extractAsHtml(el.textRange, true)}</span>`;
       }
       case "boneyard":
         return "";

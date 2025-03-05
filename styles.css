@@ -222,6 +222,13 @@
     color: var(--color-green);
 }
 
+.screenplay .note-todo {
+    color: var(--text-muted);
+    font-style: italic;
+    background-image: linear-gradient(transparent 60%, #ffeb3b 60%);
+}
+
+
 .screenplay .note {
     color: var(--text-muted);
     font-style: italic;

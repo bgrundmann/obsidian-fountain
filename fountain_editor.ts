@@ -11,6 +11,7 @@ import {
 import {
   type FountainScript,
   type StyledTextElement,
+  type Line,
   intersect,
 } from "./fountain.js";
 import { parse } from "./fountain_parser.js";
@@ -80,6 +81,39 @@ class FountainEditorPlugin implements PluginValue {
     const pageBreak = Decoration.mark({ class: "page-break" });
     const noteSymbolPlus = Decoration.mark({ class: "note-symbol-plus" });
     const noteSymbolMinus = Decoration.mark({ class: "note-symbol-minus" });
+    const noteTodo = Decoration.mark({ class: "note-todo" });
+
+    function decorateLines(lines: Line[]) {
+      for (const line of lines) {
+        for (const tel of line.elements) {
+          switch (tel.kind) {
+            case "text":
+              break;
+            case "bold":
+            case "italics":
+            case "underline":
+              this.applyTextDecoration(builder, tel);
+              break;
+
+            case "boneyard":
+              builder.add(tel.range.start, tel.range.end, boneyard);
+              break;
+            case "note": {
+              let noteDeco: Decoration = note;
+              if (tel.noteKind === "+") {
+                noteDeco = noteSymbolPlus;
+              } else if (tel.noteKind === "-") {
+                noteDeco = noteSymbolMinus;
+              } else if (tel.noteKind.toLowerCase() === "todo") {
+                noteDeco = noteTodo;
+              }
+              builder.add(tel.range.start, tel.range.end, noteDeco);
+              break;
+            }
+          }
+        }
+      }
+    }
 
     if (fscript.titlePage !== null) {
       for (const kv of fscript.titlePage) {
@@ -136,58 +170,13 @@ class FountainEditorPlugin implements PluginValue {
               el.lines[el.lines.length - 1].range.end,
               words,
             );
-            for (const line of el.lines) {
-              for (const tel of line.elements) {
-                switch (tel.kind) {
-                  case "text":
-                    break;
-                  case "bold":
-                  case "italics":
-                  case "underline":
-                    this.applyTextDecoration(builder, tel);
-                    break;
-
-                  case "boneyard":
-                    builder.add(tel.range.start, tel.range.end, boneyard);
-                    break;
-                  case "note": {
-                    let noteDeco: Decoration = note;
-                    if (tel.noteKind === "+") {
-                      noteDeco = noteSymbolPlus;
-                    } else if (tel.noteKind === "-") {
-                      noteDeco = noteSymbolMinus;
-                    }
-                    builder.add(tel.range.start, tel.range.end, noteDeco);
-                    break;
-                  }
-                }
-              }
-            }
+            decorateLines(el.lines);
           }
           break;
 
         case "action":
           builder.add(el.range.start, el.range.end, action);
-          for (const line of el.lines) {
-            for (const tel of line.elements) {
-              switch (tel.kind) {
-                case "text":
-                  break;
-                case "bold":
-                case "italics":
-                case "underline":
-                  this.applyTextDecoration(builder, tel);
-                  break;
-
-                case "boneyard":
-                  builder.add(tel.range.start, tel.range.end, boneyard);
-                  break;
-                case "note":
-                  builder.add(tel.range.start, tel.range.end, note);
-                  break;
-              }
-            }
-          }
+          decorateLines(el.lines);
           break;
 
         default:
