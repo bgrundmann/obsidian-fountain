@@ -93,13 +93,16 @@ Action
    { return { kind: 'action', range:newline, lines: [{range:newline, centered: false, elements:[]}] } };
 
 Note "note"
- = "[[" noteKind:NoteKind? elements:(!("]]"/"\n\n") @StyledTextElement)* "]]"?
- { return { range: range(), kind: 'note', noteKind:(noteKind ?? ""), elements:mergeText(elements)  }; }
+ = "[[" noteKind:NoteKind? noteText:NoteText "]]"?
+ { return { range: range(), kind: 'note', noteKind:(noteKind ?? ""), textRange:noteText  }; }
 
+NoteText
+ =  (!("]]"/"\n\n") .)* { return range(); }
+ 
 NoteKind
  = "+"   { return "+"; }
  / "-"   { return "-"; }
- / kind:NoteKindName ":" { return kind }
+ / kind:NoteKindName ":" " "* { return kind }
 
 NoteKindName = [a-zA-Z0-9]+ { return text() }
  

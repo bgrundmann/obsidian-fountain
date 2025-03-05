@@ -6,6 +6,7 @@ import {
   type Line,
   type Range,
   escapeHtml,
+  extractNotes,
 } from "./fountain.js";
 export { readingView, indexCardsView, getDataRange, rangeOfFirstVisibleLine };
 
@@ -245,6 +246,17 @@ function indexCardsView(script: FountainScript): string {
         break;
 
       default:
+        const notes = extractNotes(el);
+        console.log("NOTES", el, notes);
+        if (notes) {
+          for (const note of notes) {
+            console.log(note);
+            if (note.noteKind.toLowerCase() === "todo") {
+              emit(`<p class="todo"><span>${script.extractAsHtml(note.textRange)}</span></p>`);
+            }
+          }
+        }
+
         break;
     }
   }

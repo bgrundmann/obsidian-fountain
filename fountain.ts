@@ -29,10 +29,9 @@ function intersect(r1: Range, r2: Range): boolean {
  * @param elements List of FountainElements to extract notes from
  * @returns Array of all Note elements found
  */
-function extractNotes(elements: FountainElement[]): Note[] {
+function extractNotes(element: FountainElement): Note[] {
   const notes: Note[] = [];
   
-  for (const element of elements) {
     // Check if element has lines property (action and dialogue elements)
     if ('lines' in element) {
       for (const line of element.lines) {
@@ -43,7 +42,6 @@ function extractNotes(elements: FountainElement[]): Note[] {
         }
       }
     }
-  }
   
   return notes;
 }
@@ -113,7 +111,7 @@ type Note = {
   kind: "note";
   noteKind: string;
   range: Range;
-  elements: StyledText;
+  textRange: Range;
 };
 
 type Boneyard = {
@@ -236,7 +234,7 @@ class FountainScript {
             noteKindClass = "note";
             break;
         }
-        return `<span class="${noteKindClass}">${this.styledTextToHtml(el.elements, false)}</span>`;
+        return `<span class="${noteKindClass}">${this.extractAsHtml(el.textRange, true)}</span>`;
       }
       case "boneyard":
         return "";
