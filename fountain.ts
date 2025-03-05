@@ -1,4 +1,4 @@
-export { FountainScript, mergeText, escapeHtml, intersect };
+export { FountainScript, mergeText, escapeHtml, intersect, extractNotes };
 export type {
   Range,
   Synopsis,
@@ -12,6 +12,7 @@ export type {
   Scene,
   Section,
   FountainElement,
+  Note,
 };
 
 interface Range {
@@ -21,6 +22,30 @@ interface Range {
 
 function intersect(r1: Range, r2: Range): boolean {
   return r1.start < r2.end && r2.start < r1.end;
+}
+
+/**
+ * Extracts all notes from a list of FountainElements
+ * @param elements List of FountainElements to extract notes from
+ * @returns Array of all Note elements found
+ */
+function extractNotes(elements: FountainElement[]): Note[] {
+  const notes: Note[] = [];
+  
+  for (const element of elements) {
+    // Check if element has lines property (action and dialogue elements)
+    if ('lines' in element) {
+      for (const line of element.lines) {
+        for (const textElement of line.elements) {
+          if (textElement.kind === "note") {
+            notes.push(textElement);
+          }
+        }
+      }
+    }
+  }
+  
+  return notes;
 }
 
 // In all the fountain element AST types, range is always
