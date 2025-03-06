@@ -1,6 +1,5 @@
 import { EditorState } from "@codemirror/state";
 import { EditorView, type ViewUpdate } from "@codemirror/view";
-import type { FountainScript, Range } from "fountain.js";
 import {
   type TFile,
   TextFileView,
@@ -8,8 +7,9 @@ import {
   type WorkspaceLeaf,
   setIcon,
 } from "obsidian";
-import { fountainEditorPlugin } from "./fountain_editor.js";
-import { parse } from "./fountain_parser.js";
+import type { FountainScript, Range } from "./fountain";
+import { fountainEditorPlugin } from "./fountain_editor";
+import { parse } from "./parser_cache";
 import {
   getDataRange,
   indexCardsView,
@@ -190,7 +190,11 @@ class ReadonlyViewState {
   render() {
     /// Parent should already be empty.
     this.contentEl.empty();
-    const fp: FountainScript = parse(this.text);
+    const fp = parse(this.text);
+    if ("error" in fp) {
+      console.log("error parsing script", fp);
+      return;
+    }
     const mainblock = this.contentEl.createDiv(
       this.showMode === ShowMode.IndexCards ? undefined : "screenplay",
     );
@@ -449,6 +453,12 @@ export class FountainView extends TextFileView {
   }
 
   onLoadFile(file: TFile): Promise<void> {
+    console.log("onloadfile", file);
+    return super.onLoadFile(file);
+  }
+
+  onUnloadFile(file: TFile): Promise<void> {
+    console.log("onunloadfile", file);
     return super.onLoadFile(file);
   }
 
@@ -465,6 +475,7 @@ export class FountainView extends TextFileView {
   }
 
   setViewData(data: string, clear: boolean): void {
+    console.log("setViewData", data.length, clear);
     this.state.setViewData(data, clear);
   }
 
@@ -478,6 +489,8 @@ export class FountainView extends TextFileView {
     return textFileState;
   }
 
+  /// setState is called when the workspace.json deserialisation ran into
+  /// a view of type fountain, it should restore the workspace.
   async setState(f: Record<string, unknown>, result: ViewStateResult) {
     super.setState(f, result);
     if ("fountain" in f) {
