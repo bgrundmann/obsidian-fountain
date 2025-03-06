@@ -249,7 +249,9 @@ function indexCardsView(script: FountainScript): string {
         if (notes) {
           for (const note of notes) {
             if (note.noteKind.toLowerCase() === "todo") {
-              emit(`<p class="todo"><span>${script.extractAsHtml(note.textRange)}</span></p>`);
+              emit(
+                `<p class="todo"><span>${script.extractAsHtml(note.textRange)}</span></p>`,
+              );
             }
           }
         }

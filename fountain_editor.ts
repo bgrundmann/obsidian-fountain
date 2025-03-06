@@ -10,8 +10,8 @@ import {
 } from "@codemirror/view";
 import {
   type FountainScript,
-  type StyledTextElement,
   type Line,
+  type StyledTextElement,
   intersect,
 } from "./fountain.js";
 import { parse } from "./fountain_parser.js";

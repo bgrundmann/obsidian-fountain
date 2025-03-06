@@ -31,18 +31,18 @@ function intersect(r1: Range, r2: Range): boolean {
  */
 function extractNotes(element: FountainElement): Note[] {
   const notes: Note[] = [];
-  
-    // Check if element has lines property (action and dialogue elements)
-    if ('lines' in element) {
-      for (const line of element.lines) {
-        for (const textElement of line.elements) {
-          if (textElement.kind === "note") {
-            notes.push(textElement);
-          }
+
+  // Check if element has lines property (action and dialogue elements)
+  if ("lines" in element) {
+    for (const line of element.lines) {
+      for (const textElement of line.elements) {
+        if (textElement.kind === "note") {
+          notes.push(textElement);
         }
       }
     }
-  
+  }
+
   return notes;
 }
 
@@ -223,7 +223,7 @@ class FountainScript {
         return this.styledTextElementToHtml(el);
       case "note": {
         let noteKindClass = "";
-        let prefix = '';
+        let prefix = "";
         switch (el.noteKind.toLowerCase()) {
           case "+":
             noteKindClass = "note-symbol-plus";

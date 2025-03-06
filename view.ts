@@ -418,7 +418,7 @@ export class FountainView extends TextFileView {
   /// Switch to readonly mode (no-op if already in readonly mode)
   switchToReadonlyMode() {
     if (!(this.state instanceof ReadonlyViewState)) {
-      this.toggleEditMode()
+      this.toggleEditMode();
     }
   }
 
