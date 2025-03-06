@@ -398,7 +398,7 @@ export class FountainView extends TextFileView {
   }
 
   startEditModeHere(r: Range): void {
-    this.toggleEditMode();
+    this.switchToEditMode();
     if (this.state instanceof EditorViewState) {
       this.state.scrollToHere(r);
     }
@@ -406,6 +406,20 @@ export class FountainView extends TextFileView {
 
   isEditMode(): boolean {
     return this.state instanceof EditorViewState;
+  }
+
+  /// Switch to edit mode (no-op if already in edit mode)
+  switchToEditMode() {
+    if (!(this.state instanceof EditorViewState)) {
+      this.toggleEditMode();
+    }
+  }
+
+  /// Switch to readonly mode (no-op if already in readonly mode)
+  switchToReadonlyMode() {
+    if (!(this.state instanceof ReadonlyViewState)) {
+      this.toggleEditMode()
+    }
   }
 
   toggleEditMode() {
