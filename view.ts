@@ -104,7 +104,6 @@ class ReadonlyViewState {
       });
     }
     const sections = mainblock.querySelectorAll(".section");
-    console.log(sections);
     for (const section of sections) {
       const start = Number.parseInt(section.getAttribute("data-start") || "-1");
       // TODO think about if that is always the right thing for sections

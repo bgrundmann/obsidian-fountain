@@ -165,7 +165,6 @@ function rangeOfFirstVisibleLine(screenplayElement: HTMLElement): Range | null {
     if (child.getBoundingClientRect().bottom >= top) {
       const r = getDataRange(child);
       if (r === null) continue;
-      console.log(child, r);
       return r;
     }
   }
@@ -247,10 +246,8 @@ function indexCardsView(script: FountainScript): string {
 
       default:
         const notes = extractNotes(el);
-        console.log("NOTES", el, notes);
         if (notes) {
           for (const note of notes) {
-            console.log(note);
             if (note.noteKind.toLowerCase() === "todo") {
               emit(`<p class="todo"><span>${script.extractAsHtml(note.textRange)}</span></p>`);
             }

@@ -26,7 +26,7 @@ function intersect(r1: Range, r2: Range): boolean {
 
 /**
  * Extracts all notes from a list of FountainElements
- * @param elements List of FountainElements to extract notes from
+ * @param element List of FountainElements to extract notes from
  * @returns Array of all Note elements found
  */
 function extractNotes(element: FountainElement): Note[] {
