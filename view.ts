@@ -487,13 +487,9 @@ export class FountainView extends TextFileView {
         | ReadonlyViewPersistedState
         | EditorPersistedState;
       if (state.mode === "editing") {
-        if (!(this.state instanceof EditorView)) {
-          this.toggleEditMode();
-        }
+        this.switchToEditMode();
       } else {
-        if (!(this.state instanceof ReadonlyViewState)) {
-          this.toggleEditMode();
-        }
+        this.switchToReadonlyMode();
         if (this.state instanceof ReadonlyViewState) {
           if (this.state.showMode !== state.mode) {
             this.state.toggleIndexCards();
