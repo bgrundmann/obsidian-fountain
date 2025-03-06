@@ -224,7 +224,7 @@ class FountainScript {
       case "note": {
         let noteKindClass = "";
         let prefix = '';
-        switch (el.noteKind) {
+        switch (el.noteKind.toLowerCase()) {
           case "+":
             noteKindClass = "note-symbol-plus";
             break;
