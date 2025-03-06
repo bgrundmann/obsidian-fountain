@@ -244,7 +244,7 @@ function indexCardsView(script: FountainScript): string {
         );
         break;
 
-      default:
+      default: {
         const notes = extractNotes(el);
         if (notes) {
           for (const note of notes) {
@@ -257,6 +257,7 @@ function indexCardsView(script: FountainScript): string {
         }
 
         break;
+      }
     }
   }
   closeIfInside(Inside.Section);
