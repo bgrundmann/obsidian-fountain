@@ -8,9 +8,9 @@ import {
   escapeHtml,
   extractNotes,
 } from "./fountain.js";
-export { readingView, indexCardsView, getDataRange, rangeOfFirstVisibleLine };
+export { readonlyView, indexCardsView, getDataRange, rangeOfFirstVisibleLine };
 
-const BLANK_LINE: string = "<div>&nbsp;</div>";
+const BLANK_LINE = "<div>&nbsp;</div>";
 
 /// Generate the blank line at the end of a range.
 function blankLineAtEnd(r: Range): string {
@@ -84,7 +84,7 @@ function linesToHtml(
 /**
  Converts the parsed document to a html representation (aka the regular reading view).
  */
-function readingView(script: FountainScript): string {
+function readonlyView(script: FountainScript): string {
   let sceneNumber = 1;
   const element_to_html = (el: FountainElement): string => {
     switch (el.kind) {

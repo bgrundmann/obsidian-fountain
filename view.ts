@@ -14,7 +14,7 @@ import {
   getDataRange,
   indexCardsView,
   rangeOfFirstVisibleLine,
-  readingView,
+  readonlyView,
 } from "./reading_view.js";
 export const VIEW_TYPE_FOUNTAIN = "fountain";
 
@@ -204,7 +204,7 @@ class ReadonlyViewState {
     mainblock.innerHTML =
       this.showMode === ShowMode.IndexCards
         ? indexCardsView(fp)
-        : readingView(fp);
+        : readonlyView(fp);
 
     if (this.showMode === ShowMode.IndexCards) {
       this.installIndexCardEventHandlers(mainblock);
@@ -459,7 +459,7 @@ export class FountainView extends TextFileView {
 
   onUnloadFile(file: TFile): Promise<void> {
     console.log("onunloadfile", file);
-    return super.onLoadFile(file);
+    return super.onUnloadFile(file);
   }
 
   getViewType() {
@@ -475,8 +475,11 @@ export class FountainView extends TextFileView {
   }
 
   setViewData(data: string, clear: boolean): void {
-    console.log("setViewData", data.length, clear);
-    this.state.setViewData(data, clear);
+    console.log("setViewData", this.file?.path, data.length, clear);
+    const path = this.file?.path;
+    if (path !== null) {
+      this.state.setViewData(data, path, clear);
+    }
   }
 
   getState(): Record<string, unknown> {
