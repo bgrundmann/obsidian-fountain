@@ -13,12 +13,12 @@ const mergeText = fountain.mergeText;
 
 }}
 
-Script 
+Script
  = title:TitlePage? script:Element* !. { return new FountainScript(input, title ? title : [], script); }
 
-TitlePage 
+TitlePage
  = values:KeyValue+ "\n" { return values; }
- 
+
 KeyValue
  = key:Key ":" [ \t]* values:(@InlineValue / @MultiLineValues) { return { range: range(), key: key, values: values }; }
 
@@ -28,15 +28,15 @@ Key
 InlineValue = value:Value "\n" { return [value] }
 
 Value
- = value:StyledTextElement+ { return mergeText(value); } 
+ = value:StyledTextElement+ { return mergeText(value); }
 
 MultiLineValues
  = "\n" values:(@MultiLineValue "\n")+ { return values; }
- 
-MultiLineValue 
+
+MultiLineValue
  = (" "|3..| / "\t") value:Value { return value; }
- 
-PageBreak 
+
+PageBreak
  = OptionalBlanks "="|3..| NewLineOrEndOfInput { return { range: range(), kind: 'page-break' } }
 
 Element
@@ -49,7 +49,7 @@ Element
  / Action
 
 LineTextElement
- = boneyard:Boneyard      { return boneyard; }             
+ = boneyard:Boneyard      { return boneyard; }
  / note:Note              { return note; }
  / text:StyledTextElement { return text; }
 
@@ -77,7 +77,7 @@ ActionLine
 
 ForcedActionLine
  = "!" line:Line  { line.range.start = line.range.start - 1; return line; }
- 
+
 ActionLines
  = @lines:ActionLine+ NewLineOrEndOfInput
 
@@ -98,18 +98,18 @@ Note "note"
 
 NoteText
  =  (!("]]"/"\n\n") .)* { return range(); }
- 
+
 NoteKind
  = "+"   { return "+"; }
  / "-"   { return "-"; }
  / kind:NoteKindName ":" " "* { return kind }
 
 NoteKindName = [a-zA-Z0-9]+ { return text() }
- 
+
 Boneyard "boneyard"
- = OptionalBlanks "/*" (!"*/" .)* "*/" 
+ = OptionalBlanks "/*" (!"*/" .)* "*/"
  { return { range: range(), kind: 'boneyard' }; }
- 
+
 Section
  = OptionalBlanks hashes:Hashes RestOfLine NewLineOrEndOfInput
  { return { range: range(), depth:hashes, kind: 'section'} }
@@ -118,8 +118,8 @@ Hashes
  = "#"+ { return text().length }
 
 Synopsis
- = OptionalBlanks "=" synopsis:RestOfLine NewLineOrEndOfInput { return { range:range(), synopsis:synopsis, kind: 'synopsis'} } 
- 
+ = OptionalBlanks "=" synopsis:RestOfLine NewLineOrEndOfInput { return { range:range(), synopsis:synopsis, kind: 'synopsis'} }
+
 NewLine
  = "\n" { return range() }
 
@@ -128,13 +128,14 @@ NewLineOrEndOfInput
  / !.
 
 Dialogue
- = OptionalBlanks character:Character exts:CharacterExtensions "\n" 
-  parenthetical:(Parenthetical)? 
-  dialogue:Lines 
+ = OptionalBlanks character:Character [ \t]* exts:CharacterExtensions "\n"
+  parenthetical:(Parenthetical)?
+  dialogue:Lines
  { return {
      range: range(),
      kind: 'dialogue',
-     characterRange: { start:character.start, end: exts.end },
+     characterRange: character,
+     characterExtensionsRange: exts,
      parenthetical: parenthetical,
      lines: dialogue
    }
@@ -145,7 +146,7 @@ Parenthetical
 
 CharacterExtensions
  = ([ \t]* "(" [^)\n]* ")")*  { return range() }
- 
+
 Character
  = name:MaybeName &{ return name.toUpperCase() === name } { return range() }
  / "@" [^(\n]+        { return range() }
@@ -153,25 +154,24 @@ Character
 MaybeName
  = [^ >\t\n][^(\n]* { return text() }
 
-BlankLineOrEndOfInput 
+BlankLineOrEndOfInput
  = !.
  / "\n" !.
  / "\n\n"
 
 RestOfLine = [^\n]+ { return range() }
 
-OptionalBlanks 
+OptionalBlanks
  = [ \t]*
 
 Scene
- = SceneStart RestOfLine BlankLineOrEndOfInput { return { kind: 'scene', range: range() }; } 
+ = SceneStart RestOfLine BlankLineOrEndOfInput { return { kind: 'scene', range: range() }; }
 
 SceneStart
- = OptionalBlanks ('.' &[a-zA-Z0-9] 
+ = OptionalBlanks ('.' &[a-zA-Z0-9]
  / ("INT./EXT"i
  / "INT/EXT"i
  / "EXT"i
  / "EST"i
  / "INT"i
  / "I/E"i ) (" " / "."))
- 

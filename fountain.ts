@@ -87,7 +87,8 @@ type Line = {
 type Dialogue = {
   kind: "dialogue";
   range: Range; /// range of everything
-  characterRange: Range; /// range of the character line incl extensions excl whitespace at the beginning.
+  characterRange: Range; /// range of the character line excl extensions excl whitespace at the beginning.
+  characterExtensionsRange: Range; /// range of all extensions (empty range if no extensions) including all parentheses
   parenthetical: Range | null;
   lines: Line[];
 };

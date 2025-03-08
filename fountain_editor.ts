@@ -159,7 +159,7 @@ class FountainEditorPlugin implements PluginValue {
           case "dialogue":
             builder.add(
               el.characterRange.start,
-              el.characterRange.end,
+              el.characterExtensionsRange.end,
               character,
             );
             if (el.parenthetical !== null) {

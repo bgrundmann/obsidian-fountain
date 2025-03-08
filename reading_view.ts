@@ -28,7 +28,10 @@ function dialogueToHtml(
   script: FountainScript,
   blackoutCharacter?: string,
 ): string {
-  const characterLine = script.extractAsHtml(dialogue.characterRange);
+  const characterLine = script.extractAsHtml({
+    start: dialogue.characterRange.start,
+    end: dialogue.characterExtensionsRange.end,
+  });
   // TODO:
   const parenthetical =
     dialogue.parenthetical !== null
