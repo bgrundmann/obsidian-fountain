@@ -1,5 +1,29 @@
-import { Plugin } from "obsidian";
+import { type App, FuzzySuggestModal, Plugin } from "obsidian";
 import { FountainView, VIEW_TYPE_FOUNTAIN } from "./view";
+
+class FuzzySelectString extends FuzzySuggestModal<string> {
+  constructor(
+    app: App,
+    title: string,
+    private items: string[],
+    private callback: (item: string) => void,
+  ) {
+    super(app);
+    this.setTitle(title);
+  }
+
+  getItems(): string[] {
+    return this.items;
+  }
+
+  getItemText(item: string): string {
+    return item;
+  }
+
+  onChooseItem(item: string, evt: MouseEvent | KeyboardEvent): void {
+    this.callback(item);
+  }
+}
 
 export default class FountainPlugin extends Plugin {
   async onload() {
@@ -34,7 +58,15 @@ export default class FountainPlugin extends Plugin {
           const fv = leaf?.view;
           menu.addItem((item) => {
             item.setTitle("Rehearse").onClick(async () => {
-              fv.startRehearsalMode("BENE");
+              new FuzzySelectString(
+                this.app,
+                "Whose lines?",
+                ["BENE", "DAVID"],
+                (item) => {
+                  console.log(item);
+                  fv.startRehearsalMode(item);
+                },
+              ).open();
             });
           });
         }

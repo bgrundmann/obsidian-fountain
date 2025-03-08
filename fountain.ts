@@ -179,10 +179,54 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#039;");
 }
 
+/** The way the parser works, blank lines can cause separate action elements
+ * (as opposed to a single action element containing all the newlines).
+ * This merges all subsequent action elements into a single one.
+ */
+function mergeConsecutiveActions(script: FountainElement[]): FountainElement[] {
+  const merged = [];
+  let prev: FountainElement | null = null;
+  for (const el of script) {
+    if (prev === null) {
+      prev = el;
+    } else {
+      let extra_newline: Line[] = [];
+      if (prev.kind === "action" && el.kind === "action") {
+        if (
+          prev.lines.length > 0 &&
+          prev.range.end > prev.lines[prev.lines.length - 1].range.end
+        ) {
+          // Previous action ended in a blank line, but because the next thing
+          // after the blank line is a action again, let's insert that blank line
+          // as an action and go on.
+          extra_newline = [
+            {
+              range: { start: prev.range.end - 1, end: prev.range.end },
+              elements: [],
+              centered: false,
+            },
+          ];
+        }
+        prev = {
+          kind: "action",
+          lines: prev.lines.concat(extra_newline, el.lines),
+          range: { start: prev.range.start, end: el.range.end },
+        };
+      } else {
+        merged.push(prev);
+        prev = el;
+      }
+    }
+  }
+  if (prev !== null) merged.push(prev);
+  return merged;
+}
+
 class FountainScript {
-  titlePage: KeyValue[];
-  script: FountainElement[];
-  document: string;
+  readonly titlePage: KeyValue[];
+  readonly script: FountainElement[];
+  readonly document: string;
+  readonly allCharacters: Set<string>;
 
   /// Extract some text from the fountain document safe to be used
   /// as HTML source.
@@ -198,6 +242,22 @@ class FountainScript {
       .map((e) => this.textElementToHtml(e, false))
       .join("");
     return `<span class="${el.kind}">${inner}</span>`;
+  }
+
+  /**
+   * Return list of characters that are saying this dialogue.
+   * Normally this will be an array of one element. But in an
+   * extension to standard fountain we also allow multiple characters
+   * separated by & characters.
+   * NOTE: the character names are NOT html escaped!
+   * @param d Dialogue
+   */
+  charactersOf(d: Dialogue): string[] {
+    const text = this.document.slice(
+      d.characterRange.start,
+      d.characterRange.end,
+    );
+    return text.split("&").map((s) => s.trim());
   }
 
   styledTextToHtml(
@@ -254,47 +314,20 @@ class FountainScript {
   ) {
     this.document = document;
     this.titlePage = titlePage;
-    // The way the parser works, blank lines can cause separate action elements
-    // (as opposed to a single action element containing all the newlines).
-    //
-    // This merges all subsequent action elements into a single one.
-    this.script = script;
-    const merged = [];
-    let prev: FountainElement | null = null;
-    for (const el of script) {
-      if (prev === null) {
-        prev = el;
-      } else {
-        let extra_newline: Line[] = [];
-        if (prev.kind === "action" && el.kind === "action") {
-          if (
-            prev.lines.length > 0 &&
-            prev.range.end > prev.lines[prev.lines.length - 1].range.end
-          ) {
-            // Previous action ended in a blank line, but because the next thing
-            // after the blank line is a action again, let's insert that blank line
-            // as an action and go on.
-            extra_newline = [
-              {
-                range: { start: prev.range.end - 1, end: prev.range.end },
-                elements: [],
-                centered: false,
-              },
-            ];
+    this.script = mergeConsecutiveActions(script);
+    const characters = new Set<string>();
+    for (const el of this.script) {
+      switch (el.kind) {
+        case "dialogue":
+          for (const c of this.charactersOf(el)) {
+            characters.add(c);
           }
-          prev = {
-            kind: "action",
-            lines: prev.lines.concat(extra_newline, el.lines),
-            range: { start: prev.range.start, end: el.range.end },
-          };
-        } else {
-          merged.push(prev);
-          prev = el;
-        }
+          break;
+        default:
+          break;
       }
     }
-    if (prev !== null) merged.push(prev);
-    this.script = merged;
+    this.allCharacters = characters;
   }
 
   with_source(): (FountainElement & { source: string })[] {
