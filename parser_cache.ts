@@ -6,6 +6,7 @@ type ParseError = {
   error: unknown;
 };
 
+// TODO: Add cache expiration.
 // Cache storage using Map with path as key and cached result as value
 const parseCache = new Map<
   string,

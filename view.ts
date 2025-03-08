@@ -8,7 +8,7 @@ import {
   setIcon,
 } from "obsidian";
 import type { Range } from "./fountain";
-import { fountainEditorPlugin } from "./fountain_editor";
+import { createFountainEditorPlugin } from "./fountain_editor";
 import { parse } from "./parser_cache";
 import {
   getDataRange,
@@ -294,8 +294,14 @@ function firstScrollableElement(node: HTMLElement): HTMLElement | null {
 
 class EditorViewState {
   private cmEditor: EditorView;
+  private path: string;
 
-  constructor(contentEl: HTMLElement, text: string, requestSave: () => void) {
+  constructor(
+    contentEl: HTMLElement,
+    path: string,
+    text: string,
+    requestSave: () => void,
+  ) {
     contentEl.empty();
     const editorContainer = contentEl.createDiv("custom-editor-component");
     // our screenplay sets some of the styling information
@@ -321,7 +327,7 @@ class EditorViewState {
         theme,
         EditorView.editorAttributes.of({ class: "screenplay" }),
         EditorView.lineWrapping,
-        fountainEditorPlugin,
+        createFountainEditorPlugin(() => path),
         EditorView.updateListener.of((update: ViewUpdate) => {
           if (update.docChanged) {
             requestSave();
@@ -329,6 +335,7 @@ class EditorViewState {
         }),
       ],
     });
+    this.path = path;
     this.cmEditor = new EditorView({
       state: state,
       parent: editorContainer,
@@ -336,6 +343,7 @@ class EditorViewState {
   }
 
   setViewData(path: string, text: string, _clear: boolean) {
+    this.path = path;
     this.cmEditor.dispatch({
       changes: {
         from: 0,
@@ -470,7 +478,12 @@ export class FountainView extends TextFileView {
       // Switch to editor
       const r = this.state.rangeOfFirstVisibleLine();
       this.indexCardAction.hide();
-      this.state = new EditorViewState(this.contentEl, text, this.requestSave);
+      this.state = new EditorViewState(
+        this.contentEl,
+        this.file?.path ?? "",
+        text,
+        this.requestSave,
+      );
       if (r !== null) this.state.scrollToHere(r);
     }
     this.toggleEditAction.empty();
@@ -500,6 +513,7 @@ export class FountainView extends TextFileView {
   }
 
   setViewData(data: string, clear: boolean): void {
+    console.log("setViewData", data, clear, this.file?.path);
     const path = this.file?.path;
     if (path) {
       this.state.setViewData(path, data, clear);

@@ -10,25 +10,27 @@ import {
 } from "@codemirror/view";
 import { type Line, type StyledTextElement, intersect } from "./fountain";
 import { parse } from "./parser_cache";
-export { fountainEditorPlugin };
+export { createFountainEditorPlugin };
 
 /// This extends CodeMirror 6 to syntax highlight fountain.
 /// Note that we are using a custom Code Mirror instance,
 /// so we do not have any of the obsidian customizations.
 /// That is both bad and good.
 class FountainEditorPlugin implements PluginValue {
-  decorations: DecorationSet;
-  bold: Decoration;
-  italics: Decoration;
-  underline: Decoration;
-  boneyard: Decoration;
-  noteSymbolPlus: Decoration;
-  noteSymbolMinus: Decoration;
-  noteTodo: Decoration;
-  note: Decoration;
+  public decorations: DecorationSet;
+  private bold: Decoration;
+  private italics: Decoration;
+  private underline: Decoration;
+  private boneyard: Decoration;
+  private noteSymbolPlus: Decoration;
+  private noteSymbolMinus: Decoration;
+  private noteTodo: Decoration;
+  private note: Decoration;
 
-  constructor(view: EditorView) {
-    this.decorations = this.buildDecorations(view);
+  constructor(
+    view: EditorView,
+    readonly getPath: () => string,
+  ) {
     this.bold = Decoration.mark({ class: "bold" });
     this.italics = Decoration.mark({ class: "italics" });
     this.underline = Decoration.mark({ class: "underline" });
@@ -37,6 +39,7 @@ class FountainEditorPlugin implements PluginValue {
     this.noteSymbolMinus = Decoration.mark({ class: "note-symbol-minus" });
     this.noteTodo = Decoration.mark({ class: "note-todo" });
     this.note = Decoration.mark({ class: "note" });
+    this.decorations = this.buildDecorations(view);
   }
 
   update(update: ViewUpdate) {
@@ -99,7 +102,7 @@ class FountainEditorPlugin implements PluginValue {
 
   buildDecorations(view: EditorView): DecorationSet {
     const builder = new RangeSetBuilder<Decoration>();
-    const fscript = parse("", view.state.doc.toString());
+    const fscript = parse(this.getPath(), view.state.doc.toString());
     if ("error" in fscript) {
       console.log("parse error", fscript.error);
       return builder.finish();
@@ -129,7 +132,6 @@ class FountainEditorPlugin implements PluginValue {
 
     try {
       for (const el of fscript.script) {
-        console.log(el);
         if (!intersect(el.range, viewPortRange)) {
           // Don't decorate things that are not in the viewport at all
           continue;
@@ -194,7 +196,10 @@ const pluginSpec: PluginSpec<FountainEditorPlugin> = {
   decorations: (value: FountainEditorPlugin) => value.decorations,
 };
 
-const fountainEditorPlugin = ViewPlugin.fromClass(
-  FountainEditorPlugin,
-  pluginSpec,
-);
+function createFountainEditorPlugin(
+  getPath: () => string,
+): ViewPlugin<FountainEditorPlugin> {
+  return ViewPlugin.define((view) => {
+    return new FountainEditorPlugin(view, getPath);
+  }, pluginSpec);
+}
