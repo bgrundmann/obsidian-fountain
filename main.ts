@@ -56,19 +56,22 @@ export default class FountainPlugin extends Plugin {
       this.app.workspace.on("file-menu", (menu, editor, _source, leaf) => {
         if (leaf?.view && leaf?.view instanceof FountainView) {
           const fv = leaf?.view;
-          menu.addItem((item) => {
-            item.setTitle("Rehearse").onClick(async () => {
-              new FuzzySelectString(
-                this.app,
-                "Whose lines?",
-                ["BENE", "DAVID"],
-                (item) => {
-                  console.log(item);
-                  fv.startRehearsalMode(item);
-                },
-              ).open();
+          const script = fv.script();
+          if (!("error" in script)) {
+            menu.addItem((item) => {
+              item.setTitle("Rehearse").onClick(async () => {
+                new FuzzySelectString(
+                  this.app,
+                  "Whose lines?",
+                  Array.from(script.allCharacters.values()),
+                  (item) => {
+                    console.log(item);
+                    fv.startRehearsalMode(item);
+                  },
+                ).open();
+              });
             });
-          });
+          }
         }
       }),
     );

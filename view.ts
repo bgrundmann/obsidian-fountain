@@ -7,9 +7,9 @@ import {
   type WorkspaceLeaf,
   setIcon,
 } from "obsidian";
-import type { Range } from "./fountain";
+import type { FountainScript, Range } from "./fountain";
 import { createFountainEditorPlugin } from "./fountain_editor";
-import { parse } from "./parser_cache";
+import { type ParseError, parse } from "./parser_cache";
 import {
   getDataRange,
   indexCardsView,
@@ -80,6 +80,10 @@ class ReadonlyViewState {
     } catch (error) {
       return null;
     }
+  }
+
+  script(): FountainScript | ParseError {
+    return parse(this.path, this.text);
   }
 
   private installIndexCardEventHandlers(mainblock: HTMLDivElement) {
@@ -195,7 +199,7 @@ class ReadonlyViewState {
   render() {
     /// Parent should already be empty.
     this.contentEl.empty();
-    const fp = parse(this.path, this.text);
+    const fp = this.script();
     if ("error" in fp) {
       console.log("error parsing script", fp);
       return;
@@ -342,6 +346,10 @@ class EditorViewState {
     });
   }
 
+  script(): FountainScript | ParseError {
+    return parse(this.path, this.cmEditor.state.doc.toString());
+  }
+
   setViewData(path: string, text: string, _clear: boolean) {
     this.path = path;
     this.cmEditor.dispatch({
@@ -454,6 +462,10 @@ export class FountainView extends TextFileView {
     if (this.state instanceof ReadonlyViewState) {
       this.state.startRehearsalMode(blackout);
     }
+  }
+
+  script(): FountainScript | ParseError {
+    return this.state.script();
   }
 
   toggleEditMode() {

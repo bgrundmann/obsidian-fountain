@@ -1,8 +1,7 @@
 import type { FountainScript } from "./fountain";
 import * as fountain_parser from "./fountain_parser";
-export { parse };
 
-type ParseError = {
+export type ParseError = {
   error: unknown;
 };
 
@@ -16,7 +15,10 @@ const parseCache = new Map<
   }
 >();
 
-function parse(path: string, input: string): FountainScript | ParseError {
+export function parse(
+  path: string,
+  input: string,
+): FountainScript | ParseError {
   // Check if we have a cached result for this path
   const cached = parseCache.get(path);
 
