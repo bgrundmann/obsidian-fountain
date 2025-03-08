@@ -197,28 +197,22 @@ class ReadonlyViewState {
     evt.dataTransfer.setData("application/json", JSON.stringify(range));
   }
 
-  private blackoutRevealHandler() {
-    const currentBlack = this.contentEl.querySelector(".blackout");
-    if (currentBlack === null) {
+  private blackoutRevealHandler(evt: Event) {
+    const target = evt.target as HTMLElement;
+    target.removeClass("blackout");
+    const hasAtLeastOneBlack = this.contentEl.querySelector(".blackout");
+    if (hasAtLeastOneBlack === null) {
       new Notice("That were all your lines", 1000);
       this.blackout = null;
       this.render();
-    } else {
-      currentBlack.removeClasses(["blackout"]);
-      const nextBlack = this.contentEl.querySelector(".blackout");
-      if (nextBlack === null) {
-        new Notice("That were all your lines", 1000);
-        this.blackout = null;
-        this.render();
-      }
     }
   }
 
   private installBlackOutRevealHandlers() {
     const blackouts = this.contentEl.querySelectorAll(".blackout");
     for (const bl of blackouts) {
-      bl.addEventListener("click", (evt) => {
-        this.blackoutRevealHandler();
+      bl.addEventListener("click", (evt: Event) => {
+        this.blackoutRevealHandler(evt);
       });
     }
   }
