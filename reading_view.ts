@@ -37,9 +37,11 @@ function dialogueToHtml(
     dialogue.parenthetical !== null
       ? `<div ${dataRange(dialogue.parenthetical)}><div class="dialogue-parenthetical">${script.extractAsHtml(dialogue.parenthetical)}</div></div>`
       : "";
-  const classes = blackoutCharacter
-    ? ["blackout", "dialogue-words"]
-    : ["dialogue-words"];
+  const classes =
+    blackoutCharacter &&
+    script.charactersOf(dialogue).includes(blackoutCharacter)
+      ? ["blackout", "dialogue-words"]
+      : ["dialogue-words"];
   const words = linesToHtml(script, classes, dialogue.lines, false);
   return `<div ${dataRange(dialogue.characterRange)}><h4 class="dialogue-character">${characterLine}</h4></div>
 ${parenthetical}

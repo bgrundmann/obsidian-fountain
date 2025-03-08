@@ -64,9 +64,8 @@ export default class FountainPlugin extends Plugin {
                   this.app,
                   "Whose lines?",
                   Array.from(script.allCharacters.values()),
-                  (item) => {
-                    console.log(item);
-                    fv.startRehearsalMode(item);
+                  (character) => {
+                    fv.startRehearsalMode(character);
                   },
                 ).open();
               });

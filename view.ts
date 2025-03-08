@@ -1,6 +1,7 @@
 import { EditorState } from "@codemirror/state";
 import { EditorView, type ViewUpdate } from "@codemirror/view";
 import {
+  Notice,
   type TFile,
   TextFileView,
   type ViewStateResult,
@@ -196,6 +197,32 @@ class ReadonlyViewState {
     evt.dataTransfer.setData("application/json", JSON.stringify(range));
   }
 
+  private blackoutRevealHandler() {
+    const currentBlack = this.contentEl.querySelector(".blackout");
+    if (currentBlack === null) {
+      new Notice("That were all your lines", 1000);
+      this.blackout = null;
+      this.render();
+    } else {
+      currentBlack.removeClasses(["blackout"]);
+      const nextBlack = this.contentEl.querySelector(".blackout");
+      if (nextBlack === null) {
+        new Notice("That were all your lines", 1000);
+        this.blackout = null;
+        this.render();
+      }
+    }
+  }
+
+  private installBlackOutRevealHandlers() {
+    const blackouts = this.contentEl.querySelectorAll(".blackout");
+    for (const bl of blackouts) {
+      bl.addEventListener("click", (evt) => {
+        this.blackoutRevealHandler();
+      });
+    }
+  }
+
   render() {
     /// Parent should already be empty.
     this.contentEl.empty();
@@ -214,6 +241,10 @@ class ReadonlyViewState {
       this.showMode === ShowMode.IndexCards
         ? indexCardsView(fp)
         : readonlyView(fp, this.blackout ?? undefined);
+
+    if (this.blackout) {
+      this.installBlackOutRevealHandlers();
+    }
 
     if (this.showMode === ShowMode.IndexCards) {
       this.installIndexCardEventHandlers(mainblock);
@@ -255,6 +286,7 @@ class ReadonlyViewState {
       this.showMode === ShowMode.IndexCards
         ? ShowMode.Script
         : ShowMode.IndexCards;
+    this.blackout = null;
     this.render();
   }
 
