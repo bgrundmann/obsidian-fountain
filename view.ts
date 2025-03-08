@@ -7,7 +7,7 @@ import {
   type WorkspaceLeaf,
   setIcon,
 } from "obsidian";
-import type { FountainScript, Range } from "./fountain";
+import type { Range } from "./fountain";
 import { fountainEditorPlugin } from "./fountain_editor";
 import { parse } from "./parser_cache";
 import {
@@ -54,6 +54,7 @@ class ReadonlyViewState {
   public showMode: ShowMode;
   private contentEl: HTMLElement;
   private startEditModeHere: (range: Range) => void;
+  private blackout: string | null; /// rehearsal mode is on blacking out this character
 
   constructor(
     contentEl: HTMLElement,
@@ -64,6 +65,7 @@ class ReadonlyViewState {
     this.text = text;
     this.contentEl = contentEl;
     this.startEditModeHere = startEditModeHere;
+    this.blackout = null;
   }
 
   private getDragData(evt: DragEvent): Range | null {
@@ -204,7 +206,7 @@ class ReadonlyViewState {
     mainblock.innerHTML =
       this.showMode === ShowMode.IndexCards
         ? indexCardsView(fp)
-        : readonlyView(fp);
+        : readonlyView(fp, this.blackout ?? undefined);
 
     if (this.showMode === ShowMode.IndexCards) {
       this.installIndexCardEventHandlers(mainblock);
@@ -249,11 +251,16 @@ class ReadonlyViewState {
     this.render();
   }
 
+  startRehearsalMode(blackout: string) {
+    this.blackout = blackout;
+    this.render();
+  }
+
   getViewData(): string {
     return this.text;
   }
 
-  setViewData(text: string, _clear: boolean): void {
+  setViewData(path: string, text: string, _clear: boolean): void {
     this.text = text;
     this.render();
   }
@@ -318,10 +325,13 @@ class EditorViewState {
         }),
       ],
     });
-    this.cmEditor = new EditorView({ state: state, parent: editorContainer });
+    this.cmEditor = new EditorView({
+      state: state,
+      parent: editorContainer,
+    });
   }
 
-  setViewData(text: string, _clear: boolean) {
+  setViewData(path: string, text: string, _clear: boolean) {
     this.cmEditor.dispatch({
       changes: {
         from: 0,
@@ -359,6 +369,7 @@ class EditorViewState {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 type FountainViewPersistedState = {
   fountain: ReadonlyViewPersistedState | EditorPersistedState;
 };
@@ -426,6 +437,13 @@ export class FountainView extends TextFileView {
     }
   }
 
+  startRehearsalMode(blackout: string) {
+    this.switchToReadonlyMode();
+    if (this.state instanceof ReadonlyViewState) {
+      this.state.startRehearsalMode(blackout);
+    }
+  }
+
   toggleEditMode() {
     const text = this.state.getViewData();
     if (this.state instanceof EditorViewState) {
@@ -477,8 +495,8 @@ export class FountainView extends TextFileView {
   setViewData(data: string, clear: boolean): void {
     console.log("setViewData", this.file?.path, data.length, clear);
     const path = this.file?.path;
-    if (path !== null) {
-      this.state.setViewData(data, path, clear);
+    if (path) {
+      this.state.setViewData(path, data, clear);
     }
   }
 

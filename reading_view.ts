@@ -19,18 +19,25 @@ function blankLineAtEnd(r: Range): string {
 }
 
 function actionToHtml(action: Action, script: FountainScript): string {
-  const html = `${linesToHtml(script, "action", action.lines, true)}${blankLineAtEnd(action.range)}`;
+  const html = `${linesToHtml(script, ["action"], action.lines, true)}${blankLineAtEnd(action.range)}`;
   return html;
 }
 
-function dialogueToHtml(dialogue: Dialogue, script: FountainScript): string {
+function dialogueToHtml(
+  dialogue: Dialogue,
+  script: FountainScript,
+  blackoutCharacter?: string,
+): string {
   const characterLine = script.extractAsHtml(dialogue.characterRange);
   // TODO:
   const parenthetical =
     dialogue.parenthetical !== null
       ? `<div ${dataRange(dialogue.parenthetical)}><div class="dialogue-parenthetical">${script.extractAsHtml(dialogue.parenthetical)}</div></div>`
       : "";
-  const words = linesToHtml(script, "dialogue-words", dialogue.lines, false);
+  const classes = blackoutCharacter
+    ? ["blackout", "dialogue-words"]
+    : ["dialogue-words"];
+  const words = linesToHtml(script, classes, dialogue.lines, false);
   return `<div ${dataRange(dialogue.characterRange)}><h4 class="dialogue-character">${characterLine}</h4></div>
 ${parenthetical}
 ${words}
@@ -62,7 +69,7 @@ function getDataRange(target: HTMLElement): Range | null {
 
 function linesToHtml(
   script: FountainScript,
-  lineClass: string,
+  lineClasses: string[], // Changed from lineClass: string
   lines: Line[],
   escapeLeadingSpaces: boolean,
 ): string {
@@ -76,7 +83,9 @@ function linesToHtml(
         innerHtml = script.styledTextToHtml(line.elements, escapeLeadingSpaces);
       }
       const centered = line.centered ? "centered" : "";
-      return `<div ${dataRange(line.range)}><div ${classes([centered, lineClass])}>${innerHtml}</div></div>`;
+      // Merge the lineClasses array with centered if present
+      const allClasses = centered ? [centered, ...lineClasses] : lineClasses;
+      return `<div ${dataRange(line.range)}><div ${classes(allClasses)}>${innerHtml}</div></div>`;
     })
     .join("");
 }
@@ -84,7 +93,10 @@ function linesToHtml(
 /**
  Converts the parsed document to a html representation (aka the regular reading view).
  */
-function readonlyView(script: FountainScript): string {
+function readonlyView(
+  script: FountainScript,
+  blackoutCharacter?: string,
+): string {
   let sceneNumber = 1;
   const element_to_html = (el: FountainElement): string => {
     switch (el.kind) {
@@ -113,7 +125,7 @@ function readonlyView(script: FountainScript): string {
         return html;
       }
       case "dialogue":
-        return dialogueToHtml(el, script);
+        return dialogueToHtml(el, script, blackoutCharacter);
       case "transition": {
         const transitionText = script.extractAsHtml(el.range);
         return `<div class="transition" ${dataRange(el.range)}>${transitionText}</div>${BLANK_LINE}`;
