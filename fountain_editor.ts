@@ -8,12 +8,7 @@ import {
   ViewPlugin,
   type ViewUpdate,
 } from "@codemirror/view";
-import {
-  type FountainScript,
-  type Line,
-  type StyledTextElement,
-  intersect,
-} from "./fountain";
+import { type Line, type StyledTextElement, intersect } from "./fountain";
 import { parse } from "./parser_cache";
 export { fountainEditorPlugin };
 
@@ -104,7 +99,7 @@ class FountainEditorPlugin implements PluginValue {
 
   buildDecorations(view: EditorView): DecorationSet {
     const builder = new RangeSetBuilder<Decoration>();
-    const fscript = parse(view.state.doc.toString());
+    const fscript = parse("", view.state.doc.toString());
     if ("error" in fscript) {
       console.log("parse error", fscript.error);
       return builder.finish();

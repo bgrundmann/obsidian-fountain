@@ -55,9 +55,11 @@ class ReadonlyViewState {
   private contentEl: HTMLElement;
   private startEditModeHere: (range: Range) => void;
   private blackout: string | null; /// rehearsal mode is on blacking out this character
+  private path: string;
 
   constructor(
     contentEl: HTMLElement,
+    path: string,
     text: string,
     startEditModeHere: (range: Range) => void,
   ) {
@@ -66,6 +68,7 @@ class ReadonlyViewState {
     this.contentEl = contentEl;
     this.startEditModeHere = startEditModeHere;
     this.blackout = null;
+    this.path = path;
   }
 
   private getDragData(evt: DragEvent): Range | null {
@@ -192,7 +195,7 @@ class ReadonlyViewState {
   render() {
     /// Parent should already be empty.
     this.contentEl.empty();
-    const fp = parse(this.text);
+    const fp = parse(this.path, this.text);
     if ("error" in fp) {
       console.log("error parsing script", fp);
       return;
@@ -261,6 +264,7 @@ class ReadonlyViewState {
   }
 
   setViewData(path: string, text: string, _clear: boolean): void {
+    this.path = path;
     this.text = text;
     this.render();
   }
@@ -389,7 +393,7 @@ export class FountainView extends TextFileView {
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
-    this.state = new ReadonlyViewState(this.contentEl, "", (r) =>
+    this.state = new ReadonlyViewState(this.contentEl, "", "", (r) =>
       this.startEditModeHere(r),
     );
     this.toggleEditAction = this.addAction(
@@ -450,8 +454,11 @@ export class FountainView extends TextFileView {
       // Switch to readonly mode
       const firstLine = this.state.firstVisibleLine();
       this.state.destroy();
-      this.state = new ReadonlyViewState(this.contentEl, text, (r) =>
-        this.startEditModeHere(r),
+      this.state = new ReadonlyViewState(
+        this.contentEl,
+        this.file?.path ?? "",
+        text,
+        (r) => this.startEditModeHere(r),
       );
       this.state.render();
       this.indexCardAction.show();
@@ -493,7 +500,6 @@ export class FountainView extends TextFileView {
   }
 
   setViewData(data: string, clear: boolean): void {
-    console.log("setViewData", this.file?.path, data.length, clear);
     const path = this.file?.path;
     if (path) {
       this.state.setViewData(path, data, clear);
@@ -539,7 +545,7 @@ export class FountainView extends TextFileView {
     this.state.clear();
     if (this.state instanceof EditorViewState) {
       this.state.destroy();
-      this.state = new ReadonlyViewState(this.contentEl, "", (r) =>
+      this.state = new ReadonlyViewState(this.contentEl, "", "", (r) =>
         this.startEditModeHere(r),
       );
       this.indexCardAction.show();
