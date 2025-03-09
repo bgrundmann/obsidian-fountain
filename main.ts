@@ -1,4 +1,5 @@
-import { type App, FuzzySuggestModal, Plugin } from "obsidian";
+import type { FountainScript } from "fountain";
+import { type App, FuzzySuggestModal, type Menu, Plugin } from "obsidian";
 import { FountainView, VIEW_TYPE_FOUNTAIN } from "./view";
 
 class FuzzySelectString extends FuzzySuggestModal<string> {
@@ -58,21 +59,37 @@ export default class FountainPlugin extends Plugin {
           const fv = leaf?.view;
           const script = fv.script();
           if (!("error" in script)) {
-            menu.addItem((item) => {
-              item.setTitle("Rehearse").onClick(async () => {
-                new FuzzySelectString(
-                  this.app,
-                  "Whose lines?",
-                  Array.from(script.allCharacters.values()),
-                  (character) => {
-                    fv.startRehearsalMode(character);
-                  },
-                ).open();
-              });
-            });
+            this.installFileMenuItems(menu, script, fv);
           }
         }
       }),
     );
+  }
+
+  private installFileMenuItems(
+    menu: Menu,
+    script: FountainScript,
+    view: FountainView,
+  ) {
+    menu.addItem((item) => {
+      item.setTitle("Rehearsal").onClick(async () => {
+        new FuzzySelectString(
+          this.app,
+          "Whose lines?",
+          Array.from(script.allCharacters.values()),
+          (character) => {
+            view.startRehearsalMode(character);
+          },
+        ).open();
+      });
+    });
+    const bl = view.blackoutCharacter();
+    if (bl !== null) {
+      menu.addItem((item) => {
+        item.setTitle("Stop Rehearsal").onClick(async () => {
+          view.stopRehearsalMode();
+        });
+      });
+    }
   }
 }

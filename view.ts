@@ -1,7 +1,6 @@
 import { EditorState } from "@codemirror/state";
 import { EditorView, type ViewUpdate } from "@codemirror/view";
 import {
-  Notice,
   type TFile,
   TextFileView,
   type ViewStateResult,
@@ -197,22 +196,26 @@ class ReadonlyViewState {
     evt.dataTransfer.setData("application/json", JSON.stringify(range));
   }
 
-  private blackoutRevealHandler(evt: Event) {
-    const target = evt.target as HTMLElement;
-    target.removeClass("blackout");
-    const hasAtLeastOneBlack = this.contentEl.querySelector(".blackout");
-    if (hasAtLeastOneBlack === null) {
-      new Notice("That were all your lines", 1000);
-      this.blackout = null;
-      this.render();
-    }
+  public stopRehearsalMode() {
+    this.blackout = null;
+    this.render();
   }
 
-  private installBlackOutRevealHandlers() {
+  /** Is blackout mode active and for which character? */
+  public blackoutCharacter(): string | null {
+    return this.blackout;
+  }
+
+  private toggleBlackoutHandler(evt: Event) {
+    const target = evt.target as HTMLElement;
+    target.classList.toggle("blackout");
+  }
+
+  private installToggleBlackoutHandlers() {
     const blackouts = this.contentEl.querySelectorAll(".blackout");
     for (const bl of blackouts) {
       bl.addEventListener("click", (evt: Event) => {
-        this.blackoutRevealHandler(evt);
+        this.toggleBlackoutHandler(evt);
       });
     }
   }
@@ -237,7 +240,7 @@ class ReadonlyViewState {
         : readonlyView(fp, this.blackout ?? undefined);
 
     if (this.blackout) {
-      this.installBlackOutRevealHandlers();
+      this.installToggleBlackoutHandlers();
     }
 
     if (this.showMode === ShowMode.IndexCards) {
@@ -261,11 +264,6 @@ class ReadonlyViewState {
             }
           });
         }
-      } else if (this.showMode === ShowMode.Script && e.target != null) {
-        const target = e.target as HTMLElement;
-        const r = getDataRange(target);
-        if (r === null) return;
-        this.startEditModeHere(r);
       }
     });
   }
@@ -487,6 +485,19 @@ export class FountainView extends TextFileView {
     this.switchToReadonlyMode();
     if (this.state instanceof ReadonlyViewState) {
       this.state.startRehearsalMode(blackout);
+    }
+  }
+
+  public blackoutCharacter(): string | null {
+    if (this.state instanceof ReadonlyViewState) {
+      return this.state.blackoutCharacter();
+    }
+    return null;
+  }
+
+  public stopRehearsalMode() {
+    if (this.state instanceof ReadonlyViewState) {
+      this.state.stopRehearsalMode();
     }
   }
 
