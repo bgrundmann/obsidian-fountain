@@ -11,7 +11,6 @@ import type { FountainScript, Range } from "./fountain";
 import { createFountainEditorPlugin } from "./fountain_editor";
 import { type ParseError, parse } from "./parser_cache";
 import {
-  getDataRange,
   indexCardsView,
   rangeOfFirstVisibleLine,
   readonlyView,
@@ -49,26 +48,40 @@ function moveText(text: string, range: Range, newStart: number): string {
   );
 }
 
+type ReadonlyViewPersistedState = {
+  mode: ShowMode;
+  blackout?: string; // This misses which dialogue(s) have been revealed, but is cheap and good enough
+  hideSynopis?: boolean; // undefined also false
+  hideNotes?: boolean; // undefined also false
+};
+
 class ReadonlyViewState {
   private text: string;
-  public showMode: ShowMode;
+  public pstate: ReadonlyViewPersistedState;
   private contentEl: HTMLElement;
   private startEditModeHere: (range: Range) => void;
-  private blackout: string | null; /// rehearsal mode is on blacking out this character
   private path: string;
 
   constructor(
     contentEl: HTMLElement,
+    pstate: ReadonlyViewPersistedState,
     path: string,
     text: string,
     startEditModeHere: (range: Range) => void,
   ) {
-    this.showMode = ShowMode.Script;
     this.text = text;
     this.contentEl = contentEl;
     this.startEditModeHere = startEditModeHere;
-    this.blackout = null;
     this.path = path;
+    this.pstate = pstate;
+  }
+
+  public get showMode(): ShowMode {
+    return this.pstate.mode;
+  }
+
+  private get blackout(): string | null {
+    return this.pstate.blackout ?? null;
   }
 
   private getDragData(evt: DragEvent): Range | null {
@@ -197,7 +210,7 @@ class ReadonlyViewState {
   }
 
   public stopRehearsalMode() {
-    this.blackout = null;
+    this.pstate.blackout = undefined;
     this.render();
   }
 
@@ -252,7 +265,7 @@ class ReadonlyViewState {
         const target = e.target as HTMLElement;
         if (target.id !== null && target.matches(".scene-heading")) {
           const id = target.id;
-          this.showMode = ShowMode.Script;
+          this.pstate.mode = ShowMode.Script;
           this.render();
           requestAnimationFrame(() => {
             const targetElement = document.getElementById(id);
@@ -273,17 +286,22 @@ class ReadonlyViewState {
     targetElement?.scrollIntoView();
   }
 
+  public setPersistentState(pstate: ReadonlyViewPersistedState) {
+    this.pstate = pstate;
+    this.render();
+  }
+
   toggleIndexCards() {
-    this.showMode =
-      this.showMode === ShowMode.IndexCards
+    this.pstate.mode =
+      this.pstate.mode === ShowMode.IndexCards
         ? ShowMode.Script
         : ShowMode.IndexCards;
-    this.blackout = null;
+    this.pstate.blackout = undefined;
     this.render();
   }
 
   startRehearsalMode(blackout: string) {
-    this.blackout = blackout;
+    this.pstate.blackout = blackout;
     this.render();
   }
 
@@ -413,28 +431,28 @@ class EditorViewState {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type FountainViewPersistedState = {
-  fountain: ReadonlyViewPersistedState | EditorPersistedState;
-};
-
-type ReadonlyViewPersistedState = {
-  mode: ShowMode;
-};
-
-type EditorPersistedState = {
-  mode: "editing";
+/** Stored in persistent state (workspace.json under the fountain key) */
+type FountainViewPersistedState = ReadonlyViewPersistedState & {
+  editing?: boolean; // undefined => false
 };
 
 export class FountainView extends TextFileView {
   state: ReadonlyViewState | EditorViewState;
-  indexCardAction: HTMLElement;
-  toggleEditAction: HTMLElement;
+  private readonlyViewState: ReadonlyViewPersistedState;
+  private indexCardAction: HTMLElement;
+  private toggleEditAction: HTMLElement;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
-    this.state = new ReadonlyViewState(this.contentEl, "", "", (r) =>
-      this.startEditModeHere(r),
+    this.readonlyViewState = {
+      mode: ShowMode.Script,
+    };
+    this.state = new ReadonlyViewState(
+      this.contentEl,
+      this.readonlyViewState,
+      "",
+      "",
+      (r) => this.startEditModeHere(r),
     );
     this.toggleEditAction = this.addAction(
       "edit",
@@ -513,6 +531,7 @@ export class FountainView extends TextFileView {
       this.state.destroy();
       this.state = new ReadonlyViewState(
         this.contentEl,
+        this.readonlyViewState,
         this.file?.path ?? "",
         text,
         (r) => this.startEditModeHere(r),
@@ -525,6 +544,7 @@ export class FountainView extends TextFileView {
       });
     } else {
       // Switch to editor
+      this.readonlyViewState = this.state.pstate;
       const r = this.state.rangeOfFirstVisibleLine();
       this.indexCardAction.hide();
       this.state = new EditorViewState(
@@ -571,11 +591,21 @@ export class FountainView extends TextFileView {
 
   getState(): Record<string, unknown> {
     const textFileState = super.getState();
-    if (this.state instanceof EditorViewState) {
-      textFileState.fountain = { mode: "editing" };
+    let editing: boolean;
+
+    if (this.state instanceof ReadonlyViewState) {
+      // If readonly view is active make sure our
+      // copy matches
+      this.readonlyViewState = this.state.pstate;
+      editing = false;
     } else {
-      textFileState.fountain = { mode: this.state.showMode };
+      editing = true;
     }
+    textFileState.fountain = {
+      editing: editing,
+      ...this.readonlyViewState,
+    };
+
     return textFileState;
   }
 
@@ -586,17 +616,14 @@ export class FountainView extends TextFileView {
     if ("fountain" in f) {
       // TODO: Should probably run proper deserialise code here
       // and deal with invalid state.
-      const state = f.fountain as
-        | ReadonlyViewPersistedState
-        | EditorPersistedState;
-      if (state.mode === "editing") {
+      const state = f.fountain as FountainViewPersistedState;
+      this.readonlyViewState = state;
+      if (state.editing) {
         this.switchToEditMode();
       } else {
         this.switchToReadonlyMode();
         if (this.state instanceof ReadonlyViewState) {
-          if (this.state.showMode !== state.mode) {
-            this.state.toggleIndexCards();
-          }
+          this.state.setPersistentState(state);
         }
       }
     } else {
@@ -608,8 +635,12 @@ export class FountainView extends TextFileView {
     this.state.clear();
     if (this.state instanceof EditorViewState) {
       this.state.destroy();
-      this.state = new ReadonlyViewState(this.contentEl, "", "", (r) =>
-        this.startEditModeHere(r),
+      this.state = new ReadonlyViewState(
+        this.contentEl,
+        this.readonlyViewState,
+        "",
+        "",
+        (r) => this.startEditModeHere(r),
       );
       this.indexCardAction.show();
     }
