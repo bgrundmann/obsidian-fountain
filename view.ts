@@ -49,9 +49,14 @@ function moveText(text: string, range: Range, newStart: number): string {
   );
 }
 
+type Rehearsal = {
+  character: string;
+  previousShowHideSettings: ShowHideSettings;
+};
+
 type ReadonlyViewPersistedState = {
   mode: ShowMode;
-  blackout?: string; // This misses which dialogue(s) have been revealed, but is cheap and good enough
+  rehearsal?: Rehearsal; // This misses which dialogue(s) have been revealed, but is cheap and good enough
 } & ShowHideSettings;
 
 class ReadonlyViewState {
@@ -80,7 +85,7 @@ class ReadonlyViewState {
   }
 
   private get blackout(): string | null {
-    return this.pstate.blackout ?? null;
+    return this.pstate.rehearsal?.character ?? null;
   }
 
   private getDragData(evt: DragEvent): Range | null {
@@ -209,7 +214,33 @@ class ReadonlyViewState {
   }
 
   public stopRehearsalMode() {
-    this.pstate.blackout = undefined;
+    if (this.pstate.rehearsal) {
+      this.pstate = {
+        ...this.pstate,
+        ...this.pstate.rehearsal.previousShowHideSettings,
+      };
+      this.pstate.rehearsal = undefined;
+      this.render();
+    }
+  }
+
+  startRehearsalMode(character: string) {
+    this.pstate.rehearsal = {
+      character,
+      // We have to explicitely save all 3 settings otherwise
+      // they might be undefined instead of false and then not
+      // be set by the spread operator
+      previousShowHideSettings: {
+        hideBoneyard: this.pstate.hideBoneyard || false,
+        hideSynopsis: this.pstate.hideSynopsis || false,
+        hideNotes: this.pstate.hideNotes || false,
+      },
+    };
+    console.log(this.pstate.rehearsal);
+    this.pstate.hideBoneyard = true;
+    this.pstate.hideNotes = true;
+    this.pstate.hideSynopsis = true;
+    console.log(this.pstate.rehearsal);
     this.render();
   }
 
@@ -243,9 +274,10 @@ class ReadonlyViewState {
     const mainblock = this.contentEl.createDiv(
       this.showMode === ShowMode.IndexCards ? undefined : "screenplay",
     );
-    // Assuming nobody does a supply chain attack on the fountain library, the below
-    // is fine as there is no way for the user to embed html in the fountain.
-    //mainblock.innerHTML = compile(this.showMode, this.tokens);
+    // We are using innerHTML here. Which is not ideal and states back
+    // from when we were using the fountain library.  Now that we are
+    // using our own parser we could in theory rewrite this to use
+    // the recommended obsidian create... calls.
     mainblock.innerHTML =
       this.showMode === ShowMode.IndexCards
         ? indexCardsView(fp)
@@ -300,12 +332,6 @@ class ReadonlyViewState {
       this.pstate.mode === ShowMode.IndexCards
         ? ShowMode.Script
         : ShowMode.IndexCards;
-    this.pstate.blackout = undefined;
-    this.render();
-  }
-
-  startRehearsalMode(blackout: string) {
-    this.pstate.blackout = blackout;
     this.render();
   }
 
@@ -684,8 +710,8 @@ export class FountainView extends TextFileView {
         this.switchToReadonlyMode();
         if (this.state instanceof ReadonlyViewState) {
           this.state.setPersistentState(state);
-          if (state.blackout) {
-            this.startRehearsalMode(state.blackout);
+          if (state.rehearsal) {
+            this.startRehearsalMode(state.rehearsal.character);
           }
         }
       }
