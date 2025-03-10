@@ -471,7 +471,7 @@ export class FountainView extends TextFileView {
   private readonlyViewState: ReadonlyViewPersistedState;
   private indexCardAction: HTMLElement;
   private toggleEditAction: HTMLElement;
-  private filterAction: HTMLElement;
+  private showViewMenuAction: HTMLElement;
   private stopRehearsalModeAction: HTMLElement;
 
   constructor(leaf: WorkspaceLeaf) {
@@ -504,44 +504,11 @@ export class FountainView extends TextFileView {
         }
       },
     );
-    this.filterAction = this.addAction("filter", "Show/Hide", (evt) => {
-      if (this.state instanceof ReadonlyViewState) {
-        const updateSettings = (s: ShowHideSettings) => {
-          if (this.state instanceof ReadonlyViewState) {
-            const newSettings = this.state.pstate;
-            this.state.setShowHideSettings({ ...newSettings, ...s });
-            this.app.workspace.requestSaveLayout();
-          }
-        };
-        const menu = new Menu();
-        const state = this.state.pstate;
-        menu.addItem((item) =>
-          item
-            .setTitle(state.hideSynopsis ? "Synopsis" : "Synopsis")
-            .setChecked(!(state.hideSynopsis || false))
-            .onClick(() =>
-              updateSettings({ hideSynopsis: !(state.hideSynopsis || false) }),
-            ),
-        );
-        menu.addItem((item) =>
-          item
-            .setTitle(state.hideNotes ? "Notes" : "Notes")
-            .setChecked(!(state.hideNotes || false))
-            .onClick(() =>
-              updateSettings({ hideNotes: !(state.hideNotes || false) }),
-            ),
-        );
-        menu.addItem((item) =>
-          item
-            .setTitle(state.hideBoneyard ? "Boneyard" : "Boneyard")
-            .setChecked(!(state.hideBoneyard || false))
-            .onClick(() =>
-              updateSettings({ hideBoneyard: !(state.hideBoneyard || false) }),
-            ),
-        );
-        menu.showAtMouseEvent(evt);
-      }
-    });
+    this.showViewMenuAction = this.addAction(
+      "filter",
+      "Show/Hide",
+      this.showViewMenu,
+    );
     this.stopRehearsalModeAction = this.addAction(
       "brain",
       "Stop rehearsal",
@@ -550,6 +517,45 @@ export class FountainView extends TextFileView {
       },
     );
     this.stopRehearsalModeAction.hide();
+  }
+
+  private showViewMenu(evt: MouseEvent) {
+    if (this.state instanceof ReadonlyViewState) {
+      const updateSettings = (s: ShowHideSettings) => {
+        if (this.state instanceof ReadonlyViewState) {
+          const newSettings = this.state.pstate;
+          this.state.setShowHideSettings({ ...newSettings, ...s });
+          this.app.workspace.requestSaveLayout();
+        }
+      };
+      const menu = new Menu();
+      const state = this.state.pstate;
+      menu.addItem((item) =>
+        item
+          .setTitle("Synopsis")
+          .setChecked(!(state.hideSynopsis || false))
+          .onClick(() =>
+            updateSettings({ hideSynopsis: !(state.hideSynopsis || false) }),
+          ),
+      );
+      menu.addItem((item) =>
+        item
+          .setTitle("Notes")
+          .setChecked(!(state.hideNotes || false))
+          .onClick(() =>
+            updateSettings({ hideNotes: !(state.hideNotes || false) }),
+          ),
+      );
+      menu.addItem((item) =>
+        item
+          .setTitle("Boneyard")
+          .setChecked(!(state.hideBoneyard || false))
+          .onClick(() =>
+            updateSettings({ hideBoneyard: !(state.hideBoneyard || false) }),
+          ),
+      );
+      menu.showAtMouseEvent(evt);
+    }
   }
 
   startEditModeHere(r: Range): void {
@@ -581,7 +587,7 @@ export class FountainView extends TextFileView {
     this.switchToReadonlyMode();
     if (this.state instanceof ReadonlyViewState) {
       this.indexCardAction.hide();
-      this.filterAction.hide();
+      this.showViewMenuAction.hide();
       this.stopRehearsalModeAction.show();
       this.state.startRehearsalMode(blackout);
       this.app.workspace.requestSaveLayout();
@@ -599,7 +605,7 @@ export class FountainView extends TextFileView {
     if (this.state instanceof ReadonlyViewState) {
       this.state.stopRehearsalMode();
       this.indexCardAction.show();
-      this.filterAction.show();
+      this.showViewMenuAction.show();
       this.stopRehearsalModeAction.hide();
       this.app.workspace.requestSaveLayout();
     }
