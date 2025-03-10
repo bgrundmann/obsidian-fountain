@@ -5,9 +5,10 @@ import {
   type FountainScript,
   type Line,
   type Range,
+  type ShowHideSettings,
   escapeHtml,
   extractNotes,
-} from "./fountain.js";
+} from "./fountain";
 export { readonlyView, indexCardsView, getDataRange, rangeOfFirstVisibleLine };
 
 const BLANK_LINE = "<div>&nbsp;</div>";
@@ -18,14 +19,19 @@ function blankLineAtEnd(r: Range): string {
   return `<div ${dataRange(end)}>&nbsp;</div>`;
 }
 
-function actionToHtml(action: Action, script: FountainScript): string {
-  const html = `${linesToHtml(script, ["action"], action.lines, true)}${blankLineAtEnd(action.range)}`;
+function actionToHtml(
+  action: Action,
+  script: FountainScript,
+  settings: ShowHideSettings,
+): string {
+  const html = `${linesToHtml(script, ["action"], action.lines, true, settings)}${blankLineAtEnd(action.range)}`;
   return html;
 }
 
 function dialogueToHtml(
   dialogue: Dialogue,
   script: FountainScript,
+  settings: ShowHideSettings,
   blackoutCharacter?: string,
 ): string {
   const characterLine = script.extractAsHtml({
@@ -42,7 +48,7 @@ function dialogueToHtml(
     script.charactersOf(dialogue).includes(blackoutCharacter)
       ? ["blackout", "dialogue-words"]
       : ["dialogue-words"];
-  const words = linesToHtml(script, classes, dialogue.lines, false);
+  const words = linesToHtml(script, classes, dialogue.lines, false, settings);
   return `<div ${dataRange(dialogue.characterRange)}><h4 class="dialogue-character">${characterLine}</h4></div>
 ${parenthetical}
 ${words}
@@ -77,6 +83,7 @@ function linesToHtml(
   lineClasses: string[], // Changed from lineClass: string
   lines: Line[],
   escapeLeadingSpaces: boolean,
+  settings: ShowHideSettings,
 ): string {
   return lines
     .map((line) => {
@@ -85,7 +92,11 @@ function linesToHtml(
         // Need a nbsp so that the div is not empty and gets regular text height
         innerHtml = "&nbsp;";
       } else {
-        innerHtml = script.styledTextToHtml(line.elements, escapeLeadingSpaces);
+        innerHtml = script.styledTextToHtml(
+          line.elements,
+          settings,
+          escapeLeadingSpaces,
+        );
       }
       const centered = line.centered ? "centered" : "";
       // Merge the lineClasses array with centered if present
@@ -100,13 +111,18 @@ function linesToHtml(
  */
 function readonlyView(
   script: FountainScript,
+  settings: ShowHideSettings,
   blackoutCharacter?: string,
 ): string {
   let sceneNumber = 1;
+  let skippingRest = false;
   const element_to_html = (el: FountainElement): string => {
+    if (skippingRest) {
+      return "";
+    }
     switch (el.kind) {
       case "action":
-        return actionToHtml(el, script);
+        return actionToHtml(el, script, settings);
       case "scene": {
         const text = script.extractAsHtml(el.range);
         const res = `<h3 ${dataRange(el.range)} class="scene-heading" id="scene${sceneNumber}">${text}</h3>${BLANK_LINE}`;
@@ -114,6 +130,9 @@ function readonlyView(
         return res;
       }
       case "synopsis":
+        if (settings.hideSynopsis) {
+          return "";
+        }
         return `<div class="synopsis" ${dataRange(el.range)}>${script.extractAsHtml(el.synopsis)}</div>`;
       case "section": {
         const title = script.extractAsHtml(el.range);
@@ -124,13 +143,17 @@ function readonlyView(
             .replace(/^ *#+ */, "")
             .trimEnd() === "boneyard"
         ) {
+          if (settings.hideBoneyard) {
+            skippingRest = true;
+            return "";
+          }
           prefix = "<hr>";
         }
         const html = `${prefix}<h${el.depth ?? 1} class="section" ${dataRange(el.range)}>${title}</h${el.depth ?? 1}>`;
         return html;
       }
       case "dialogue":
-        return dialogueToHtml(el, script, blackoutCharacter);
+        return dialogueToHtml(el, script, settings, blackoutCharacter);
       case "transition": {
         const transitionText = script.extractAsHtml(el.range);
         return `<div class="transition" ${dataRange(el.range)}>${transitionText}</div>${BLANK_LINE}`;

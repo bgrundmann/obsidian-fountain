@@ -1,23 +1,21 @@
 import { EditorState } from "@codemirror/state";
 import { EditorView, type ViewUpdate } from "@codemirror/view";
 import {
-  type App,
-  Modal,
-  Setting,
+  Menu,
   type TFile,
   TextFileView,
   type ViewStateResult,
   type WorkspaceLeaf,
   setIcon,
 } from "obsidian";
-import type { FountainScript, Range } from "./fountain";
+import type { FountainScript, Range, ShowHideSettings } from "./fountain";
 import { createFountainEditorPlugin } from "./fountain_editor";
 import { type ParseError, parse } from "./parser_cache";
 import {
   indexCardsView,
   rangeOfFirstVisibleLine,
   readonlyView,
-} from "./reading_view.js";
+} from "./reading_view";
 export const VIEW_TYPE_FOUNTAIN = "fountain";
 
 enum ShowMode {
@@ -51,44 +49,10 @@ function moveText(text: string, range: Range, newStart: number): string {
   );
 }
 
-type ShowHideSettings = {
-  hideSynopsis?: boolean; // undefined also false
-  hideNotes?: boolean; // undefined also false
-};
-
 type ReadonlyViewPersistedState = {
   mode: ShowMode;
   blackout?: string; // This misses which dialogue(s) have been revealed, but is cheap and good enough
 } & ShowHideSettings;
-
-class FilterModal extends Modal {
-  constructor(
-    app: App,
-    init: ShowHideSettings,
-    onSubmit: (filters: ShowHideSettings) => void,
-  ) {
-    super(app);
-    this.setTitle("Show/Hide");
-    const filters = {
-      hideSynopsis: init.hideSynopsis ?? false,
-      hideNotes: init.hideNotes ?? false,
-    };
-    new Setting(this.contentEl).setName("Synopsis").addToggle((cb) => {
-      cb.setValue(filters.hideSynopsis).onChange((v) => {
-        filters.hideSynopsis = v;
-      });
-    });
-    new Setting(this.contentEl).addButton((btn) => {
-      btn
-        .setButtonText("OK")
-        .setCta()
-        .onClick(() => {
-          this.close();
-          onSubmit(filters);
-        });
-    });
-  }
-}
 
 class ReadonlyViewState {
   private text: string;
@@ -285,7 +249,7 @@ class ReadonlyViewState {
     mainblock.innerHTML =
       this.showMode === ShowMode.IndexCards
         ? indexCardsView(fp)
-        : readonlyView(fp, this.blackout ?? undefined);
+        : readonlyView(fp, this.pstate, this.blackout ?? undefined);
 
     if (this.blackout) {
       this.installToggleBlackoutHandlers();
@@ -327,8 +291,7 @@ class ReadonlyViewState {
   }
 
   public setShowHideSettings(sh: ShowHideSettings) {
-    this.pstate.hideSynopsis = sh.hideSynopsis;
-    this.pstate.hideNotes = sh.hideNotes;
+    this.pstate = { ...this.pstate, ...sh };
     this.render();
   }
 
@@ -514,14 +477,41 @@ export class FountainView extends TextFileView {
         }
       },
     );
-    this.filterAction = this.addAction("filter", "Show/Hide", (_evt) => {
+    this.filterAction = this.addAction("filter", "Show/Hide", (evt) => {
       if (this.state instanceof ReadonlyViewState) {
-        new FilterModal(this.app, this.state.pstate, (filters) => {
+        const updateSettings = (s: ShowHideSettings) => {
           if (this.state instanceof ReadonlyViewState) {
-            this.state.setShowHideSettings(filters);
+            const newSettings = this.state.pstate;
+            this.state.setShowHideSettings({ ...newSettings, ...s });
           }
-        }).open();
-        // ;
+        };
+        const menu = new Menu();
+        const state = this.state.pstate;
+        menu.addItem((item) =>
+          item
+            .setTitle(state.hideSynopsis ? "Synopsis" : "Synopsis")
+            .setChecked(!(state.hideSynopsis || false))
+            .onClick(() =>
+              updateSettings({ hideSynopsis: !(state.hideSynopsis || false) }),
+            ),
+        );
+        menu.addItem((item) =>
+          item
+            .setTitle(state.hideNotes ? "Notes" : "Notes")
+            .setChecked(!(state.hideNotes || false))
+            .onClick(() =>
+              updateSettings({ hideNotes: !(state.hideNotes || false) }),
+            ),
+        );
+        menu.addItem((item) =>
+          item
+            .setTitle(state.hideBoneyard ? "Boneyard" : "Boneyard")
+            .setChecked(!(state.hideBoneyard || false))
+            .onClick(() =>
+              updateSettings({ hideBoneyard: !(state.hideBoneyard || false) }),
+            ),
+        );
+        menu.showAtMouseEvent(evt);
       }
     });
   }

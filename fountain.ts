@@ -15,6 +15,12 @@ export type {
   Note,
 };
 
+export type ShowHideSettings = {
+  hideSynopsis?: boolean; // undefined also false
+  hideNotes?: boolean; // undefined also false
+  hideBoneyard?: boolean; // undefined also false
+};
+
 interface Range {
   start: number;
   end: number;
@@ -237,9 +243,12 @@ class FountainScript {
       : safe;
   }
 
-  private styledTextElementToHtml(el: StyledTextElement): string {
+  private styledTextElementToHtml(
+    el: StyledTextElement,
+    settings: ShowHideSettings,
+  ): string {
     const inner = el.elements
-      .map((e) => this.textElementToHtml(e, false))
+      .map((e) => this.textElementToHtml(e, settings, false))
       .join("");
     return `<span class="${el.kind}">${inner}</span>`;
   }
@@ -262,10 +271,11 @@ class FountainScript {
 
   styledTextToHtml(
     st: StyledTextWithNotesAndBoneyard,
+    settings: ShowHideSettings,
     escapeLeadingSpaces: boolean,
   ): string {
     return st
-      .map((el) => this.textElementToHtml(el, escapeLeadingSpaces))
+      .map((el) => this.textElementToHtml(el, settings, escapeLeadingSpaces))
       .join("");
   }
 
@@ -273,6 +283,7 @@ class FountainScript {
   /// HTML source.
   private textElementToHtml(
     el: TextElementWithNotesAndBoneyard,
+    settings: ShowHideSettings,
     escapeLeadingSpaces: boolean,
   ): string {
     switch (el.kind) {
@@ -281,8 +292,11 @@ class FountainScript {
       case "bold":
       case "italics":
       case "underline":
-        return this.styledTextElementToHtml(el);
+        return this.styledTextElementToHtml(el, settings);
       case "note": {
+        if (settings.hideNotes) {
+          return "";
+        }
         let noteKindClass = "";
         let prefix = "";
         switch (el.noteKind.toLowerCase()) {
@@ -344,7 +358,7 @@ class FountainScript {
       return {
         ...kv,
         htmlValues: kv.values.map((v) => {
-          return v.map((st) => this.textElementToHtml(st, false)).join("");
+          return v.map((st) => this.textElementToHtml(st, {}, false)).join("");
         }),
       };
     });
