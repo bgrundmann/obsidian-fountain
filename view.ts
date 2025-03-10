@@ -646,6 +646,7 @@ export class FountainView extends TextFileView {
     const text = this.state.getViewData();
     if (this.state instanceof EditorViewState) {
       // Switch to readonly mode
+      this.showViewMenuAction.show();
       const firstLine = this.state.firstVisibleLine();
       this.state.destroy();
       this.state = new ReadonlyViewState(
@@ -662,6 +663,7 @@ export class FountainView extends TextFileView {
       });
     } else {
       // Switch to editor
+      this.showViewMenuAction.hide();
       this.readonlyViewState = this.state.pstate;
       const r = this.state.rangeOfFirstVisibleLine();
       this.state = new EditorViewState(
