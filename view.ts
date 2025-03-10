@@ -1,6 +1,9 @@
 import { EditorState } from "@codemirror/state";
 import { EditorView, type ViewUpdate } from "@codemirror/view";
 import {
+  type App,
+  Modal,
+  Setting,
   type TFile,
   TextFileView,
   type ViewStateResult,
@@ -48,12 +51,44 @@ function moveText(text: string, range: Range, newStart: number): string {
   );
 }
 
+type ShowHideSettings = {
+  hideSynopsis?: boolean; // undefined also false
+  hideNotes?: boolean; // undefined also false
+};
+
 type ReadonlyViewPersistedState = {
   mode: ShowMode;
   blackout?: string; // This misses which dialogue(s) have been revealed, but is cheap and good enough
-  hideSynopis?: boolean; // undefined also false
-  hideNotes?: boolean; // undefined also false
-};
+} & ShowHideSettings;
+
+class FilterModal extends Modal {
+  constructor(
+    app: App,
+    init: ShowHideSettings,
+    onSubmit: (filters: ShowHideSettings) => void,
+  ) {
+    super(app);
+    this.setTitle("Show/Hide");
+    const filters = {
+      hideSynopsis: init.hideSynopsis ?? false,
+      hideNotes: init.hideNotes ?? false,
+    };
+    new Setting(this.contentEl).setName("Synopsis").addToggle((cb) => {
+      cb.setValue(filters.hideSynopsis).onChange((v) => {
+        filters.hideSynopsis = v;
+      });
+    });
+    new Setting(this.contentEl).addButton((btn) => {
+      btn
+        .setButtonText("OK")
+        .setCta()
+        .onClick(() => {
+          this.close();
+          onSubmit(filters);
+        });
+    });
+  }
+}
 
 class ReadonlyViewState {
   private text: string;
@@ -291,6 +326,12 @@ class ReadonlyViewState {
     this.render();
   }
 
+  public setShowHideSettings(sh: ShowHideSettings) {
+    this.pstate.hideSynopsis = sh.hideSynopsis;
+    this.pstate.hideNotes = sh.hideNotes;
+    this.render();
+  }
+
   toggleIndexCards() {
     this.pstate.mode =
       this.pstate.mode === ShowMode.IndexCards
@@ -441,6 +482,7 @@ export class FountainView extends TextFileView {
   private readonlyViewState: ReadonlyViewPersistedState;
   private indexCardAction: HTMLElement;
   private toggleEditAction: HTMLElement;
+  private filterAction: HTMLElement;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
@@ -472,6 +514,16 @@ export class FountainView extends TextFileView {
         }
       },
     );
+    this.filterAction = this.addAction("filter", "Show/Hide", (_evt) => {
+      if (this.state instanceof ReadonlyViewState) {
+        new FilterModal(this.app, this.state.pstate, (filters) => {
+          if (this.state instanceof ReadonlyViewState) {
+            this.state.setShowHideSettings(filters);
+          }
+        }).open();
+        // ;
+      }
+    });
   }
 
   startEditModeHere(r: Range): void {
