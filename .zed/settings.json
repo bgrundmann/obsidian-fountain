@@ -3,10 +3,14 @@
 // For a full list of overridable settings, and general information on folder-specific settings,
 // see the documentation: https://zed.dev/docs/configuring-zed#settings-files
 {
-	"languages": {
-		"JavaScript": {
-			"tab_size": 2,
-			"hard_tabs": false
-		}
-	}
+  "languages": {
+    "JavaScript": {
+      "tab_size": 2,
+      "hard_tabs": false
+    },
+    "TypeScript": {
+      "tab_size": 2,
+      "hard_tabs": false
+    }
+  }
 }
