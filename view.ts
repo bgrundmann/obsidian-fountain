@@ -446,6 +446,7 @@ export class FountainView extends TextFileView {
   private indexCardAction: HTMLElement;
   private toggleEditAction: HTMLElement;
   private filterAction: HTMLElement;
+  private stopRehearsalModeAction: HTMLElement;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
@@ -483,6 +484,7 @@ export class FountainView extends TextFileView {
           if (this.state instanceof ReadonlyViewState) {
             const newSettings = this.state.pstate;
             this.state.setShowHideSettings({ ...newSettings, ...s });
+            this.app.workspace.requestSaveLayout();
           }
         };
         const menu = new Menu();
@@ -514,6 +516,14 @@ export class FountainView extends TextFileView {
         menu.showAtMouseEvent(evt);
       }
     });
+    this.stopRehearsalModeAction = this.addAction(
+      "brain",
+      "Stop rehearsal",
+      (_evt) => {
+        this.stopRehearsalMode();
+      },
+    );
+    this.stopRehearsalModeAction.hide();
   }
 
   startEditModeHere(r: Range): void {
@@ -544,7 +554,11 @@ export class FountainView extends TextFileView {
   startRehearsalMode(blackout: string) {
     this.switchToReadonlyMode();
     if (this.state instanceof ReadonlyViewState) {
+      this.indexCardAction.hide();
+      this.filterAction.hide();
+      this.stopRehearsalModeAction.show();
       this.state.startRehearsalMode(blackout);
+      this.app.workspace.requestSaveLayout();
     }
   }
 
@@ -558,6 +572,10 @@ export class FountainView extends TextFileView {
   public stopRehearsalMode() {
     if (this.state instanceof ReadonlyViewState) {
       this.state.stopRehearsalMode();
+      this.indexCardAction.show();
+      this.filterAction.show();
+      this.stopRehearsalModeAction.hide();
+      this.app.workspace.requestSaveLayout();
     }
   }
 
@@ -666,6 +684,9 @@ export class FountainView extends TextFileView {
         this.switchToReadonlyMode();
         if (this.state instanceof ReadonlyViewState) {
           this.state.setPersistentState(state);
+          if (state.blackout) {
+            this.startRehearsalMode(state.blackout);
+          }
         }
       }
     } else {

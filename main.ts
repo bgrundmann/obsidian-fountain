@@ -72,16 +72,19 @@ export default class FountainPlugin extends Plugin {
     view: FountainView,
   ) {
     menu.addItem((item) => {
-      item.setTitle("Rehearsal").onClick(async () => {
-        new FuzzySelectString(
-          this.app,
-          "Whose lines?",
-          Array.from(script.allCharacters.values()),
-          (character) => {
-            view.startRehearsalMode(character);
-          },
-        ).open();
-      });
+      item
+        .setTitle("Rehearsal")
+        .setIcon("brain")
+        .onClick(async () => {
+          new FuzzySelectString(
+            this.app,
+            "Whose lines?",
+            Array.from(script.allCharacters.values()),
+            (character) => {
+              view.startRehearsalMode(character);
+            },
+          ).open();
+        });
     });
     const bl = view.blackoutCharacter();
     if (bl !== null) {
