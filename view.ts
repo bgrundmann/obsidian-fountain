@@ -1,5 +1,6 @@
 import { EditorState } from "@codemirror/state";
 import { EditorView, type ViewUpdate } from "@codemirror/view";
+import { FuzzySelectString } from "fuzzy_select_string";
 import {
   Menu,
   type TFile,
@@ -469,7 +470,6 @@ type FountainViewPersistedState = ReadonlyViewPersistedState & {
 export class FountainView extends TextFileView {
   state: ReadonlyViewState | EditorViewState;
   private readonlyViewState: ReadonlyViewPersistedState;
-  private indexCardAction: HTMLElement;
   private toggleEditAction: HTMLElement;
   private showViewMenuAction: HTMLElement;
   private stopRehearsalModeAction: HTMLElement;
@@ -494,20 +494,8 @@ export class FountainView extends TextFileView {
         this.app.workspace.requestSaveLayout();
       },
     );
-    this.indexCardAction = this.addAction(
-      "layout-grid",
-      "Toggle Index Card View",
-      (_evt) => {
-        if (this.state instanceof ReadonlyViewState) {
-          this.state.toggleIndexCards();
-          this.app.workspace.requestSaveLayout();
-        }
-      },
-    );
-    this.showViewMenuAction = this.addAction(
-      "filter",
-      "Show/Hide",
-      this.showViewMenu,
+    this.showViewMenuAction = this.addAction("eye", "View options", (evt) =>
+      this.showViewMenu(evt),
     );
     this.stopRehearsalModeAction = this.addAction(
       "brain",
@@ -530,31 +518,72 @@ export class FountainView extends TextFileView {
       };
       const menu = new Menu();
       const state = this.state.pstate;
-      menu.addItem((item) =>
-        item
-          .setTitle("Synopsis")
-          .setChecked(!(state.hideSynopsis || false))
-          .onClick(() =>
-            updateSettings({ hideSynopsis: !(state.hideSynopsis || false) }),
-          ),
-      );
-      menu.addItem((item) =>
-        item
-          .setTitle("Notes")
-          .setChecked(!(state.hideNotes || false))
-          .onClick(() =>
-            updateSettings({ hideNotes: !(state.hideNotes || false) }),
-          ),
-      );
-      menu.addItem((item) =>
-        item
-          .setTitle("Boneyard")
-          .setChecked(!(state.hideBoneyard || false))
-          .onClick(() =>
-            updateSettings({ hideBoneyard: !(state.hideBoneyard || false) }),
-          ),
-      );
+      if (!this.blackoutCharacter()) {
+        menu.addItem((item) =>
+          item
+            .setTitle(state.mode === ShowMode.Script ? "Index cards" : "Script")
+            .onClick(() => {
+              if (this.state instanceof ReadonlyViewState) {
+                this.state.toggleIndexCards();
+                this.app.workspace.requestSaveLayout();
+              }
+            }),
+        );
+        menu.addSeparator();
+      }
+      if (state.mode !== ShowMode.IndexCards) {
+        menu.addItem((item) =>
+          item
+            .setTitle("Synopsis")
+            .setChecked(!(state.hideSynopsis || false))
+            .onClick(() =>
+              updateSettings({ hideSynopsis: !(state.hideSynopsis || false) }),
+            ),
+        );
+        menu.addItem((item) =>
+          item
+            .setTitle("Notes")
+            .setChecked(!(state.hideNotes || false))
+            .onClick(() =>
+              updateSettings({ hideNotes: !(state.hideNotes || false) }),
+            ),
+        );
+        menu.addItem((item) =>
+          item
+            .setTitle("Boneyard")
+            .setChecked(!(state.hideBoneyard || false))
+            .onClick(() =>
+              updateSettings({ hideBoneyard: !(state.hideBoneyard || false) }),
+            ),
+        );
+        menu.addSeparator();
+        if (this.blackoutCharacter()) {
+          menu.addItem((item) => {
+            item.setTitle("Stop Rehearsal").onClick(() => {
+              this.stopRehearsalMode();
+            });
+          });
+        } else {
+          menu.addItem((item) =>
+            item
+              .setTitle("Rehearsal")
+              .onClick(() => this.rehearsalModeClicked()),
+          );
+        }
+      }
       menu.showAtMouseEvent(evt);
+    }
+  }
+
+  private rehearsalModeClicked(): void {
+    const script = this.script();
+    if (!("error" in script)) {
+      new FuzzySelectString(
+        this.app,
+        "Whose lines?",
+        Array.from(script.allCharacters.values()),
+        (character) => this.startRehearsalMode(character),
+      ).open();
     }
   }
 
@@ -586,7 +615,6 @@ export class FountainView extends TextFileView {
   startRehearsalMode(blackout: string) {
     this.switchToReadonlyMode();
     if (this.state instanceof ReadonlyViewState) {
-      this.indexCardAction.hide();
       this.showViewMenuAction.hide();
       this.stopRehearsalModeAction.show();
       this.state.startRehearsalMode(blackout);
@@ -604,7 +632,6 @@ export class FountainView extends TextFileView {
   public stopRehearsalMode() {
     if (this.state instanceof ReadonlyViewState) {
       this.state.stopRehearsalMode();
-      this.indexCardAction.show();
       this.showViewMenuAction.show();
       this.stopRehearsalModeAction.hide();
       this.app.workspace.requestSaveLayout();
@@ -629,7 +656,6 @@ export class FountainView extends TextFileView {
         (r) => this.startEditModeHere(r),
       );
       this.state.render();
-      this.indexCardAction.show();
       const es = this.state;
       requestAnimationFrame(() => {
         es.scrollLineIntoView(firstLine);
@@ -638,7 +664,6 @@ export class FountainView extends TextFileView {
       // Switch to editor
       this.readonlyViewState = this.state.pstate;
       const r = this.state.rangeOfFirstVisibleLine();
-      this.indexCardAction.hide();
       this.state = new EditorViewState(
         this.contentEl,
         this.file?.path ?? "",
@@ -737,7 +762,6 @@ export class FountainView extends TextFileView {
         "",
         (r) => this.startEditModeHere(r),
       );
-      this.indexCardAction.show();
     }
   }
 }
