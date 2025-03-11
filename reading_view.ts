@@ -299,12 +299,14 @@ function indexCardsView(script: FountainScript): string {
           for (const l of el.linesOfText) {
             emit(`<div class="synopsis">${script.extractAsHtml(l)}</div>`);
           }
+          atStart = false;
         }
         break;
 
       default: {
         if (!isBlankLines(el)) {
-          // we allow for blank lines between synopsis elements
+          // we allow for blank lines between the section or scene
+          // and the synopsis
           // but anything else indicates the end of what we will
           // display in the index card.
           atStart = false;
