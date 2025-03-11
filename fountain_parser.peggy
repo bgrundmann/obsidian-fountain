@@ -94,7 +94,7 @@ Action
 
 Note "note"
  = "[[" noteKind:NoteKind? noteText:NoteText "]]"?
- { return { range: range(), kind: 'note', noteKind:(noteKind ?? ""), textRange:noteText  }; }
+ { return { range: range(), kind: 'note', noteKind:(noteKind ?? "").toLowerCase(), textRange:noteText  }; }
 
 NoteText
  =  (!("]]"/"\n\n") .)* { return range(); }

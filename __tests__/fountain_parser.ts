@@ -68,9 +68,9 @@ Contact:
 Credit: written by
 Author: John August
 Source: based on the novel by Daniel Wallace
-Notes:	
+Notes:
 	FINAL PRODUCTION DRAFT
-	includes post-production dialogue 
+	includes post-production dialogue
 	and omitted scenes
 Copyright: (c) 2003 Columbia Pictures
 
@@ -84,7 +84,7 @@ This is a Southern story, full of lies and fabrications, but truer for their inc
         key: "Notes",
         htmlValues: [
           "FINAL PRODUCTION DRAFT",
-          "includes post-production dialogue ",
+          "includes post-production dialogue",
           "and omitted scenes",
         ],
       },
@@ -196,30 +196,39 @@ describe("Parser tests", () => {
       ],
     },
   ]);
-  test_script("notes no longer contain styles", "[[+**PLUS**]][[-Minus]]", [
-    {
-      kind: "action",
-      range: { start: 0, end: 23 },
-      lines: [
-        {
-          range: { start: 0, end: 23 },
-          centered: false,
-          elements: [
-            {
-              kind: "note",
-              noteKind: "+",
-              range: { start: 0, end: 13 },
-            },
-            {
-              kind: "note",
-              noteKind: "-",
-              range: { start: 13, end: 23 },
-            },
-          ],
-        },
-      ],
-    },
-  ]);
+  test_script(
+    "notes no longer contain styles",
+    "[[+**PLUS**]][[-Minus]][[Todo:A]]",
+    [
+      {
+        kind: "action",
+        range: { start: 0, end: 33 },
+        lines: [
+          {
+            range: { start: 0, end: 33 },
+            centered: false,
+            elements: [
+              {
+                kind: "note",
+                noteKind: "+",
+                range: { start: 0, end: 13 },
+              },
+              {
+                kind: "note",
+                noteKind: "-",
+                range: { start: 13, end: 23 },
+              },
+              {
+                kind: "note",
+                noteKind: "todo",
+                range: { start: 23, end: 33 },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  );
   test_script("CenteredAction", ">A centered action<", [
     {
       kind: "action",
@@ -476,7 +485,7 @@ describe("Corner cases from big fish", () => {
 
 BRIGHT SUNLIGHT
 
-filters through soft sheets.  We're under the covers, where a man's hand traces the curves of a woman's bare back.   A beat, then she turns over in bed, revealing her to be 
+filters through soft sheets.  We're under the covers, where a man's hand traces the curves of a woman's bare back.   A beat, then she turns over in bed, revealing her to be
 
 JOSEPHINE.
 
@@ -498,7 +507,7 @@ Did you?
         kind: "action",
         source: `BRIGHT SUNLIGHT
 
-filters through soft sheets.  We're under the covers, where a man's hand traces the curves of a woman's bare back.   A beat, then she turns over in bed, revealing her to be 
+filters through soft sheets.  We're under the covers, where a man's hand traces the curves of a woman's bare back.   A beat, then she turns over in bed, revealing her to be
 
 JOSEPHINE.
 

@@ -89,7 +89,7 @@ class FountainEditorPlugin implements PluginValue {
               noteDeco = this.noteSymbolPlus;
             } else if (tel.noteKind === "-") {
               noteDeco = this.noteSymbolMinus;
-            } else if (tel.noteKind.toLowerCase() === "todo") {
+            } else if (tel.noteKind === "todo") {
               noteDeco = this.noteTodo;
             }
             builder.add(tel.range.start, tel.range.end, noteDeco);
