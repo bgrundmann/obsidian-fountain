@@ -8,6 +8,7 @@ import {
   type ShowHideSettings,
   escapeHtml,
   extractNotes,
+  isBlankLines,
 } from "./fountain";
 export { readonlyView, indexCardsView, getDataRange, rangeOfFirstVisibleLine };
 
@@ -219,12 +220,16 @@ enum Inside {
 
 function indexCardsView(script: FountainScript): string {
   let state: Inside = Inside.Nothing;
+  // Are we at the very start of either a section or a scene?
+  // Rationale: We only want the initial synopsis of a section
+  // or scene in the index card view
+  let atStart = true;
   const result: string[] = [];
   let sceneNumber = 1;
   function emit(s: string) {
     result.push(s);
   }
-  function closeIfInside(what: Inside.Section | Inside.Card) {
+  function emitClose(what: Inside.Section | Inside.Card) {
     while (state >= what) {
       emit("</div>");
       state--;
@@ -251,18 +256,21 @@ function indexCardsView(script: FountainScript): string {
   for (const el of script.script) {
     switch (el.kind) {
       case "scene":
-        closeIfInside(Inside.Card);
+        // make sure the previous card is closed and open a new one.
+        emitClose(Inside.Card);
         emitOpenTill(Inside.Card);
         emit(
           `<h3 class="scene-heading" id="scene${sceneNumber}" data-start="${el.range.start}">${script.extractAsHtml(el.range)}</h3>`,
         );
+        atStart = true;
         sceneNumber++;
         break;
 
       case "section":
         // We ignore sections of depth 4 and deeper in the overview
         if (el.depth <= 3) {
-          closeIfInside(Inside.Section);
+          // make sure the previous card is closed and also the prev section
+          emitClose(Inside.Section);
           const title = script.extractAsHtml(el.range);
           if (
             title
@@ -275,16 +283,26 @@ function indexCardsView(script: FountainScript): string {
           emit(
             `<h${el.depth ?? 1} class="section" data-start="${el.range.start}">${title}</h${el.depth ?? 1}>`,
           );
+          atStart = true;
         }
         break;
 
       case "synopsis":
-        emit(
-          `<div class="synopsis">${script.extractAsHtml(el.synopsis)}</div>`,
-        );
+        if (atStart) {
+          emit(
+            `<div class="synopsis">${script.extractAsHtml(el.synopsis)}</div>`,
+          );
+        }
         break;
 
       default: {
+        if (!isBlankLines(el)) {
+          // we allow for blank lines between synopsis elements
+          // but anything else indicates the end of what we will
+          // display in the index card.
+          atStart = false;
+        }
+        // With the exception of todo notes which we do display
         const notes = extractNotes(el);
         if (notes) {
           for (const note of notes) {
@@ -300,7 +318,7 @@ function indexCardsView(script: FountainScript): string {
       }
     }
   }
-  closeIfInside(Inside.Section);
+  emitClose(Inside.Section);
   // emit one data-start containing the end of the document.
   emit(`<div data-start="${script.document.length}"></div>`);
   return result.join("");

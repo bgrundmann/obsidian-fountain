@@ -142,6 +142,15 @@ type TextElement = BasicTextElement | StyledTextElement;
 
 type StyledText = TextElement[];
 
+/** Is this one or more explicit blank lines? That is an Action element only consisting of one or more blank lines? */
+export function isBlankLines(f: FountainElement) {
+  return (
+    f.kind === "action" &&
+    f.lines.length >= 1 &&
+    f.lines.every((l) => l.elements.length === 0)
+  );
+}
+
 /// This merges consecutive basic text elements into one
 function mergeText(elts: StyledText): StyledText {
   const res: (BasicTextElement | StyledTextElement)[] = [];
