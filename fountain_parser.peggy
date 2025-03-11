@@ -118,7 +118,10 @@ Hashes
  = "#"+ { return text().length }
 
 Synopsis
- = OptionalBlanks "=" synopsis:RestOfLine NewLineOrEndOfInput { return { range:range(), synopsis:synopsis, kind: 'synopsis'} }
+ = lines:SynopsisLine+ { return { range:range(), kind: 'synopsis', linesOfText:lines } }
+
+SynopsisLine
+ = OptionalBlanks "=" synopsis:RestOfLine NewLineOrEndOfInput { return synopsis; }
 
 NewLine
  = "\n" { return range() }

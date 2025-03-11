@@ -61,10 +61,15 @@ type PageBreak = {
   range: Range;
 };
 
+/** A synopsis is some text soley for the writer of the document.
+ Often used to summarize the key points of a scene before the scene
+ is written.  linesOfText is one element per line of text. Where each
+ elements range excludes the '=' as well as the newline character.
+*/
 type Synopsis = {
   kind: "synopsis";
   range: Range;
-  synopsis: Range;
+  linesOfText: Range[];
 };
 
 type Action = {

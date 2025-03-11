@@ -130,11 +130,18 @@ function readonlyView(
         sceneNumber++;
         return res;
       }
+
       case "synopsis":
         if (settings.hideSynopsis) {
           return "";
         }
-        return `<div class="synopsis" ${dataRange(el.range)}>${script.extractAsHtml(el.synopsis)}</div>`;
+        return el.linesOfText
+          .map(
+            (l) =>
+              `<div class="synopsis" ${dataRange(l)}>${script.extractAsHtml(l)}</div>`,
+          )
+          .join("");
+
       case "section": {
         const title = script.extractAsHtml(el.range);
         let prefix = "";
@@ -289,9 +296,9 @@ function indexCardsView(script: FountainScript): string {
 
       case "synopsis":
         if (atStart) {
-          emit(
-            `<div class="synopsis">${script.extractAsHtml(el.synopsis)}</div>`,
-          );
+          for (const l of el.linesOfText) {
+            emit(`<div class="synopsis">${script.extractAsHtml(l)}</div>`);
+          }
         }
         break;
 

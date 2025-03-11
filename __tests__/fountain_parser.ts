@@ -475,6 +475,33 @@ describe("Emphasis in actions", () => {
   );
 });
 
+describe("Synopsis handling", () => {
+  test_script("A single line of synopsis", " = A synopsis\n", [
+    {
+      kind: "synopsis",
+      range: { start: 0, end: 14 },
+      linesOfText: [{ start: 2, end: 13 }],
+    },
+  ]);
+  test_script(
+    "Multiple lines",
+    ` = A synopsis
+ = Consisting of several lines
+= With and without leading spaces`,
+    [
+      {
+        kind: "synopsis",
+        range: { start: 0, end: 78 },
+        linesOfText: [
+          { start: 2, end: 13 },
+          { start: 16, end: 44 },
+          { start: 46, end: 78 },
+        ],
+      },
+    ],
+  );
+});
+
 describe("Corner cases from big fish", () => {
   // These are corner cases from big fish we got wrong at some point or the other.
   // josephine was an example of us mistaking ALL UPPERCASE followed by blank line
