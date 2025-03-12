@@ -330,6 +330,7 @@
 }
 
 .screenplay-index-card textarea {
+  font-size: 11px;
   flex: 1;
   resize: none;
 }
