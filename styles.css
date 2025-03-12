@@ -329,7 +329,7 @@
   /* padding: 8px; */
 }
 
-.screenplay-index-card .textarea {
+.screenplay-index-card textarea {
   flex: 1;
   resize: none;
 }

@@ -199,7 +199,6 @@ class ReadonlyViewState {
       this.render();
     });
     okButton.addEventListener("click", () => {
-      // TODO: Apply changes using textarea.value
       const synopsified = textarea.value
         .split("\n")
         .map((l) => `= ${l}`)
