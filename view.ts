@@ -185,24 +185,19 @@ class ReadonlyViewState {
     const textarea = createEl("textarea", {
       text: lines.join("\n"),
     });
-
     const buttonContainer = el.createDiv({
       cls: "edit-buttons",
     });
-
     const cancelButton = buttonContainer.createEl("button", {
       text: "Cancel",
     });
-
     const okButton = buttonContainer.createEl("button", {
       text: "OK",
     });
     el.replaceWith(textarea, buttonContainer);
-
     cancelButton.addEventListener("click", () => {
       this.render();
     });
-
     okButton.addEventListener("click", () => {
       // TODO: Apply changes using textarea.value
       const synopsified = textarea.value
