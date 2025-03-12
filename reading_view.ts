@@ -56,8 +56,8 @@ ${words}
 ${blankLineAtEnd(dialogue.range)}`;
 }
 
-function dataRange(r: Range): string {
-  return `data-range="${r.start},${r.end}"`;
+function dataRange(r: Range, name = "range"): string {
+  return `data-${name}="${r.start},${r.end}"`;
 }
 
 function classes(c: string[]): string {
@@ -65,8 +65,8 @@ function classes(c: string[]): string {
   return `class="${c.join(" ")}"`;
 }
 
-function getDataRange(target: HTMLElement): Range | null {
-  const rawRange = target.getAttribute("data-range");
+function getDataRange(target: HTMLElement, name = "range"): Range | null {
+  const rawRange = target.getAttribute(`data-${name}`);
   if (rawRange === null) return null;
   const r = rawRange.split(",");
   if (r.length !== 2) return null;
@@ -296,9 +296,13 @@ function indexCardsView(script: FountainScript): string {
 
       case "synopsis":
         if (atStart) {
+          emit(`<div ${dataRange(el.range, "synopsis")}>`);
           for (const l of el.linesOfText) {
-            emit(`<div class="synopsis">${script.extractAsHtml(l)}</div>`);
+            emit(
+              `<div ${dataRange(l)} class="synopsis">${script.extractAsHtml(l)}</div>`,
+            );
           }
+          emit("</div>");
           atStart = false;
         }
         break;

@@ -285,6 +285,8 @@
   border-radius: 8px;
   overflow: hidden;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .index-card-buttons {
@@ -293,6 +295,7 @@
   right: 10px;
   opacity: 0;
   transition: opacity 0.2s ease-in-out;
+  padding: 0;
 }
 
 .screenplay-index-card:hover .index-card-buttons {
@@ -310,26 +313,42 @@
 }
 
 .screenplay-index-card .scene-heading {
-  font-size: 12px;
+  font-size: 14px;
   text-transform: uppercase;
   font-family: var(--screenplay-font), "Courier Final Draft", "Courier",
     var(--font-monospace);
-  margin: 0px;
+  margin-top: 0;
+  margin-left: 0;
+  margin-right: 0;
+  margin-bottom: 8px;
   /* padding: 8px; */
 }
 
 .screenplay-index-card .synopsis {
-  font-size: 10px;
+  font-size: 11px;
   /* padding: 8px; */
 }
 
+.screenplay-index-card .textarea {
+  flex: 1;
+  resize: none;
+}
+
+.screenplay-index-card .edit-buttons {
+  margin-top: 4px;
+  margin-bottom: 0;
+  justify-content: flex-end;
+  display: flex;
+  gap: 10px;
+}
+
 .screenplay-index-card .todo {
-  font-size: 10px;
+  font-size: 11px;
   margin: 5px;
 }
 
 .screenplay-index-card .todo span {
-  font-size: 10px;
+  font-size: 11px;
   background-image: linear-gradient(
     transparent 70%,
     rgba(243, 245, 39, 0.4) 70%

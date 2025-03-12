@@ -13,6 +13,7 @@ import type { FountainScript, Range, ShowHideSettings } from "./fountain";
 import { createFountainEditorPlugin } from "./fountain_editor";
 import { type ParseError, parse } from "./parser_cache";
 import {
+  getDataRange,
   indexCardsView,
   rangeOfFirstVisibleLine,
   readonlyView,
@@ -24,8 +25,9 @@ enum ShowMode {
   IndexCards = "index-cards",
 }
 
-/// Move the range of text to a new position. The newStart position is required
-/// to not be within range.
+/** Move the range of text to a new position. The newStart position is required
+to not be within range.
+*/
 function moveText(text: string, range: Range, newStart: number): string {
   // Extract the text to be moved
   const movedPortion = text.slice(range.start, range.end);
@@ -48,6 +50,20 @@ function moveText(text: string, range: Range, newStart: number): string {
     text.slice(newStart, range.start) +
     afterRange
   );
+}
+
+/**
+ * Replace a range of text.
+ *
+ * @param text the overall text
+ * @param range range of text to replace
+ * @param replacement text that replaces the text in range
+ * @returns the modified text
+ */
+function replaceText(text: string, range: Range, replacement: string): string {
+  const beforeRange = text.slice(0, range.start);
+  const afterRange = text.slice(range.end);
+  return beforeRange + replacement + afterRange;
 }
 
 type Rehearsal = {
@@ -125,7 +141,7 @@ class ReadonlyViewState {
       });
       this.addDragOverLeaveDropHandlers(indexCard, indexCardRange);
       const bt = indexCard.querySelector("button.copy") as HTMLElement;
-      setIcon(bt, "copy-plus");
+      setIcon(bt, "more-vertical");
       bt.addEventListener("click", (_ev) => {
         this.copyScene(indexCardRange);
       });
@@ -137,6 +153,65 @@ class ReadonlyViewState {
       const range = rangeFromStart(start);
       this.addDragOverLeaveDropHandlers(section, range);
     }
+
+    const editableSynopsis = mainblock.querySelectorAll("[data-synopsis]");
+    for (const es_ of editableSynopsis) {
+      const es = es_ as HTMLElement;
+      // TODO: figure out better ways to handle that range.
+      const lineRanges: Range[] = Array.from(
+        es.querySelectorAll("[data-range]"),
+      ).map((e) => getDataRange(e as HTMLElement) || { start: 0, end: 0 });
+
+      es.addEventListener("click", (ev) => {
+        const range = getDataRange(es, "synopsis");
+        if (range === null) return;
+
+        this.onEditSynopsisInIndexCardHandler(es, range, lineRanges);
+      });
+    }
+  }
+
+  private onEditSynopsisInIndexCardHandler(
+    el: HTMLElement,
+    range: Range,
+    linesOfText: Range[],
+  ) {
+    const script = this.script();
+    if ("error" in script) {
+      return;
+    }
+
+    const lines = linesOfText.map((r) => script.unsafeExtractRaw(r));
+    const textarea = createEl("textarea", {
+      text: lines.join("\n"),
+    });
+
+    const buttonContainer = el.createDiv({
+      cls: "edit-buttons",
+    });
+
+    const cancelButton = buttonContainer.createEl("button", {
+      text: "Cancel",
+    });
+
+    const okButton = buttonContainer.createEl("button", {
+      text: "OK",
+    });
+    el.replaceWith(textarea, buttonContainer);
+
+    cancelButton.addEventListener("click", () => {
+      this.render();
+    });
+
+    okButton.addEventListener("click", () => {
+      // TODO: Apply changes using textarea.value
+      const synopsified = textarea.value
+        .split("\n")
+        .map((l) => `= ${l}`)
+        .join("\n");
+      this.text = replaceText(this.text, range, synopsified);
+      this.render();
+    });
   }
 
   private addDragOverLeaveDropHandlers(el: Element, range: Range) {

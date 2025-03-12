@@ -248,13 +248,20 @@ class FountainScript {
   readonly document: string;
   readonly allCharacters: Set<string>;
 
-  /// Extract some text from the fountain document safe to be used
-  /// as HTML source.
+  /**  Extract some text from the fountain document safe to be used
+   as HTML source.
+   */
   extractAsHtml(r: Range, escapeLeadingSpaces = false): string {
-    const safe = escapeHtml(this.document.slice(r.start, r.end));
+    const safe = escapeHtml(this.unsafeExtractRaw(r));
     return escapeLeadingSpaces
       ? safe.replace(/^( +)/gm, (_, spaces) => "&nbsp;".repeat(spaces.length))
       : safe;
+  }
+
+  /** Extract some text from the fountain document. CAREFUL this
+    text is NOT html escaped! */
+  unsafeExtractRaw(r: Range): string {
+    return this.document.slice(r.start, r.end);
   }
 
   private styledTextElementToHtml(
