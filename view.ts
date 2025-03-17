@@ -334,7 +334,6 @@ class ReadonlyViewState {
   }
 
   render() {
-    /// Parent should already be empty.
     this.contentEl.empty();
     const fp = this.script();
     if ("error" in fp) {
@@ -348,10 +347,15 @@ class ReadonlyViewState {
     // from when we were using the fountain library.  Now that we are
     // using our own parser we could in theory rewrite this to use
     // the recommended obsidian create... calls.
-    mainblock.innerHTML =
-      this.showMode === ShowMode.IndexCards
-        ? indexCardsView(fp)
-        : readonlyView(fp, this.pstate, this.blackout ?? undefined);
+    switch (this.showMode) {
+      case ShowMode.IndexCards:
+        indexCardsView(mainblock, fp);
+        break;
+
+      case ShowMode.Script:
+        readonlyView(mainblock, fp, this.pstate, this.blackout ?? undefined);
+        break;
+    }
 
     if (this.blackout) {
       this.installToggleBlackoutHandlers();

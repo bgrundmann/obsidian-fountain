@@ -108,13 +108,18 @@ function linesToHtml(
 }
 
 /**
- Converts the parsed document to a html representation (aka the regular reading view).
+ * Render the readonly view of a fountain document.
+ * @param div this elements content will be replaced
+ * @param script the document to render
+ * @param settings
+ * @param blackoutCharacter if given this characters dialogue is blacked out.
  */
 function readonlyView(
+  div: HTMLElement,
   script: FountainScript,
   settings: ShowHideSettings,
   blackoutCharacter?: string,
-): string {
+) {
   let sceneNumber = 1;
   let skippingRest = false;
   const element_to_html = (el: FountainElement): string => {
@@ -194,7 +199,8 @@ function readonlyView(
   }
 
   const content = script.script.map((el) => element_to_html(el)).join("");
-  return titlePageHtml + content;
+  const innerHTML = titlePageHtml + content;
+  div.innerHTML = innerHTML;
 }
 
 /// Return the range of the first visible line on the screen. Or something close.
@@ -225,7 +231,12 @@ enum Inside {
   Card = 2,
 }
 
-function indexCardsView(script: FountainScript): string {
+/**
+ * Render a index card view of a given fountain document.
+ * @param div This elements content will be replaced.
+ * @param script the fountain document.
+ */
+function indexCardsView(div: HTMLElement, script: FountainScript): void {
   let state: Inside = Inside.Nothing;
   // Are we at the very start of either a section or a scene?
   // Rationale: We only want the initial synopsis of a section
@@ -334,5 +345,5 @@ function indexCardsView(script: FountainScript): string {
   emitClose(Inside.Section);
   // emit one data-start containing the end of the document.
   emit(`<div data-start="${script.document.length}"></div>`);
-  return result.join("");
+  div.innerHTML = result.join("");
 }
