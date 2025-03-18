@@ -114,20 +114,19 @@ function linesToHtml(
 
 /**
  * Render the readonly view of a fountain document.
- * @param div this elements content will be replaced
+ * @param parent this elements content will be replaced
  * @param script the document to render
  * @param settings
  * @param blackoutCharacter if given this characters dialogue is blacked out.
  */
 function readonlyView(
-  div: HTMLElement,
+  parent: HTMLElement,
   script: FountainScript,
   settings: ShowHideSettings,
   blackoutCharacter?: string,
 ) {
-  let sceneNumber = 1;
   let skippingRest = false;
-  const element_to_html = (el: FountainElement): string => {
+  const convertElement = (el: FountainElement): string => {
     if (skippingRest) {
       return "";
     }
@@ -136,8 +135,7 @@ function readonlyView(
         return actionToHtml(el, script, settings);
       case "scene": {
         const text = script.extractAsHtml(el.range);
-        const res = `<h3 ${dataRange(el.range)} class="scene-heading" id="scene${sceneNumber}">${text}</h3>${BLANK_LINE}`;
-        sceneNumber++;
+        const res = `<h3 ${dataRange(el.range)} class="scene-heading">${text}</h3>${BLANK_LINE}`;
         return res;
       }
 
@@ -203,9 +201,9 @@ function readonlyView(
     }<hr>${BLANK_LINE}`;
   }
 
-  const content = script.script.map((el) => element_to_html(el)).join("");
+  const content = script.script.map((el) => convertElement(el)).join("");
   const innerHTML = titlePageHtml + content;
-  div.innerHTML = innerHTML;
+  parent.innerHTML = innerHTML;
 }
 
 /// Return the range of the first visible line on the screen. Or something close.
@@ -262,27 +260,13 @@ function emitIndexCardSynopsis(
   */
 }
 
-class SceneCounter {
-  count: number;
-
-  constructor() {
-    this.count = 0;
-  }
-
-  next(): number {
-    return ++this.count;
-  }
-}
-
 function emitIndexCard(
   div: HTMLElement,
   script: FountainScript,
-  ctr: SceneCounter,
   scene: StructureScene,
 ): void {
   if (scene.scene) {
     const heading = scene.scene;
-    const sceneNumber = ctr.next();
     div.createDiv(
       {
         cls: "screenplay-index-card",
@@ -296,7 +280,6 @@ function emitIndexCard(
           cls: "scene-heading",
           attr: {
             "data-range": `${heading.range.start}${heading.range.end}`,
-            id: `scene${sceneNumber}`,
           },
           text: script.unsafeExtractRaw(heading.range),
         });
@@ -314,7 +297,6 @@ function emitIndexCard(
 function emitIndexCardsSection(
   parent: HTMLElement,
   script: FountainScript,
-  ctr: SceneCounter,
   section: StructureSection,
 ): void {
   if (section.section) {
@@ -342,10 +324,10 @@ function emitIndexCardsSection(
     for (const el of section.content) {
       switch (el.kind) {
         case "scene":
-          emitIndexCard(sectionDiv, script, ctr, el);
+          emitIndexCard(sectionDiv, script, el);
           break;
         case "section":
-          emitIndexCardsSection(sectionDiv, script, ctr, el);
+          emitIndexCardsSection(sectionDiv, script, el);
           break;
         default:
           {
@@ -365,9 +347,8 @@ function emitIndexCardsSection(
 function indexCardsView(div: HTMLElement, script: FountainScript): void {
   const structure = script.structure();
   div.empty();
-  const ctr = new SceneCounter();
   for (const s of structure) {
-    emitIndexCardsSection(div, script, ctr, s);
+    emitIndexCardsSection(div, script, s);
   }
 
   // let state: Inside = Inside.Nothing;
