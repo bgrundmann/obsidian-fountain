@@ -6,13 +6,18 @@ import {
   type Line,
   type Range,
   type ShowHideSettings,
+  type StructureScene,
+  type StructureSection,
+  type Synopsis,
   escapeHtml,
-  extractNotes,
-  isBlankLines,
 } from "./fountain";
 export { readonlyView, indexCardsView, getDataRange, rangeOfFirstVisibleLine };
 
 const BLANK_LINE = "<div>&nbsp;</div>";
+
+function assertNever(x: never): never {
+  throw new Error(`Unexpected object: ${x}`);
+}
 
 /// Generate the blank line at the end of a range.
 function blankLineAtEnd(r: Range): string {
@@ -225,10 +230,131 @@ function rangeOfFirstVisibleLine(screenplayElement: HTMLElement): Range | null {
   return null;
 }
 
-enum Inside {
-  Nothing = 0,
-  Section = 1,
-  Card = 2,
+function emitIndexCardSynopsis(
+  div: HTMLElement,
+  script: FountainScript,
+  synopsis: Synopsis,
+): void {
+  div.createDiv(
+    {
+      attr: {
+        "data-synopsis": `${synopsis.range.start},${synopsis.range.end}`,
+      },
+    },
+    (div2) => {
+      for (const l of synopsis.linesOfText) {
+        const line = div2.createDiv({
+          cls: "synopsis",
+          attr: { "data-range": `${l.start},${l.end}` },
+        });
+        line.innerHTML = script.extractAsHtml(l);
+      }
+    },
+  );
+  /*
+  emit(`<div ${dataRange(el.range, "synopsis")}>`);
+  for (const l of el.linesOfText) {
+    emit(
+      `<div ${dataRange(l)} class="synopsis">${script.extractAsHtml(l)}</div>`,
+    );
+  }
+  emit("</div>");
+  */
+}
+
+class SceneCounter {
+  count: number;
+
+  constructor() {
+    this.count = 0;
+  }
+
+  next(): number {
+    return ++this.count;
+  }
+}
+
+function emitIndexCard(
+  div: HTMLElement,
+  script: FountainScript,
+  ctr: SceneCounter,
+  scene: StructureScene,
+): void {
+  if (scene.scene) {
+    const heading = scene.scene;
+    const sceneNumber = ctr.next();
+    div.createDiv(
+      {
+        cls: "screenplay-index-card",
+        attr: {
+          draggable: true,
+          "data-range": `${scene.range.start},${scene.range.end}`,
+        },
+      },
+      (indexCard) => {
+        indexCard.createEl("h3", {
+          cls: "scene-heading",
+          attr: {
+            "data-range": `${heading.range.start}${heading.range.end}`,
+            id: `scene${sceneNumber}`,
+          },
+          text: script.unsafeExtractRaw(heading.range),
+        });
+        indexCard.createDiv({ cls: "index-card-buttons" }, (buttons) => {
+          buttons.createEl("button", { cls: "copy" });
+        });
+        if (scene.synopsis) {
+          emitIndexCardSynopsis(indexCard, script, scene.synopsis);
+        }
+      },
+    );
+  }
+}
+
+function emitIndexCardsSection(
+  parent: HTMLElement,
+  script: FountainScript,
+  ctr: SceneCounter,
+  section: StructureSection,
+): void {
+  if (section.section) {
+    const title = script.unsafeExtractRaw(section.section.range);
+    const hTag =
+      `h${section.section.depth ?? 1}` as keyof HTMLElementTagNameMap;
+    if (
+      title
+        .toLowerCase()
+        .replace(/^ *#+ */, "")
+        .trimEnd() === "boneyard"
+    ) {
+      parent.createEl("hr");
+    }
+    parent.createEl(hTag, {
+      cls: "section",
+      attr: { "data-start": section.section.range.start },
+      text: title,
+    });
+  }
+  if (section.synopsis) {
+    emitIndexCardSynopsis(parent, script, section.synopsis);
+  }
+  parent.createDiv({ cls: "screenplay-index-cards" }, (sectionDiv) => {
+    for (const el of section.content) {
+      switch (el.kind) {
+        case "scene":
+          emitIndexCard(sectionDiv, script, ctr, el);
+          break;
+        case "section":
+          emitIndexCardsSection(sectionDiv, script, ctr, el);
+          break;
+        default:
+          {
+            assertNever(el);
+          }
+          break;
+      }
+    }
+  });
 }
 
 /**
@@ -237,113 +363,120 @@ enum Inside {
  * @param script the fountain document.
  */
 function indexCardsView(div: HTMLElement, script: FountainScript): void {
-  let state: Inside = Inside.Nothing;
-  // Are we at the very start of either a section or a scene?
-  // Rationale: We only want the initial synopsis of a section
-  // or scene in the index card view
-  let atStart = true;
-  const result: string[] = [];
-  let sceneNumber = 1;
-  function emit(s: string) {
-    result.push(s);
+  const structure = script.structure();
+  div.empty();
+  const ctr = new SceneCounter();
+  for (const s of structure) {
+    emitIndexCardsSection(div, script, ctr, s);
   }
-  function emitClose(what: Inside.Section | Inside.Card) {
-    while (state >= what) {
-      emit("</div>");
-      state--;
-    }
-  }
-  function emitOpenTill(what: Inside.Section | Inside.Card) {
-    while (state < what) {
-      state++;
-      switch (state) {
-        case Inside.Nothing:
-          break;
-        case Inside.Section:
-          emit('<div class="screenplay-index-cards">');
-          break;
-        case Inside.Card:
-          emit('<div class="screenplay-index-card" draggable="true">');
-          emit(
-            '<div class="index-card-buttons"><button class="copy"></button></div>',
-          );
-          break;
-      }
-    }
-  }
-  for (const el of script.script) {
-    switch (el.kind) {
-      case "scene":
-        // make sure the previous card is closed and open a new one.
-        emitClose(Inside.Card);
-        emitOpenTill(Inside.Card);
-        emit(
-          `<h3 class="scene-heading" id="scene${sceneNumber}" data-start="${el.range.start}">${script.extractAsHtml(el.range)}</h3>`,
-        );
-        atStart = true;
-        sceneNumber++;
-        break;
 
-      case "section":
-        // We ignore sections of depth 4 and deeper in the overview
-        if (el.depth <= 3) {
-          // make sure the previous card is closed and also the prev section
-          emitClose(Inside.Section);
-          const title = script.extractAsHtml(el.range);
-          if (
-            title
-              .toLowerCase()
-              .replace(/^ *#+ */, "")
-              .trimEnd() === "boneyard"
-          ) {
-            emit("<hr>");
-          }
-          emit(
-            `<h${el.depth ?? 1} class="section" data-start="${el.range.start}">${title}</h${el.depth ?? 1}>`,
-          );
-          atStart = true;
-        }
-        break;
+  // let state: Inside = Inside.Nothing;
+  // // Are we at the very start of either a section or a scene?
+  // // Rationale: We only want the initial synopsis of a section
+  // // or scene in the index card view
+  // let atStart = true;
+  // const result: string[] = [];
+  // let sceneNumber = 1;
+  // function emit(s: string) {
+  //   result.push(s);
+  // }
+  // function emitClose(what: Inside.Section | Inside.Card) {
+  //   while (state >= what) {
+  //     emit("</div>");
+  //     state--;
+  //   }
+  // }
+  // function emitOpenTill(what: Inside.Section | Inside.Card) {
+  //   while (state < what) {
+  //     state++;
+  //     switch (state) {
+  //       case Inside.Nothing:
+  //         break;
+  //       case Inside.Section:
+  //         emit('<div class="screenplay-index-cards">');
+  //         break;
+  //       case Inside.Card:
+  //         emit('<div class="screenplay-index-card" draggable="true">');
+  //         emit(
+  //           '<div class="index-card-buttons"><button class="copy"></button></div>',
+  //         );
+  //         break;
+  //     }
+  //   }
+  // }
+  // for (const el of script.script) {
+  //   switch (el.kind) {
+  //     case "scene":
+  //       // make sure the previous card is closed and open a new one.
+  //       emitClose(Inside.Card);
+  //       emitOpenTill(Inside.Card);
+  //       emit(
+  //         `<h3 class="scene-heading" id="scene${sceneNumber}" data-start="${el.range.start}">${script.extractAsHtml(el.range)}</h3>`,
+  //       );
+  //       atStart = true;
+  //       sceneNumber++;
+  //       break;
 
-      case "synopsis":
-        if (atStart) {
-          emit(`<div ${dataRange(el.range, "synopsis")}>`);
-          for (const l of el.linesOfText) {
-            emit(
-              `<div ${dataRange(l)} class="synopsis">${script.extractAsHtml(l)}</div>`,
-            );
-          }
-          emit("</div>");
-          atStart = false;
-        }
-        break;
+  //     case "section":
+  //       // We ignore sections of depth 4 and deeper in the overview
+  //       if (el.depth <= 3) {
+  //         // make sure the previous card is closed and also the prev section
+  //         emitClose(Inside.Section);
+  //         const title = script.extractAsHtml(el.range);
+  //         if (
+  //           title
+  //             .toLowerCase()
+  //             .replace(/^ *#+ */, "")
+  //             .trimEnd() === "boneyard"
+  //         ) {
+  //           emit("<hr>");
+  //         }
+  //         emit(
+  //           `<h${el.depth ?? 1} class="section" data-start="${el.range.start}">${title}</h${el.depth ?? 1}>`,
+  //         );
+  //         atStart = true;
+  //       }
+  //       break;
 
-      default: {
-        if (!isBlankLines(el)) {
-          // we allow for blank lines between the section or scene
-          // and the synopsis
-          // but anything else indicates the end of what we will
-          // display in the index card.
-          atStart = false;
-        }
-        // With the exception of todo notes which we do display
-        const notes = extractNotes(el);
-        if (notes) {
-          for (const note of notes) {
-            if (note.noteKind === "todo") {
-              emit(
-                `<p class="todo"><span>${script.extractAsHtml(note.textRange)}</span></p>`,
-              );
-            }
-          }
-        }
+  //     case "synopsis":
+  //       if (atStart) {
+  //         emit(`<div ${dataRange(el.range, "synopsis")}>`);
+  //         for (const l of el.linesOfText) {
+  //           emit(
+  //             `<div ${dataRange(l)} class="synopsis">${script.extractAsHtml(l)}</div>`,
+  //           );
+  //         }
+  //         emit("</div>");
+  //         atStart = false;
+  //       }
+  //       break;
 
-        break;
-      }
-    }
-  }
-  emitClose(Inside.Section);
-  // emit one data-start containing the end of the document.
-  emit(`<div data-start="${script.document.length}"></div>`);
-  div.innerHTML = result.join("");
+  //     default: {
+  //       if (!isBlankLines(el)) {
+  //         // we allow for blank lines between the section or scene
+  //         // and the synopsis
+  //         // but anything else indicates the end of what we will
+  //         // display in the index card.
+  //         atStart = false;
+  //       }
+  //       // With the exception of todo notes which we do display
+  //       const notes = extractNotes(el);
+  //       if (notes) {
+  //         for (const note of notes) {
+  //           if (note.noteKind === "todo") {
+  //             emit(
+  //               `<p class="todo"><span>${script.extractAsHtml(note.textRange)}</span></p>`,
+  //             );
+  //           }
+  //         }
+  //       }
+
+  //       break;
+  //     }
+  //   }
+  // }
+  // emitClose(Inside.Section);
+  // // emit one data-start containing the end of the document.
+  // emit(`<div data-start="${script.document.length}"></div>`);
+  // div.innerHTML = result.join("");
 }

@@ -28,7 +28,12 @@ enum ShowMode {
 /** Move the range of text to a new position. The newStart position is required
 to not be within range.
 */
-function moveText(text: string, range: Range, newStart: number): string {
+function moveText(
+  text: string,
+  range: Range,
+  newStart: number,
+  newTrailer = "",
+): string {
   // Extract the text to be moved
   const movedPortion = text.slice(range.start, range.end);
   const beforeRange = text.slice(0, range.start);
@@ -40,6 +45,7 @@ function moveText(text: string, range: Range, newStart: number): string {
       beforeRange +
       afterRange.slice(0, newStart - range.end) +
       movedPortion +
+      newTrailer +
       afterRange.slice(newStart - range.end)
     );
   }
@@ -47,6 +53,7 @@ function moveText(text: string, range: Range, newStart: number): string {
   return (
     text.slice(0, newStart) +
     movedPortion +
+    newTrailer +
     text.slice(newStart, range.start) +
     afterRange
   );
@@ -121,21 +128,12 @@ class ReadonlyViewState {
   }
 
   private installIndexCardEventHandlers(mainblock: HTMLDivElement) {
-    const indexCards = mainblock.querySelectorAll(".screenplay-index-card");
-    const starts = Array.from(mainblock.querySelectorAll("[data-start]"))
-      .map((e: Element) => {
-        return Number.parseInt(e.getAttribute("data-start") || "-1");
-      })
-      .filter((v) => v !== -1);
-    function rangeFromStart(start: number): Range {
-      const ndx = starts.findIndex((r) => r === start);
-      return { start: start, end: starts[ndx + 1] };
-    }
+    const indexCards = mainblock.querySelectorAll<HTMLElement>(
+      ".screenplay-index-card",
+    );
     for (const indexCard of indexCards) {
-      const d = indexCard.querySelector("[data-start]");
-      if (d === null) continue;
-      const start = Number.parseInt(d.getAttribute("data-start") || "-1");
-      const indexCardRange = rangeFromStart(start);
+      const indexCardRange = getDataRange(indexCard);
+      if (!indexCardRange) continue;
       indexCard.addEventListener("dragstart", (evt: DragEvent) => {
         this.dragstartHandler(mainblock, indexCardRange, evt);
       });
@@ -146,13 +144,15 @@ class ReadonlyViewState {
         this.copyScene(indexCardRange);
       });
     }
-    const sections = mainblock.querySelectorAll(".section");
+    /*
+    const sections = mainblock.querySelectorAll<HTMLElement>(".section");
     for (const section of sections) {
       const start = Number.parseInt(section.getAttribute("data-start") || "-1");
       // TODO think about if that is always the right thing for sections
       const range = rangeFromStart(start);
       this.addDragOverLeaveDropHandlers(section, range);
     }
+    */
 
     const editableSynopsis = mainblock.querySelectorAll("[data-synopsis]");
     for (const es_ of editableSynopsis) {
@@ -208,7 +208,7 @@ class ReadonlyViewState {
     });
   }
 
-  private addDragOverLeaveDropHandlers(el: Element, range: Range) {
+  private addDragOverLeaveDropHandlers(el: HTMLElement, range: Range) {
     el.addEventListener("dragover", (evt: DragEvent) => {
       this.dragoverHandler(el, range, evt);
     });
@@ -221,12 +221,30 @@ class ReadonlyViewState {
     });
   }
 
+  /* copy a scene making sure that it is properly terminated by an empty line */
   private copyScene(range: Range): void {
+    const sceneText = this.text.slice(range.start, range.end);
+    const lastTwo = sceneText.slice(-2);
+    const extraNewLines =
+      lastTwo === "\n\n" ? "" : lastTwo[1] === "\n" ? "\n" : "\n\n";
+
     this.text =
       this.text.slice(0, range.end) +
-      this.text.slice(range.start, range.end) +
+      extraNewLines +
+      sceneText +
       this.text.slice(range.end);
     this.render();
+  }
+
+  /* move a scene making sure that it is properly terminated by an empty line  */
+  private moveScene(range: Range, newPos: number): void {
+    const lastTwo = this.text.slice(
+      range.end - range.start - 2,
+      range.end - range.start,
+    );
+    const extraNewLines =
+      lastTwo === "\n\n" ? "" : lastTwo[1] === "\n" ? "\n" : "\n\n";
+    this.text = moveText(this.text, range, newPos, extraNewLines);
   }
 
   private dropHandler(dropZone: Element, dropZoneRange: Range, evt: DragEvent) {
@@ -238,8 +256,7 @@ class ReadonlyViewState {
     dropZone.classList.remove("drop-left");
     dropZone.classList.remove("drop-right");
     evt.preventDefault();
-    this.text = moveText(
-      this.text,
+    this.moveScene(
       draggedRange,
       before ? dropZoneRange.start : dropZoneRange.end,
     );

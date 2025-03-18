@@ -242,6 +242,37 @@ function mergeConsecutiveActions(script: FountainElement[]): FountainElement[] {
   return merged;
 }
 
+export type StructureSection = {
+  kind: "section";
+  section?: Section;
+  synopsis?: Synopsis;
+  content: (StructureSection | StructureScene)[];
+};
+
+export class StructureScene {
+  constructor(
+    readonly kind: "scene",
+    readonly content: Exclude<FountainElement, Scene>[],
+    public scene?: Scene,
+    public synopsis?: Synopsis,
+  ) {}
+
+  get range(): Range {
+    const starts: number[] = [
+      this.scene?.range.start,
+      this.synopsis?.range.start,
+      this.content[0]?.range.start,
+    ].filter((r): r is number => r !== undefined);
+    const ends: number[] = [
+      this.scene?.range.end,
+      this.synopsis?.range.end,
+      this.content[this.content.length - 1]?.range.end,
+    ].filter((r): r is number => r !== undefined);
+
+    return { start: Math.min(...starts), end: Math.max(...ends) };
+  }
+}
+
 class FountainScript {
   readonly titlePage: KeyValue[];
   readonly script: FountainElement[];
@@ -383,5 +414,104 @@ class FountainScript {
         }),
       };
     });
+  }
+
+  /** Return a structured representation of the script.
+      Note that in this representation the first synopsis of a section
+      or scene will not appear inside content, but inside the synopsis
+      field. Even if empty action lines (which will appear inside content)
+      where between the scene or section header and the synopsis.
+      So if exact reproduction of the document or iteration in the order
+      in which the elements appear in the script is important, use this.script()
+  */
+  structure(): StructureSection[] {
+    const res: StructureSection[] = [];
+    let currentSection: StructureSection = { kind: "section", content: [] };
+    let currentScene: StructureScene = new StructureScene("scene", []);
+
+    const isCurrentSceneEmpty = () =>
+      !currentScene.content.length &&
+      !currentScene.scene &&
+      !currentScene.synopsis;
+    const isCurrentSectionEmpty = () =>
+      isCurrentSceneEmpty() &&
+      !currentSection.content &&
+      !currentSection.section &&
+      !currentSection.synopsis;
+    const currentSceneHasOnlyBlankLines = () =>
+      currentScene.content.every(
+        (fe) =>
+          fe.kind === "action" && fe.lines.every((l) => !l.elements.length),
+      );
+    for (const fe of this.script) {
+      switch (fe.kind) {
+        case "section":
+          {
+            if (fe.depth <= 3) {
+              if (isCurrentSectionEmpty()) {
+                // If the current section does not contain anything yet than this is its title
+                // this only happens at the beginning of a document
+                currentSection.section = fe;
+              } else {
+                // otherwise finish the current scene and start a new section
+                if (!isCurrentSceneEmpty()) {
+                  currentSection.content.push(currentScene);
+                  currentScene = new StructureScene("scene", []);
+                }
+                res.push(currentSection);
+                currentSection = { kind: "section", section: fe, content: [] };
+              }
+            } else {
+              // Sections of depth 4 and greater are used to structure scenes...
+              currentScene.content.push(fe);
+            }
+          }
+          break;
+        case "scene":
+          {
+            if (!isCurrentSceneEmpty()) {
+              // This is the start of a new scene.
+              currentSection.content.push(currentScene);
+            }
+            currentScene = new StructureScene("scene", [], fe);
+          }
+          break;
+        case "synopsis":
+          {
+            if (
+              !currentScene.synopsis &&
+              !currentScene.scene &&
+              currentSceneHasOnlyBlankLines() &&
+              !currentSection.content.length &&
+              currentSection.section
+            ) {
+              // There was a section line and nothing other than blank
+              // lines followed it
+              // TODO: Deal with boneyards
+              currentSection.synopsis = fe;
+            } else if (
+              !currentScene.synopsis &&
+              currentScene.scene &&
+              currentSceneHasOnlyBlankLines()
+            ) {
+              currentScene.synopsis = fe;
+            } else {
+              currentScene.content.push(fe);
+            }
+          }
+          break;
+
+        default:
+          currentScene.content.push(fe);
+          break;
+      }
+    }
+    if (!isCurrentSceneEmpty()) {
+      currentSection.content.push(currentScene);
+    }
+    if (!isCurrentSectionEmpty()) {
+      res.push(currentSection);
+    }
+    return res;
   }
 }
