@@ -14,6 +14,7 @@ export type {
   FountainElement,
   Note,
 };
+import { NBSP } from "render_tools";
 
 export type ShowHideSettings = {
   hideSynopsis?: boolean; // undefined also false
@@ -25,9 +26,6 @@ interface Range {
   start: number;
   end: number;
 }
-
-/** Unicode non breaking space. Use this instead of &nbsp; so we don't need to set innerHTML */
-export const NBSP = "\u00A0";
 
 function intersect(r1: Range, r2: Range): boolean {
   return r1.start < r2.end && r2.start < r1.end;

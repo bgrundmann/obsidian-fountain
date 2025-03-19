@@ -11,13 +11,14 @@ import {
 } from "obsidian";
 import type { FountainScript, Range, ShowHideSettings } from "./fountain";
 import { createFountainEditorPlugin } from "./fountain_editor";
+import { renderIndexCards } from "./index_cards_view";
 import { type ParseError, parse } from "./parser_cache";
 import {
   getDataRange,
   rangeOfFirstVisibleLine,
   renderFountain,
-  renderIndexCards,
 } from "./reading_view";
+
 export const VIEW_TYPE_FOUNTAIN = "fountain";
 
 enum ShowMode {
