@@ -51,18 +51,19 @@ function dialogueView(
   settings: ShowHideSettings,
   blackoutCharacter?: string,
 ): void {
-  const characterLine = script.extractAsHtml({
-    start: dialogue.characterRange.start,
-    end: dialogue.characterExtensionsRange.end,
-  });
-  // Character line
+  // Character line (including extensions)
   parent.createDiv(
     {
       attr: dataRange(dialogue.characterRange),
     },
     (div) => {
-      const character = div.createEl("h4", { cls: "dialogue-character" });
-      character.innerHTML = characterLine;
+      div.createEl("h4", {
+        cls: "dialogue-character",
+        text: script.unsafeExtractRaw({
+          start: dialogue.characterRange.start,
+          end: dialogue.characterExtensionsRange.end,
+        }),
+      });
     },
   );
   if (dialogue.parenthetical) {
@@ -72,8 +73,10 @@ function dialogueView(
         attr: dataRange(p),
       },
       (div) => {
-        const paren = div.createDiv({ cls: "dialogue-parenthetical" });
-        paren.innerHTML = script.extractAsHtml(p);
+        div.createDiv({
+          cls: "dialogue-parenthetical",
+          text: script.unsafeExtractRaw(p),
+        });
       },
     );
   }
@@ -166,7 +169,7 @@ function contentView(
           parent.createDiv({
             cls: "synopsis",
             attr: dataRange(l),
-            text: script.unsafeExtractRaw(l),
+            text: script.unsafeExtractRaw(l, true),
           });
         }
         break;
@@ -301,11 +304,11 @@ function emitIndexCardSynopsis(
     },
     (div2) => {
       for (const l of synopsis.linesOfText) {
-        const line = div2.createDiv({
+        div2.createDiv({
           cls: "synopsis",
           attr: dataRange(l),
+          text: script.unsafeExtractRaw(l, true),
         });
-        line.innerHTML = script.extractAsHtml(l);
       }
     },
   );

@@ -298,9 +298,13 @@ class FountainScript {
   }
 
   /** Extract some text from the fountain document. CAREFUL this
-    text is NOT html escaped! */
-  unsafeExtractRaw(r: Range): string {
-    return this.document.slice(r.start, r.end);
+    text is NOT html escaped!
+    @param escapeLeadingSpaces if true leading spaces are replaced by non breaking space */
+  unsafeExtractRaw(r: Range, escapeLeadingSpaces = false): string {
+    return maybeEscapeLeadingSpaces(
+      escapeLeadingSpaces,
+      this.document.slice(r.start, r.end),
+    );
   }
 
   /**
