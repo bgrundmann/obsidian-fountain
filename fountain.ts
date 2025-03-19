@@ -328,12 +328,10 @@ class FountainScript {
     st: StyledTextWithNotesAndBoneyard,
     settings: ShowHideSettings,
     escapeLeadingSpaces: boolean,
-  ): string {
-    return st
-      .map((el) =>
-        this.renderTextElement(parent, el, settings, escapeLeadingSpaces),
-      )
-      .join("");
+  ): void {
+    st.map((el) =>
+      this.renderTextElement(parent, el, settings, escapeLeadingSpaces),
+    );
   }
 
   private renderStyledTextElement(
@@ -392,9 +390,9 @@ class FountainScript {
           }
           parent.createEl("span", { cls: noteKindClass }, (span) => {
             if (el.noteKind === "todo") {
-              parent.createEl("b", { text: "TODO: " });
+              span.createEl("b", { text: "TODO: " });
             }
-            parent.appendText(
+            span.appendText(
               maybeEscapeLeadingSpaces(
                 true,
                 this.unsafeExtractRaw(el.textRange),
