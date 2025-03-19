@@ -11,7 +11,12 @@ import type {
   Synopsis,
 } from "./fountain";
 import { NBSP } from "./fountain";
-export { readonlyView, indexCardsView, getDataRange, rangeOfFirstVisibleLine };
+export {
+  renderFountain,
+  renderIndexCards,
+  getDataRange,
+  rangeOfFirstVisibleLine,
+};
 
 function assertNever(x: never): never {
   throw new Error(`Unexpected object: ${x}`);
@@ -34,17 +39,17 @@ function renderBlankLine(parent: HTMLElement, r?: Range): HTMLElement {
   });
 }
 
-function actionToHtml(
+function renderAction(
   parent: HTMLElement,
   action: Action,
   script: FountainScript,
   settings: ShowHideSettings,
 ): void {
-  linesToHtml(parent, script, ["action"], action.lines, true, settings);
+  renderLines(parent, script, ["action"], action.lines, true, settings);
   renderBlankLine(parent, action.range);
 }
 
-function dialogueView(
+function renderDialogue(
   parent: HTMLElement,
   dialogue: Dialogue,
   script: FountainScript,
@@ -85,7 +90,7 @@ function dialogueView(
     script.charactersOf(dialogue).includes(blackoutCharacter)
       ? ["blackout", "dialogue-words"]
       : ["dialogue-words"];
-  linesToHtml(parent, script, classes, dialogue.lines, false, settings);
+  renderLines(parent, script, classes, dialogue.lines, false, settings);
   renderBlankLine(parent, dialogue.range);
 }
 
@@ -103,7 +108,7 @@ function getDataRange(target: HTMLElement, name = "range"): Range | null {
   }
 }
 
-function linesToHtml(
+function renderLines(
   parent: HTMLElement,
   script: FountainScript,
   lineClasses: string[], // Changed from lineClass: string
@@ -135,7 +140,7 @@ function linesToHtml(
 /**
  * Render the content of the script (everything but the title page).
  */
-function contentView(
+function renderContent(
   parent: HTMLElement,
   script: FountainScript,
   settings: ShowHideSettings,
@@ -148,7 +153,7 @@ function contentView(
     }
     switch (el.kind) {
       case "action":
-        actionToHtml(parent, el, script, settings);
+        renderAction(parent, el, script, settings);
         break;
       case "scene":
         {
@@ -198,7 +203,7 @@ function contentView(
         }
         break;
       case "dialogue":
-        dialogueView(parent, el, script, settings, blackoutCharacter);
+        renderDialogue(parent, el, script, settings, blackoutCharacter);
         break;
       case "transition":
         {
@@ -225,7 +230,7 @@ function contentView(
 
 const INDENT = NBSP.repeat(3);
 
-function titlePageView(parent: HTMLElement, script: FountainScript): void {
+function renderTitlePage(parent: HTMLElement, script: FountainScript): void {
   const titlePage = script.titlePage;
 
   if (titlePage.length > 0) {
@@ -259,14 +264,14 @@ function titlePageView(parent: HTMLElement, script: FountainScript): void {
  * @param settings
  * @param blackoutCharacter if given this characters dialogue is blacked out.
  */
-function readonlyView(
+function renderFountain(
   parent: HTMLElement,
   script: FountainScript,
   settings: ShowHideSettings,
   blackoutCharacter?: string,
 ): void {
-  titlePageView(parent, script);
-  contentView(parent, script, settings, blackoutCharacter);
+  renderTitlePage(parent, script);
+  renderContent(parent, script, settings, blackoutCharacter);
 }
 
 /// Return the range of the first visible line on the screen. Or something close.
@@ -396,7 +401,7 @@ function emitIndexCardsSection(
  * @param div This elements content will be replaced.
  * @param script the fountain document.
  */
-function indexCardsView(div: HTMLElement, script: FountainScript): void {
+function renderIndexCards(div: HTMLElement, script: FountainScript): void {
   const structure = script.structure();
   div.empty();
   for (const s of structure) {

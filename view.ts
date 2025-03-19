@@ -14,9 +14,9 @@ import { createFountainEditorPlugin } from "./fountain_editor";
 import { type ParseError, parse } from "./parser_cache";
 import {
   getDataRange,
-  indexCardsView,
   rangeOfFirstVisibleLine,
-  readonlyView,
+  renderFountain,
+  renderIndexCards,
 } from "./reading_view";
 export const VIEW_TYPE_FOUNTAIN = "fountain";
 
@@ -366,11 +366,11 @@ class ReadonlyViewState {
     // the recommended obsidian create... calls.
     switch (this.showMode) {
       case ShowMode.IndexCards:
-        indexCardsView(mainblock, fp);
+        renderIndexCards(mainblock, fp);
         break;
 
       case ShowMode.Script:
-        readonlyView(mainblock, fp, this.pstate, this.blackout ?? undefined);
+        renderFountain(mainblock, fp, this.pstate, this.blackout ?? undefined);
         break;
     }
 
