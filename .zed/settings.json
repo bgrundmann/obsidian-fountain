@@ -16,6 +16,7 @@
 					"name": "biome"
 				}
 			},
+			"use_on_type_format": false,
 			"code_actions_on_format": {
 				"source.fixAll.biome": true,
 				"source.organizeImports.biome": true
