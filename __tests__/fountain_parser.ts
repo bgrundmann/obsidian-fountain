@@ -20,7 +20,7 @@ function testTitlePage(
 ): void {
   test(label, () => {
     const script: FountainScript = parse(input, {});
-    expect(script.titlePageWithHtmlValues()).toMatchObject(expected);
+    expect(script.titlePage).toMatchObject(expected);
   });
 }
 
@@ -43,21 +43,50 @@ Contact:
     [
       {
         key: "Title",
-        htmlValues: [
-          `<span class="underline"><span class="bold">BRICK &amp; STEEL</span></span>`,
-          `<span class="underline"><span class="bold">FULL RETIRED</span></span>`,
+        values: [
+          [
+            {
+              kind: "underline",
+              elements: [
+                {
+                  kind: "bold",
+                  elements: [{ kind: "text", range: { start: 11, end: 24 } }],
+                  range: { start: 9, end: 26 },
+                },
+              ],
+              range: { start: 8, end: 27 },
+            },
+          ],
+          [
+            {
+              kind: "underline",
+              elements: [{ kind: "bold", elements: [{ kind: "text" }] }],
+            },
+          ],
         ],
       },
-      { key: "Credit", htmlValues: ["Written by"] },
-      { key: "Author", htmlValues: ["Stu Maschwitz"] },
-      { key: "Source", htmlValues: ["Story by KTM"] },
-      { key: "Draft date", htmlValues: ["1/27/2012"] },
+      {
+        key: "Credit",
+        values: [[{ kind: "text", range: { start: 56, end: 66 } }]],
+      },
+      {
+        key: "Author",
+        values: [[{ kind: "text", range: { start: 75, end: 88 } }]],
+      },
+      {
+        key: "Source",
+        values: [[{ kind: "text", range: { start: 97, end: 109 } }]],
+      },
+      {
+        key: "Draft date",
+        values: [[{ kind: "text", range: { start: 122, end: 131 } }]],
+      },
       {
         key: "Contact",
-        htmlValues: [
-          "Next Level Productions",
-          "1588 Mission Dr.",
-          "Solvang, CA 93463",
+        values: [
+          [{ kind: "text", range: { start: 142, end: 164 } }],
+          [{ kind: "text", range: { start: 166, end: 182 } }],
+          [{ kind: "text", range: { start: 184, end: 201 } }],
         ],
       },
     ],
@@ -76,19 +105,34 @@ Copyright: (c) 2003 Columbia Pictures
 
 This is a Southern story, full of lies and fabrications, but truer for their inclusion.`,
     [
-      { key: "Title", htmlValues: ["Big Fish"] },
-      { key: "Credit", htmlValues: ["written by"] },
-      { key: "Author", htmlValues: ["John August"] },
-      { key: "Source", htmlValues: ["based on the novel by Daniel Wallace"] },
+      {
+        key: "Title",
+        values: [[{ kind: "text", range: { start: 7, end: 15 } }]],
+      },
+      {
+        key: "Credit",
+        values: [[{ kind: "text", range: { start: 24, end: 34 } }]],
+      },
+      {
+        key: "Author",
+        values: [[{ kind: "text", range: { start: 43, end: 54 } }]],
+      },
+      {
+        key: "Source",
+        values: [[{ kind: "text", range: { start: 63, end: 99 } }]],
+      },
       {
         key: "Notes",
-        htmlValues: [
-          "FINAL PRODUCTION DRAFT",
-          "includes post-production dialogue",
-          "and omitted scenes",
+        values: [
+          [{ kind: "text", range: { start: 108, end: 130 } }],
+          [{ kind: "text", range: { start: 132, end: 165 } }],
+          [{ kind: "text", range: { start: 167, end: 185 } }],
         ],
       },
-      { key: "Copyright", htmlValues: ["(c) 2003 Columbia Pictures"] },
+      {
+        key: "Copyright",
+        values: [[{ kind: "text", range: { start: 197, end: 223 } }]],
+      },
     ],
   );
 });

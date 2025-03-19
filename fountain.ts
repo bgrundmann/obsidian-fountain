@@ -26,6 +26,9 @@ interface Range {
   end: number;
 }
 
+/** Unicode non breaking space. Use this instead of &nbsp; so we don't need to set innerHTML */
+export const NBSP = "\u00A0";
+
 function intersect(r1: Range, r2: Range): boolean {
   return r1.start < r2.end && r2.start < r1.end;
 }
@@ -199,6 +202,13 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#039;");
 }
 
+/** Escape leading spaces (that is spaces at beginning of the string or after newlines) if cond is true. */
+function maybeEscapeLeadingSpaces(cond: boolean, s: string): string {
+  return cond
+    ? s.replace(/^( +)/gm, (_, spaces) => NBSP.repeat(spaces.length))
+    : s;
+}
+
 /** The way the parser works, blank lines can cause separate action elements
  * (as opposed to a single action element containing all the newlines).
  * This merges all subsequent action elements into a single one.
@@ -284,25 +294,13 @@ class FountainScript {
    */
   extractAsHtml(r: Range, escapeLeadingSpaces = false): string {
     const safe = escapeHtml(this.unsafeExtractRaw(r));
-    return escapeLeadingSpaces
-      ? safe.replace(/^( +)/gm, (_, spaces) => "&nbsp;".repeat(spaces.length))
-      : safe;
+    return maybeEscapeLeadingSpaces(escapeLeadingSpaces, safe);
   }
 
   /** Extract some text from the fountain document. CAREFUL this
     text is NOT html escaped! */
   unsafeExtractRaw(r: Range): string {
     return this.document.slice(r.start, r.end);
-  }
-
-  private styledTextElementToHtml(
-    el: StyledTextElement,
-    settings: ShowHideSettings,
-  ): string {
-    const inner = el.elements
-      .map((e) => this.textElementToHtml(e, settings, false))
-      .join("");
-    return `<span class="${el.kind}">${inner}</span>`;
   }
 
   /**
@@ -322,54 +320,87 @@ class FountainScript {
   }
 
   styledTextToHtml(
+    parent: HTMLElement,
     st: StyledTextWithNotesAndBoneyard,
     settings: ShowHideSettings,
     escapeLeadingSpaces: boolean,
   ): string {
     return st
-      .map((el) => this.textElementToHtml(el, settings, escapeLeadingSpaces))
+      .map((el) =>
+        this.renderTextElement(parent, el, settings, escapeLeadingSpaces),
+      )
       .join("");
+  }
+
+  private renderStyledTextElement(
+    parent: HTMLElement,
+    el: StyledTextElement,
+    settings: ShowHideSettings,
+  ): void {
+    parent.createEl("span", { cls: el.kind }, (span) => {
+      for (const e of el.elements) {
+        this.renderTextElement(parent, e, settings, false);
+      }
+    });
   }
 
   /// Extract a text element from the fountain document safe to be used as
   /// HTML source.
-  private textElementToHtml(
+  private renderTextElement(
+    parent: HTMLElement,
     el: TextElementWithNotesAndBoneyard,
     settings: ShowHideSettings,
     escapeLeadingSpaces: boolean,
-  ): string {
+  ): void {
     switch (el.kind) {
       case "text":
-        return this.extractAsHtml(el.range, escapeLeadingSpaces);
+        parent.appendText(
+          maybeEscapeLeadingSpaces(
+            escapeLeadingSpaces,
+            this.unsafeExtractRaw(el.range),
+          ),
+        );
+        break;
       case "bold":
       case "italics":
       case "underline":
-        return this.styledTextElementToHtml(el, settings);
-      case "note": {
-        if (settings.hideNotes) {
-          return "";
+        this.renderStyledTextElement(parent, el, settings);
+        break;
+      case "note":
+        {
+          if (settings.hideNotes) {
+            return;
+          }
+          let noteKindClass = "";
+          switch (el.noteKind) {
+            case "+":
+              noteKindClass = "note-symbol-plus";
+              break;
+            case "-":
+              noteKindClass = "note-symbol-minus";
+              break;
+            case "todo":
+              noteKindClass = "note-todo";
+              break;
+            default:
+              noteKindClass = "note";
+              break;
+          }
+          parent.createEl("span", { cls: noteKindClass }, (span) => {
+            if (el.noteKind === "todo") {
+              parent.createEl("b", { text: "TODO: " });
+            }
+            parent.appendText(
+              maybeEscapeLeadingSpaces(
+                true,
+                this.unsafeExtractRaw(el.textRange),
+              ),
+            );
+          });
         }
-        let noteKindClass = "";
-        let prefix = "";
-        switch (el.noteKind) {
-          case "+":
-            noteKindClass = "note-symbol-plus";
-            break;
-          case "-":
-            noteKindClass = "note-symbol-minus";
-            break;
-          case "todo":
-            prefix = "<b>TODO: </b>";
-            noteKindClass = "note-todo";
-            break;
-          default:
-            noteKindClass = "note";
-            break;
-        }
-        return `<span class="${noteKindClass}">${prefix}${this.extractAsHtml(el.textRange, true)}</span>`;
-      }
+        break;
       case "boneyard":
-        return "";
+      /// TODO: support
     }
   }
 
@@ -401,17 +432,6 @@ class FountainScript {
       return {
         ...elt,
         source: this.document.slice(elt.range.start, elt.range.end),
-      };
-    });
-  }
-
-  titlePageWithHtmlValues(): (KeyValue & { htmlValues: string[] })[] {
-    return this.titlePage.map((kv) => {
-      return {
-        ...kv,
-        htmlValues: kv.values.map((v) => {
-          return v.map((st) => this.textElementToHtml(st, {}, false)).join("");
-        }),
       };
     });
   }

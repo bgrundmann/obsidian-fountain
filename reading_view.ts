@@ -10,19 +10,28 @@ import type {
   StructureSection,
   Synopsis,
 } from "./fountain";
+import { NBSP } from "./fountain";
 export { readonlyView, indexCardsView, getDataRange, rangeOfFirstVisibleLine };
 
 function assertNever(x: never): never {
   throw new Error(`Unexpected object: ${x}`);
 }
 
+function dataRange(r: Range): { "data-range": string } {
+  return { "data-range": `${r.start},${r.end}` };
+}
+
+function endOfRange(r: Range): Range {
+  return { start: r.end, end: r.end };
+}
+
 /// Generate the blank line at the end of a range.
-function renderBlankLine(parent: HTMLElement, r: Range): void {
-  const div = parent.createDiv({
+function renderBlankLine(parent: HTMLElement, r?: Range): HTMLElement {
+  return parent.createDiv({
     // end,end on purpose
-    attr: { "data-range": `${r.end},${r.end}` },
+    attr: r ? dataRange(endOfRange(r)) : {},
+    text: NBSP,
   });
-  div.innerHTML = "&nbsp";
 }
 
 function actionToHtml(
@@ -49,9 +58,7 @@ function dialogueView(
   // Character line
   parent.createDiv(
     {
-      attr: {
-        "data-range": `${dialogue.characterRange.start},${dialogue.characterRange.end}`,
-      },
+      attr: dataRange(dialogue.characterRange),
     },
     (div) => {
       const character = div.createEl("h4", { cls: "dialogue-character" });
@@ -62,7 +69,7 @@ function dialogueView(
     const p = dialogue.parenthetical;
     parent.createDiv(
       {
-        attr: { "data-range": `${p.start},${p.end}` },
+        attr: dataRange(p),
       },
       (div) => {
         const paren = div.createDiv({ cls: "dialogue-parenthetical" });
@@ -102,27 +109,23 @@ function linesToHtml(
   settings: ShowHideSettings,
 ): void {
   for (const line of lines) {
-    let innerHtml: string;
-    if (line.elements.length === 0) {
-      // Need a nbsp so that the div is not empty and gets regular text height
-      innerHtml = "&nbsp;";
-    } else {
-      innerHtml = script.styledTextToHtml(
-        line.elements,
-        settings,
-        escapeLeadingSpaces,
-      );
-    }
     const centered = line.centered ? "centered" : "";
     // Merge the lineClasses array with centered if present
     const allClasses = centered ? [centered, ...lineClasses] : lineClasses;
-    parent.createDiv(
-      { attr: { "data-range": `${line.range.start},${line.range.end}` } },
-      (div) => {
-        const innerDiv = div.createDiv({ cls: allClasses });
-        innerDiv.innerHTML = innerHtml;
-      },
-    );
+    parent.createDiv({ attr: dataRange(line.range) }, (div) => {
+      const innerDiv = div.createDiv({ cls: allClasses });
+      if (line.elements.length === 0) {
+        // Need a nbsp so that the div is not empty and gets regular text height
+        innerDiv.appendText(NBSP);
+      } else {
+        script.styledTextToHtml(
+          innerDiv,
+          line.elements,
+          settings,
+          escapeLeadingSpaces,
+        );
+      }
+    });
   }
 }
 
@@ -148,9 +151,7 @@ function contentView(
         {
           parent.createEl("h3", {
             cls: "scene-heading",
-            attr: {
-              "data-range": `${el.range.start},${el.range.end}`,
-            },
+            attr: dataRange(el.range),
             text: script.unsafeExtractRaw(el.range),
           });
           renderBlankLine(parent, el.range);
@@ -164,7 +165,7 @@ function contentView(
         for (const l of el.linesOfText) {
           parent.createDiv({
             cls: "synopsis",
-            attr: { "data-range": `${l.start},${l.end}` },
+            attr: dataRange(l),
             text: script.unsafeExtractRaw(l),
           });
         }
@@ -188,7 +189,7 @@ function contentView(
           const tag = `h${el.depth ?? 1}` as keyof HTMLElementTagNameMap;
           parent.createEl(tag, {
             cls: "section",
-            attr: { "data-range": `${el.range.start},${el.range.end}` },
+            attr: dataRange(el.range),
             text: title,
           });
         }
@@ -201,7 +202,7 @@ function contentView(
           const transitionText = script.unsafeExtractRaw(el.range);
           parent.createDiv({
             cls: "transition",
-            attr: { "data-range": `${el.range.start},${el.range.end}` },
+            attr: dataRange(el.range),
             text: transitionText,
           });
           renderBlankLine(parent, el.range);
@@ -209,7 +210,7 @@ function contentView(
         break;
       case "page-break":
         parent.createEl("hr", {
-          attr: { "data-range": `${el.range.start},${el.range.end}` },
+          attr: dataRange(el.range),
         });
         break;
     }
@@ -219,6 +220,8 @@ function contentView(
   }
 }
 
+const INDENT = NBSP.repeat(3);
+
 function titlePageView(parent: HTMLElement, script: FountainScript): void {
   const titlePage = script.titlePage;
 
@@ -227,25 +230,21 @@ function titlePageView(parent: HTMLElement, script: FountainScript): void {
       if (kv.values.length === 1) {
         parent.createDiv({}, (div) => {
           div.appendText(`${kv.key}: `);
-          // TODO:  kv.values[0]
+          script.styledTextToHtml(div, kv.values[0], {}, true);
         });
       } else {
         parent.createDiv({ text: `${kv.key}: ` });
-        for (const _v of kv.values) {
+        for (const v of kv.values) {
           parent.createDiv({}, (div) => {
-            div.innerHTML = "&nbsp;&nbsp;&nbsp";
-            // TODO: v
+            div.appendText(INDENT);
+            script.styledTextToHtml(div, v, {}, true);
           });
         }
       }
       // blank line
-      parent.createDiv({}, (div) => {
-        div.innerHTML = "&nbsp;";
-      });
+      renderBlankLine(parent);
       parent.createEl("hr");
-      parent.createDiv({}, (div) => {
-        div.innerHTML = "&nbsp;";
-      });
+      renderBlankLine(parent);
     }
   }
 }
@@ -304,21 +303,12 @@ function emitIndexCardSynopsis(
       for (const l of synopsis.linesOfText) {
         const line = div2.createDiv({
           cls: "synopsis",
-          attr: { "data-range": `${l.start},${l.end}` },
+          attr: dataRange(l),
         });
         line.innerHTML = script.extractAsHtml(l);
       }
     },
   );
-  /*
-  emit(`<div ${dataRange(el.range, "synopsis")}>`);
-  for (const l of el.linesOfText) {
-    emit(
-      `<div ${dataRange(l)} class="synopsis">${script.extractAsHtml(l)}</div>`,
-    );
-  }
-  emit("</div>");
-  */
 }
 
 function emitIndexCard(
@@ -333,15 +323,13 @@ function emitIndexCard(
         cls: "screenplay-index-card",
         attr: {
           draggable: true,
-          "data-range": `${scene.range.start},${scene.range.end}`,
+          ...dataRange(scene.range),
         },
       },
       (indexCard) => {
         indexCard.createEl("h3", {
           cls: "scene-heading",
-          attr: {
-            "data-range": `${heading.range.start}${heading.range.end}`,
-          },
+          attr: dataRange(heading.range),
           text: script.unsafeExtractRaw(heading.range),
         });
         indexCard.createDiv({ cls: "index-card-buttons" }, (buttons) => {
