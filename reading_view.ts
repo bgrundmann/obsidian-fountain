@@ -1,73 +1,82 @@
-import {
-  type Action,
-  type Dialogue,
-  type FountainElement,
-  type FountainScript,
-  type Line,
-  type Range,
-  type ShowHideSettings,
-  type StructureScene,
-  type StructureSection,
-  type Synopsis,
-  escapeHtml,
+import type {
+  Action,
+  Dialogue,
+  FountainElement,
+  FountainScript,
+  Line,
+  Range,
+  ShowHideSettings,
+  StructureScene,
+  StructureSection,
+  Synopsis,
 } from "./fountain";
 export { readonlyView, indexCardsView, getDataRange, rangeOfFirstVisibleLine };
-
-const BLANK_LINE = "<div>&nbsp;</div>";
 
 function assertNever(x: never): never {
   throw new Error(`Unexpected object: ${x}`);
 }
 
 /// Generate the blank line at the end of a range.
-function blankLineAtEnd(r: Range): string {
-  const end = { start: r.end, end: r.end };
-  return `<div ${dataRange(end)}>&nbsp;</div>`;
+function renderBlankLine(parent: HTMLElement, r: Range): void {
+  const div = parent.createDiv({
+    // end,end on purpose
+    attr: { "data-range": `${r.end},${r.end}` },
+  });
+  div.innerHTML = "&nbsp";
 }
 
 function actionToHtml(
+  parent: HTMLElement,
   action: Action,
   script: FountainScript,
   settings: ShowHideSettings,
-): string {
-  const html = `${linesToHtml(script, ["action"], action.lines, true, settings)}${blankLineAtEnd(action.range)}`;
-  return html;
+): void {
+  linesToHtml(parent, script, ["action"], action.lines, true, settings);
+  renderBlankLine(parent, action.range);
 }
 
-function dialogueToHtml(
+function dialogueView(
+  parent: HTMLElement,
   dialogue: Dialogue,
   script: FountainScript,
   settings: ShowHideSettings,
   blackoutCharacter?: string,
-): string {
+): void {
   const characterLine = script.extractAsHtml({
     start: dialogue.characterRange.start,
     end: dialogue.characterExtensionsRange.end,
   });
-  // TODO:
-  const parenthetical =
-    dialogue.parenthetical !== null
-      ? `<div ${dataRange(dialogue.parenthetical)}><div class="dialogue-parenthetical">${script.extractAsHtml(dialogue.parenthetical)}</div></div>`
-      : "";
+  // Character line
+  parent.createDiv(
+    {
+      attr: {
+        "data-range": `${dialogue.characterRange.start},${dialogue.characterRange.end}`,
+      },
+    },
+    (div) => {
+      const character = div.createEl("h4", { cls: "dialogue-character" });
+      character.innerHTML = characterLine;
+    },
+  );
+  if (dialogue.parenthetical) {
+    const p = dialogue.parenthetical;
+    parent.createDiv(
+      {
+        attr: { "data-range": `${p.start},${p.end}` },
+      },
+      (div) => {
+        const paren = div.createDiv({ cls: "dialogue-parenthetical" });
+        paren.innerHTML = script.extractAsHtml(p);
+      },
+    );
+  }
   const classes =
     blackoutCharacter &&
     script.charactersOf(dialogue).includes(blackoutCharacter)
       ? ["blackout", "dialogue-words"]
       : ["dialogue-words"];
-  const words = linesToHtml(script, classes, dialogue.lines, false, settings);
-  return `<div ${dataRange(dialogue.characterRange)}><h4 class="dialogue-character">${characterLine}</h4></div>
-${parenthetical}
-${words}
-${blankLineAtEnd(dialogue.range)}`;
-}
-
-function dataRange(r: Range, name = "range"): string {
-  return `data-${name}="${r.start},${r.end}"`;
-}
-
-function classes(c: string[]): string {
-  if (c.length === 0) return "";
-  return `class="${c.join(" ")}"`;
+  linesToHtml(parent, script, classes, dialogue.lines, false, settings);
+  renderBlankLine(parent, dialogue.range);
 }
 
 function getDataRange(target: HTMLElement, name = "range"): Range | null {
@@ -85,31 +94,160 @@ function getDataRange(target: HTMLElement, name = "range"): Range | null {
 }
 
 function linesToHtml(
+  parent: HTMLElement,
   script: FountainScript,
   lineClasses: string[], // Changed from lineClass: string
   lines: Line[],
   escapeLeadingSpaces: boolean,
   settings: ShowHideSettings,
-): string {
-  return lines
-    .map((line) => {
-      let innerHtml: string;
-      if (line.elements.length === 0) {
-        // Need a nbsp so that the div is not empty and gets regular text height
-        innerHtml = "&nbsp;";
+): void {
+  for (const line of lines) {
+    let innerHtml: string;
+    if (line.elements.length === 0) {
+      // Need a nbsp so that the div is not empty and gets regular text height
+      innerHtml = "&nbsp;";
+    } else {
+      innerHtml = script.styledTextToHtml(
+        line.elements,
+        settings,
+        escapeLeadingSpaces,
+      );
+    }
+    const centered = line.centered ? "centered" : "";
+    // Merge the lineClasses array with centered if present
+    const allClasses = centered ? [centered, ...lineClasses] : lineClasses;
+    parent.createDiv(
+      { attr: { "data-range": `${line.range.start},${line.range.end}` } },
+      (div) => {
+        const innerDiv = div.createDiv({ cls: allClasses });
+        innerDiv.innerHTML = innerHtml;
+      },
+    );
+  }
+}
+
+/**
+ * Render the content of the script (everything but the title page).
+ */
+function contentView(
+  parent: HTMLElement,
+  script: FountainScript,
+  settings: ShowHideSettings,
+  blackoutCharacter?: string,
+): void {
+  let skippingRest = false;
+  const convertElement = (el: FountainElement): void => {
+    if (skippingRest) {
+      return;
+    }
+    switch (el.kind) {
+      case "action":
+        actionToHtml(parent, el, script, settings);
+        break;
+      case "scene":
+        {
+          parent.createEl("h3", {
+            cls: "scene-heading",
+            attr: {
+              "data-range": `${el.range.start},${el.range.end}`,
+            },
+            text: script.unsafeExtractRaw(el.range),
+          });
+          renderBlankLine(parent, el.range);
+        }
+        break;
+
+      case "synopsis":
+        if (settings.hideSynopsis) {
+          return;
+        }
+        for (const l of el.linesOfText) {
+          parent.createDiv({
+            cls: "synopsis",
+            attr: { "data-range": `${l.start},${l.end}` },
+            text: script.unsafeExtractRaw(l),
+          });
+        }
+        break;
+
+      case "section":
+        {
+          const title = script.unsafeExtractRaw(el.range);
+          if (
+            title
+              .toLowerCase()
+              .replace(/^ *#+ */, "")
+              .trimEnd() === "boneyard"
+          ) {
+            if (settings.hideBoneyard) {
+              skippingRest = true;
+              return;
+            }
+            parent.createEl("hr");
+          }
+          const tag = `h${el.depth ?? 1}` as keyof HTMLElementTagNameMap;
+          parent.createEl(tag, {
+            cls: "section",
+            attr: { "data-range": `${el.range.start},${el.range.end}` },
+            text: title,
+          });
+        }
+        break;
+      case "dialogue":
+        dialogueView(parent, el, script, settings, blackoutCharacter);
+        break;
+      case "transition":
+        {
+          const transitionText = script.unsafeExtractRaw(el.range);
+          parent.createDiv({
+            cls: "transition",
+            attr: { "data-range": `${el.range.start},${el.range.end}` },
+            text: transitionText,
+          });
+          renderBlankLine(parent, el.range);
+        }
+        break;
+      case "page-break":
+        parent.createEl("hr", {
+          attr: { "data-range": `${el.range.start},${el.range.end}` },
+        });
+        break;
+    }
+  };
+  for (const el of script.script) {
+    convertElement(el);
+  }
+}
+
+function titlePageView(parent: HTMLElement, script: FountainScript): void {
+  const titlePage = script.titlePage;
+
+  if (titlePage.length > 0) {
+    for (const kv of titlePage) {
+      if (kv.values.length === 1) {
+        parent.createDiv({}, (div) => {
+          div.appendText(`${kv.key}: `);
+          // TODO:  kv.values[0]
+        });
       } else {
-        innerHtml = script.styledTextToHtml(
-          line.elements,
-          settings,
-          escapeLeadingSpaces,
-        );
+        parent.createDiv({ text: `${kv.key}: ` });
+        for (const _v of kv.values) {
+          parent.createDiv({}, (div) => {
+            div.innerHTML = "&nbsp;&nbsp;&nbsp";
+            // TODO: v
+          });
+        }
       }
-      const centered = line.centered ? "centered" : "";
-      // Merge the lineClasses array with centered if present
-      const allClasses = centered ? [centered, ...lineClasses] : lineClasses;
-      return `<div ${dataRange(line.range)}><div ${classes(allClasses)}>${innerHtml}</div></div>`;
-    })
-    .join("");
+      // blank line
+      parent.createDiv({}, (div) => {
+        div.innerHTML = "&nbsp;";
+      });
+      parent.createEl("hr");
+      parent.createDiv({}, (div) => {
+        div.innerHTML = "&nbsp;";
+      });
+    }
+  }
 }
 
 /**
@@ -124,86 +262,9 @@ function readonlyView(
   script: FountainScript,
   settings: ShowHideSettings,
   blackoutCharacter?: string,
-) {
-  let skippingRest = false;
-  const convertElement = (el: FountainElement): string => {
-    if (skippingRest) {
-      return "";
-    }
-    switch (el.kind) {
-      case "action":
-        return actionToHtml(el, script, settings);
-      case "scene": {
-        const text = script.extractAsHtml(el.range);
-        const res = `<h3 ${dataRange(el.range)} class="scene-heading">${text}</h3>${BLANK_LINE}`;
-        return res;
-      }
-
-      case "synopsis":
-        if (settings.hideSynopsis) {
-          return "";
-        }
-        return el.linesOfText
-          .map(
-            (l) =>
-              `<div class="synopsis" ${dataRange(l)}>${script.extractAsHtml(l)}</div>`,
-          )
-          .join("");
-
-      case "section": {
-        const title = script.extractAsHtml(el.range);
-        let prefix = "";
-        if (
-          title
-            .toLowerCase()
-            .replace(/^ *#+ */, "")
-            .trimEnd() === "boneyard"
-        ) {
-          if (settings.hideBoneyard) {
-            skippingRest = true;
-            return "";
-          }
-          prefix = "<hr>";
-        }
-        const html = `${prefix}<h${el.depth ?? 1} class="section" ${dataRange(el.range)}>${title}</h${el.depth ?? 1}>`;
-        return html;
-      }
-      case "dialogue":
-        return dialogueToHtml(el, script, settings, blackoutCharacter);
-      case "transition": {
-        const transitionText = script.extractAsHtml(el.range);
-        return `<div class="transition" ${dataRange(el.range)}>${transitionText}</div>${BLANK_LINE}`;
-      }
-      case "page-break":
-        return `<hr ${dataRange(el.range)}>`;
-    }
-  };
-
-  const titlePage = script.titlePageWithHtmlValues();
-  let titlePageHtml: string;
-
-  if (titlePage.length === 0) {
-    titlePageHtml = "";
-  } else {
-    titlePageHtml = `${
-      titlePage
-        .map((kv) => {
-          if (kv.htmlValues.length === 1) {
-            return `<div>${escapeHtml(kv.key)}: ${kv.htmlValues[0]}</div>`;
-          }
-          return `<div>${escapeHtml(kv.key)}:</div>${kv.htmlValues
-            .map((h) => {
-              return `<div>&nbsp;&nbsp;&nbsp;${h}</div>`;
-            })
-            .join("")}`;
-        })
-        .join("") + BLANK_LINE
-    }<hr>${BLANK_LINE}`;
-  }
-
-  const content = script.script.map((el) => convertElement(el)).join("");
-  const innerHTML = titlePageHtml + content;
-  parent.innerHTML = innerHTML;
+): void {
+  titlePageView(parent, script);
+  contentView(parent, script, settings, blackoutCharacter);
 }
 
 /// Return the range of the first visible line on the screen. Or something close.
@@ -350,114 +411,4 @@ function indexCardsView(div: HTMLElement, script: FountainScript): void {
   for (const s of structure) {
     emitIndexCardsSection(div, script, s);
   }
-
-  // let state: Inside = Inside.Nothing;
-  // // Are we at the very start of either a section or a scene?
-  // // Rationale: We only want the initial synopsis of a section
-  // // or scene in the index card view
-  // let atStart = true;
-  // const result: string[] = [];
-  // let sceneNumber = 1;
-  // function emit(s: string) {
-  //   result.push(s);
-  // }
-  // function emitClose(what: Inside.Section | Inside.Card) {
-  //   while (state >= what) {
-  //     emit("</div>");
-  //     state--;
-  //   }
-  // }
-  // function emitOpenTill(what: Inside.Section | Inside.Card) {
-  //   while (state < what) {
-  //     state++;
-  //     switch (state) {
-  //       case Inside.Nothing:
-  //         break;
-  //       case Inside.Section:
-  //         emit('<div class="screenplay-index-cards">');
-  //         break;
-  //       case Inside.Card:
-  //         emit('<div class="screenplay-index-card" draggable="true">');
-  //         emit(
-  //           '<div class="index-card-buttons"><button class="copy"></button></div>',
-  //         );
-  //         break;
-  //     }
-  //   }
-  // }
-  // for (const el of script.script) {
-  //   switch (el.kind) {
-  //     case "scene":
-  //       // make sure the previous card is closed and open a new one.
-  //       emitClose(Inside.Card);
-  //       emitOpenTill(Inside.Card);
-  //       emit(
-  //         `<h3 class="scene-heading" id="scene${sceneNumber}" data-start="${el.range.start}">${script.extractAsHtml(el.range)}</h3>`,
-  //       );
-  //       atStart = true;
-  //       sceneNumber++;
-  //       break;
-
-  //     case "section":
-  //       // We ignore sections of depth 4 and deeper in the overview
-  //       if (el.depth <= 3) {
-  //         // make sure the previous card is closed and also the prev section
-  //         emitClose(Inside.Section);
-  //         const title = script.extractAsHtml(el.range);
-  //         if (
-  //           title
-  //             .toLowerCase()
-  //             .replace(/^ *#+ */, "")
-  //             .trimEnd() === "boneyard"
-  //         ) {
-  //           emit("<hr>");
-  //         }
-  //         emit(
-  //           `<h${el.depth ?? 1} class="section" data-start="${el.range.start}">${title}</h${el.depth ?? 1}>`,
-  //         );
-  //         atStart = true;
-  //       }
-  //       break;
-
-  //     case "synopsis":
-  //       if (atStart) {
-  //         emit(`<div ${dataRange(el.range, "synopsis")}>`);
-  //         for (const l of el.linesOfText) {
-  //           emit(
-  //             `<div ${dataRange(l)} class="synopsis">${script.extractAsHtml(l)}</div>`,
-  //           );
-  //         }
-  //         emit("</div>");
-  //         atStart = false;
-  //       }
-  //       break;
-
-  //     default: {
-  //       if (!isBlankLines(el)) {
-  //         // we allow for blank lines between the section or scene
-  //         // and the synopsis
-  //         // but anything else indicates the end of what we will
-  //         // display in the index card.
-  //         atStart = false;
-  //       }
-  //       // With the exception of todo notes which we do display
-  //       const notes = extractNotes(el);
-  //       if (notes) {
-  //         for (const note of notes) {
-  //           if (note.noteKind === "todo") {
-  //             emit(
-  //               `<p class="todo"><span>${script.extractAsHtml(note.textRange)}</span></p>`,
-  //             );
-  //           }
-  //         }
-  //       }
-
-  //       break;
-  //     }
-  //   }
-  // }
-  // emitClose(Inside.Section);
-  // // emit one data-start containing the end of the document.
-  // emit(`<div data-start="${script.document.length}"></div>`);
-  // div.innerHTML = result.join("");
 }
