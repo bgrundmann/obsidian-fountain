@@ -113,43 +113,6 @@ class ReadonlyViewState {
     return parse(this.path, this.text);
   }
 
-  private onEditSynopsisInIndexCardHandler(
-    el: HTMLElement,
-    range: Range,
-    linesOfText: Range[],
-  ) {
-    const script = this.script();
-    if ("error" in script) {
-      return;
-    }
-
-    const lines = linesOfText.map((r) => script.unsafeExtractRaw(r));
-    const textarea = createEl("textarea", {
-      text: lines.join("\n"),
-    });
-    const buttonContainer = el.createDiv({
-      cls: "edit-buttons",
-    });
-    const cancelButton = buttonContainer.createEl("button", {
-      text: "Cancel",
-    });
-    const okButton = buttonContainer.createEl("button", {
-      text: "OK",
-    });
-    el.replaceWith(textarea, buttonContainer);
-    cancelButton.addEventListener("click", () => {
-      this.render();
-    });
-    okButton.addEventListener("click", () => {
-      const synopsified = textarea.value
-        .split("\n")
-        .map((l) => `= ${l}`)
-        .join("\n");
-      this.text = replaceText(this.text, range, synopsified);
-      this.render();
-    });
-  }
-
   /* copy a scene making sure that it is properly terminated by an empty line */
   private copyScene(range: Range): void {
     const sceneText = this.text.slice(range.start, range.end);
@@ -162,7 +125,6 @@ class ReadonlyViewState {
       extraNewLines +
       sceneText +
       this.text.slice(range.end);
-    this.render();
   }
 
   /* move a scene making sure that it is properly terminated by an empty line  */
@@ -174,6 +136,10 @@ class ReadonlyViewState {
     const extraNewLines =
       lastTwo === "\n\n" ? "" : lastTwo[1] === "\n" ? "\n" : "\n\n";
     this.text = moveText(this.text, range, newPos, extraNewLines);
+  }
+
+  private replaceText(range: Range, s: string): void {
+    this.text = replaceText(this.text, range, s);
   }
 
   public stopRehearsalMode() {
@@ -228,17 +194,24 @@ class ReadonlyViewState {
 
   render() {
     this.contentEl.empty();
-    const fp = this.script();
     const callbacks = {
       moveScene: (r: Range, p: number) => {
         this.moveScene(r, p);
-        this.render();
       },
       copyScene: (r: Range) => {
         this.copyScene(r);
+      },
+      replaceText: (range: Range, replacement: string) => {
+        this.replaceText(range, replacement);
+      },
+      getText: (range: Range): string => {
+        return this.text.slice(range.start, range.end);
+      },
+      reRender: (): void => {
         this.render();
       },
     };
+    const fp = this.script();
     if ("error" in fp) {
       console.log("error parsing script", fp);
       return;

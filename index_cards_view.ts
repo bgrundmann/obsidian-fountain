@@ -10,6 +10,9 @@ import type {
 type Callbacks = {
   moveScene: (rangeOfScene: Range, newStart: number) => void;
   copyScene: (rangeOfScene: Range) => void;
+  replaceText: (range: Range, s: string) => void;
+  getText: (range: Range) => string;
+  reRender: () => void;
 };
 
 function getDragData(evt: DragEvent): Range | null {
@@ -41,6 +44,7 @@ function dropHandler(
     draggedRange,
     before ? dropZoneRange.start : dropZoneRange.end,
   );
+  callbacks.reRender();
 }
 
 /** This handler just adds classes to visually indicate if dropping
@@ -151,18 +155,58 @@ function assertNever(x: never): never {
   throw new Error(`Unexpected object: ${x}`);
 }
 
+function editSynopsisHandler(
+  el: HTMLElement,
+  range: Range,
+  linesOfText: Range[],
+  callbacks: Callbacks,
+) {
+  const lines = linesOfText.map((r) => callbacks.getText(r));
+  const textarea = createEl("textarea", {
+    text: lines.join("\n"),
+  });
+  const buttonContainer = el.createDiv({
+    cls: "edit-buttons",
+  });
+  const cancelButton = buttonContainer.createEl("button", {
+    text: "Cancel",
+  });
+  const okButton = buttonContainer.createEl("button", {
+    text: "OK",
+  });
+  el.replaceWith(textarea, buttonContainer);
+  cancelButton.addEventListener("click", () => {
+    callbacks.reRender();
+  });
+  okButton.addEventListener("click", () => {
+    const synopsified = textarea.value
+      .split("\n")
+      .map((l) => `= ${l}`)
+      .join("\n");
+    callbacks.replaceText(range, synopsified);
+    callbacks.reRender();
+  });
+}
+
 function renderSynopsis(
   div: HTMLElement,
   script: FountainScript,
   synopsis: Synopsis,
+  callbacks: Callbacks,
 ): void {
   div.createDiv(
     {
-      attr: {
-        "data-synopsis": `${synopsis.range.start},${synopsis.range.end}`,
-      },
+      attr: dataRange(synopsis.range),
     },
     (div2) => {
+      div2.addEventListener("click", (_evt: Event) => {
+        editSynopsisHandler(
+          div2,
+          synopsis.range,
+          synopsis.linesOfText,
+          callbacks,
+        );
+      });
       for (const l of synopsis.linesOfText) {
         div2.createDiv({
           cls: "synopsis",
@@ -203,7 +247,7 @@ function renderIndexCard(
           buttons.createEl("button", { cls: "copy" });
         });
         if (scene.synopsis) {
-          renderSynopsis(indexCard, script, scene.synopsis);
+          renderSynopsis(indexCard, script, scene.synopsis, callbacks);
         }
       },
     );
@@ -238,7 +282,7 @@ function renderSection(
     });
   }
   if (section.synopsis) {
-    renderSynopsis(parent, script, section.synopsis);
+    renderSynopsis(parent, script, section.synopsis, callbacks);
   }
   parent.createDiv({ cls: "screenplay-index-cards" }, (sectionDiv) => {
     for (const el of section.content) {
