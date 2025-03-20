@@ -10,7 +10,7 @@ function assertNever(x: never): never {
   throw new Error(`Unexpected object: ${x}`);
 }
 
-function emitIndexCardSynopsis(
+function renderSynopsis(
   div: HTMLElement,
   script: FountainScript,
   synopsis: Synopsis,
@@ -33,7 +33,9 @@ function emitIndexCardSynopsis(
   );
 }
 
-function emitIndexCard(
+/** Render a index card. As of right now that includes only the scene heading
+and if the scene heading was followed by a synopsis, that synopsis. */
+function renderIndexCard(
   div: HTMLElement,
   script: FountainScript,
   scene: StructureScene,
@@ -58,14 +60,17 @@ function emitIndexCard(
           buttons.createEl("button", { cls: "copy" });
         });
         if (scene.synopsis) {
-          emitIndexCardSynopsis(indexCard, script, scene.synopsis);
+          renderSynopsis(indexCard, script, scene.synopsis);
         }
       },
     );
   }
 }
 
-function emitIndexCardsSection(
+/** Render a section, that is a combination of a heading followed by all the
+scenes that section contains. If the document started immediately with a a scene
+the section might be an unnamed section and not have a section header. */
+function renderSection(
   parent: HTMLElement,
   script: FountainScript,
   section: StructureSection,
@@ -89,16 +94,16 @@ function emitIndexCardsSection(
     });
   }
   if (section.synopsis) {
-    emitIndexCardSynopsis(parent, script, section.synopsis);
+    renderSynopsis(parent, script, section.synopsis);
   }
   parent.createDiv({ cls: "screenplay-index-cards" }, (sectionDiv) => {
     for (const el of section.content) {
       switch (el.kind) {
         case "scene":
-          emitIndexCard(sectionDiv, script, el);
+          renderIndexCard(sectionDiv, script, el);
           break;
         case "section":
-          emitIndexCardsSection(sectionDiv, script, el);
+          renderSection(sectionDiv, script, el);
           break;
         default:
           {
@@ -122,6 +127,6 @@ export function renderIndexCards(
   const structure = script.structure();
   div.empty();
   for (const s of structure) {
-    emitIndexCardsSection(div, script, s);
+    renderSection(div, script, s);
   }
 }
