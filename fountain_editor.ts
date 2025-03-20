@@ -115,6 +115,7 @@ class FountainEditorPlugin implements PluginValue {
     const words = Decoration.mark({ class: "dialogue-words" });
     const action = Decoration.mark({ class: "action" });
     const pageBreak = Decoration.mark({ class: "page-break" });
+    const transition = Decoration.mark({ class: "transition" });
 
     if (fscript.titlePage !== null) {
       for (const kv of fscript.titlePage) {
@@ -179,6 +180,10 @@ class FountainEditorPlugin implements PluginValue {
           case "action":
             builder.add(el.range.start, el.range.end, action);
             this.decorateLines(builder, el.lines);
+            break;
+
+          case "transition":
+            builder.add(el.range.start, el.range.end, transition);
             break;
 
           default:

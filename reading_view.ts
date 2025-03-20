@@ -221,10 +221,10 @@ function renderTitlePage(parent: HTMLElement, script: FountainScript): void {
         }
       }
       // blank line
-      renderBlankLine(parent);
-      parent.createEl("hr");
-      renderBlankLine(parent);
     }
+    renderBlankLine(parent);
+    parent.createEl("hr");
+    renderBlankLine(parent);
   }
 }
 

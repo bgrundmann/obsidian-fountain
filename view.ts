@@ -113,7 +113,7 @@ class ReadonlyViewState {
     return parse(this.path, this.text);
   }
 
-  /* copy a scene making sure that it is properly terminated by an empty line */
+  /** copy a scene making sure that it is properly terminated by an empty line */
   private copyScene(range: Range): void {
     const sceneText = this.text.slice(range.start, range.end);
     const lastTwo = sceneText.slice(-2);
@@ -127,7 +127,7 @@ class ReadonlyViewState {
       this.text.slice(range.end);
   }
 
-  /* move a scene making sure that it is properly terminated by an empty line  */
+  /** move a scene making sure that it is properly terminated by an empty line  */
   private moveScene(range: Range, newPos: number): void {
     const lastTwo = this.text.slice(
       range.end - range.start - 2,
