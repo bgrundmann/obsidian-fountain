@@ -13,11 +13,7 @@ import type { FountainScript, Range, ShowHideSettings } from "./fountain";
 import { createFountainEditorPlugin } from "./fountain_editor";
 import { renderIndexCards } from "./index_cards_view";
 import { type ParseError, parse } from "./parser_cache";
-import {
-  getDataRange,
-  rangeOfFirstVisibleLine,
-  renderFountain,
-} from "./reading_view";
+import { rangeOfFirstVisibleLine, renderFountain } from "./reading_view";
 
 export const VIEW_TYPE_FOUNTAIN = "fountain";
 
@@ -113,63 +109,8 @@ class ReadonlyViewState {
     return this.pstate.rehearsal?.character ?? null;
   }
 
-  private getDragData(evt: DragEvent): Range | null {
-    try {
-      const json = evt.dataTransfer?.getData("application/json");
-      if (!json) return null;
-      const r: Range = JSON.parse(json);
-      return r;
-    } catch (error) {
-      return null;
-    }
-  }
-
   script(): FountainScript | ParseError {
     return parse(this.path, this.text);
-  }
-
-  private installIndexCardEventHandlers(mainblock: HTMLDivElement) {
-    const indexCards = mainblock.querySelectorAll<HTMLElement>(
-      ".screenplay-index-card",
-    );
-    for (const indexCard of indexCards) {
-      const indexCardRange = getDataRange(indexCard);
-      if (!indexCardRange) continue;
-      indexCard.addEventListener("dragstart", (evt: DragEvent) => {
-        this.dragstartHandler(mainblock, indexCardRange, evt);
-      });
-      this.addDragOverLeaveDropHandlers(indexCard, indexCardRange);
-      const bt = indexCard.querySelector("button.copy") as HTMLElement;
-      setIcon(bt, "more-vertical");
-      bt.addEventListener("click", (_ev) => {
-        this.copyScene(indexCardRange);
-      });
-    }
-    /*
-    const sections = mainblock.querySelectorAll<HTMLElement>(".section");
-    for (const section of sections) {
-      const start = Number.parseInt(section.getAttribute("data-start") || "-1");
-      // TODO think about if that is always the right thing for sections
-      const range = rangeFromStart(start);
-      this.addDragOverLeaveDropHandlers(section, range);
-    }
-    */
-
-    const editableSynopsis = mainblock.querySelectorAll("[data-synopsis]");
-    for (const es_ of editableSynopsis) {
-      const es = es_ as HTMLElement;
-      // TODO: figure out better ways to handle that range.
-      const lineRanges: Range[] = Array.from(
-        es.querySelectorAll("[data-range]"),
-      ).map((e) => getDataRange(e as HTMLElement) || { start: 0, end: 0 });
-
-      es.addEventListener("click", (ev) => {
-        const range = getDataRange(es, "synopsis");
-        if (range === null) return;
-
-        this.onEditSynopsisInIndexCardHandler(es, range, lineRanges);
-      });
-    }
   }
 
   private onEditSynopsisInIndexCardHandler(
@@ -209,19 +150,6 @@ class ReadonlyViewState {
     });
   }
 
-  private addDragOverLeaveDropHandlers(el: HTMLElement, range: Range) {
-    el.addEventListener("dragover", (evt: DragEvent) => {
-      this.dragoverHandler(el, range, evt);
-    });
-    el.addEventListener("dragleave", (e: DragEvent) => {
-      el.classList.remove("drop-left");
-      el.classList.remove("drop-right");
-    });
-    el.addEventListener("drop", (e: DragEvent) => {
-      this.dropHandler(el, range, e);
-    });
-  }
-
   /* copy a scene making sure that it is properly terminated by an empty line */
   private copyScene(range: Range): void {
     const sceneText = this.text.slice(range.start, range.end);
@@ -246,59 +174,6 @@ class ReadonlyViewState {
     const extraNewLines =
       lastTwo === "\n\n" ? "" : lastTwo[1] === "\n" ? "\n" : "\n\n";
     this.text = moveText(this.text, range, newPos, extraNewLines);
-  }
-
-  private dropHandler(dropZone: Element, dropZoneRange: Range, evt: DragEvent) {
-    const draggedRange = this.getDragData(evt);
-    if (!draggedRange) return;
-    if (draggedRange.start === dropZoneRange.start) return;
-    const before = dropZone.classList.contains("drop-left");
-    if (!before && !dropZone.classList.contains("drop-right")) return;
-    dropZone.classList.remove("drop-left");
-    dropZone.classList.remove("drop-right");
-    evt.preventDefault();
-    this.moveScene(
-      draggedRange,
-      before ? dropZoneRange.start : dropZoneRange.end,
-    );
-    this.render();
-  }
-
-  private dragoverHandler(
-    dropZone: Element,
-    dropZoneRange: Range,
-    evt: DragEvent,
-  ) {
-    evt.preventDefault();
-    const rect = dropZone.getBoundingClientRect();
-    const mouseX = evt.clientX;
-
-    // Clamp mouseX to element boundaries
-    const clampedX = Math.min(Math.max(mouseX, rect.left), rect.right);
-    //
-    // Calculate percentage within bounds
-    const percentage = ((clampedX - rect.left) / rect.width) * 100;
-
-    if (percentage > 70) {
-      dropZone.classList.add("drop-right");
-      dropZone.classList.remove("drop-left");
-    } else if (percentage < 30) {
-      dropZone.classList.add("drop-left");
-      dropZone.classList.remove("drop-right");
-    } else {
-      dropZone.classList.remove("drop-left");
-      dropZone.classList.remove("drop-right");
-    }
-  }
-
-  private dragstartHandler(
-    mainblock: HTMLDivElement,
-    range: Range,
-    evt: DragEvent,
-  ): void {
-    if (!evt.dataTransfer) return;
-    evt.dataTransfer.clearData();
-    evt.dataTransfer.setData("application/json", JSON.stringify(range));
   }
 
   public stopRehearsalMode() {
@@ -354,6 +229,16 @@ class ReadonlyViewState {
   render() {
     this.contentEl.empty();
     const fp = this.script();
+    const callbacks = {
+      moveScene: (r: Range, p: number) => {
+        this.moveScene(r, p);
+        this.render();
+      },
+      copyScene: (r: Range) => {
+        this.copyScene(r);
+        this.render();
+      },
+    };
     if ("error" in fp) {
       console.log("error parsing script", fp);
       return;
@@ -367,7 +252,7 @@ class ReadonlyViewState {
     // the recommended obsidian create... calls.
     switch (this.showMode) {
       case ShowMode.IndexCards:
-        renderIndexCards(mainblock, fp);
+        renderIndexCards(mainblock, fp, callbacks);
         break;
 
       case ShowMode.Script:
@@ -377,10 +262,6 @@ class ReadonlyViewState {
 
     if (this.blackout) {
       this.installToggleBlackoutHandlers();
-    }
-
-    if (this.showMode === ShowMode.IndexCards) {
-      this.installIndexCardEventHandlers(mainblock);
     }
 
     mainblock.addEventListener("click", (e) => {
