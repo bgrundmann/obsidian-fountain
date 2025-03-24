@@ -6,6 +6,7 @@ import type {
   StructureSection,
   Synopsis,
 } from "./fountain";
+import { extractNotes } from "./fountain";
 
 type Callbacks = {
   moveScene: (rangeOfScene: Range, newStart: number) => void;
@@ -228,6 +229,8 @@ function renderIndexCard(
 ): void {
   if (scene.scene) {
     const heading = scene.scene;
+    const content = scene.content;
+    console.log(heading, content);
     div.createDiv(
       {
         cls: "screenplay-index-card",
@@ -248,6 +251,14 @@ function renderIndexCard(
         });
         if (scene.synopsis) {
           renderSynopsis(indexCard, script, scene.synopsis, callbacks);
+        }
+        const notes = extractNotes(content).filter(
+          (n) => n.noteKind === "todo",
+        );
+        for (const note of notes) {
+          indexCard.createDiv({}, (div) => {
+            script.styledTextToHtml(div, [note], {}, false);
+          });
         }
       },
     );

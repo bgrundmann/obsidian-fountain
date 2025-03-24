@@ -33,18 +33,20 @@ function intersect(r1: Range, r2: Range): boolean {
 
 /**
  * Extracts all notes from a list of FountainElements
- * @param element List of FountainElements to extract notes from
+ * @param elements List of FountainElements to extract notes from
  * @returns Array of all Note elements found
  */
-function extractNotes(element: FountainElement): Note[] {
+function extractNotes(elements: FountainElement[]): Note[] {
   const notes: Note[] = [];
 
   // Check if element has lines property (action and dialogue elements)
-  if ("lines" in element) {
-    for (const line of element.lines) {
-      for (const textElement of line.elements) {
-        if (textElement.kind === "note") {
-          notes.push(textElement);
+  for (const element of elements) {
+    if ("lines" in element) {
+      for (const line of element.lines) {
+        for (const textElement of line.elements) {
+          if (textElement.kind === "note") {
+            notes.push(textElement);
+          }
         }
       }
     }
