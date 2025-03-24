@@ -193,27 +193,38 @@ function editSynopsisHandler(
 function renderSynopsis(
   div: HTMLElement,
   script: FountainScript,
-  synopsis: Synopsis,
+  synopsis: Synopsis | undefined,
+  startPosIfEmpty: number,
   callbacks: Callbacks,
 ): void {
+  const synopsisRange = synopsis?.range || {
+    start: startPosIfEmpty,
+    end: startPosIfEmpty,
+  };
   div.createDiv(
     {
-      attr: dataRange(synopsis.range),
+      attr: dataRange(synopsisRange),
     },
     (div2) => {
       div2.addEventListener("click", (_evt: Event) => {
         editSynopsisHandler(
           div2,
-          synopsis.range,
-          synopsis.linesOfText,
+          synopsisRange,
+          synopsis?.linesOfText || [],
           callbacks,
         );
       });
-      for (const l of synopsis.linesOfText) {
+      for (const l of synopsis?.linesOfText || []) {
         div2.createDiv({
           cls: "synopsis",
           attr: dataRange(l),
           text: script.unsafeExtractRaw(l, true),
+        });
+      }
+      if (!synopsis) {
+        div2.createDiv({
+          cls: ["synopsis", "show-on-hover"],
+          text: "Click to edit",
         });
       }
     },
@@ -247,12 +258,19 @@ function renderIndexCard(
           attr: dataRange(heading.range),
           text: script.unsafeExtractRaw(heading.range),
         });
-        indexCard.createDiv({ cls: "index-card-buttons" }, (buttons) => {
-          buttons.createEl("button", { cls: "copy" });
-        });
-        if (scene.synopsis) {
-          renderSynopsis(indexCard, script, scene.synopsis, callbacks);
-        }
+        indexCard.createDiv(
+          { cls: ["index-card-buttons", "show-on-hover"] },
+          (buttons) => {
+            buttons.createEl("button", { cls: "copy" });
+          },
+        );
+        renderSynopsis(
+          indexCard,
+          script,
+          scene.synopsis,
+          heading.range.end,
+          callbacks,
+        );
         const notes = extractNotes(content).filter(
           (n) => n.noteKind === "todo",
         );
@@ -297,7 +315,13 @@ function renderSection(
     });
   }
   if (section.synopsis) {
-    renderSynopsis(parent, script, section.synopsis, callbacks);
+    renderSynopsis(
+      parent,
+      script,
+      section.synopsis,
+      section.synopsis.range.start,
+      callbacks,
+    );
   }
   parent.createDiv({ cls: "screenplay-index-cards" }, (sectionDiv) => {
     for (const el of section.content) {

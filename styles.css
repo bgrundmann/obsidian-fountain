@@ -294,17 +294,20 @@
 	flex-direction: column;
 }
 
+.show-on-hover {
+	opacity: 0;
+	transition: opacity 0.2s ease-in-out;
+}
+
+.show-on-hover:hover {
+	opacity: 1;
+}
+
 .index-card-buttons {
 	position: absolute;
 	top: 10px;
 	right: 10px;
-	opacity: 0;
-	transition: opacity 0.2s ease-in-out;
 	padding: 0;
-}
-
-.screenplay-index-card:hover .index-card-buttons {
-	opacity: 1;
 }
 
 .screenplay-index-cards .drop-right {
