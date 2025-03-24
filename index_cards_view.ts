@@ -14,6 +14,7 @@ type Callbacks = {
   replaceText: (range: Range, s: string) => void;
   getText: (range: Range) => string;
   reRender: () => void;
+  startEditModeHere: (range: Range) => void;
 };
 
 function getDragData(evt: DragEvent): Range | null {
@@ -258,6 +259,9 @@ function renderIndexCard(
         for (const note of notes) {
           indexCard.createDiv({}, (div) => {
             script.styledTextToHtml(div, [note], {}, false);
+            div.addEventListener("click", () =>
+              callbacks.startEditModeHere(note.range),
+            );
           });
         }
       },

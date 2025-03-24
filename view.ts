@@ -210,6 +210,9 @@ class ReadonlyViewState {
       reRender: (): void => {
         this.render();
       },
+      startEditModeHere: (r: Range): void => {
+        this.startEditModeHere(r);
+      },
     };
     const fp = this.script();
     if ("error" in fp) {
