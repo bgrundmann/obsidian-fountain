@@ -245,16 +245,21 @@ class ReadonlyViewState {
   }
 
   scrollScriptLineIntoView(r: Range) {
-    if (this.pstate.mode !== ShowMode.Script) {
-      this.toggleIndexCards();
-    }
-    requestAnimationFrame(() => {
+    const scroll = () => {
       const targetElement = document.querySelector(
         `[data-range^="${r.start},"]`,
       );
       console.log("scroll line into view", r, targetElement);
       targetElement?.scrollIntoView();
-    });
+    };
+    if (this.pstate.mode !== ShowMode.Script) {
+      this.toggleIndexCards();
+      requestAnimationFrame(() => {
+        scroll();
+      });
+    } else {
+      scroll();
+    }
   }
 
   public setPersistentState(pstate: ReadonlyViewPersistedState) {
