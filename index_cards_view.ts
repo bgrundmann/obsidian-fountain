@@ -15,6 +15,7 @@ type Callbacks = {
   getText: (range: Range) => string;
   reRender: () => void;
   startEditModeHere: (range: Range) => void;
+  startReadingModeHere: (range: Range) => void;
 };
 
 function getDragData(evt: DragEvent): Range | null {
@@ -185,7 +186,7 @@ function editSynopsisHandler(
       .split("\n")
       .map((l) => `= ${l}`)
       .join("\n");
-    callbacks.replaceText(range, synopsified);
+    callbacks.replaceText(range, `${synopsified}\n`);
     callbacks.reRender();
   });
 }
@@ -242,7 +243,6 @@ function renderIndexCard(
   if (scene.scene) {
     const heading = scene.scene;
     const content = scene.content;
-    console.log(heading, content);
     div.createDiv(
       {
         cls: "screenplay-index-card",
@@ -253,11 +253,19 @@ function renderIndexCard(
       },
       (indexCard) => {
         installDragAndDropHandlers(callbacks, indexCard, scene.range);
-        indexCard.createEl("h3", {
-          cls: "scene-heading",
-          attr: dataRange(heading.range),
-          text: script.unsafeExtractRaw(heading.range),
-        });
+        indexCard.createEl(
+          "h3",
+          {
+            cls: "scene-heading",
+            attr: dataRange(heading.range),
+            text: script.unsafeExtractRaw(heading.range),
+          },
+          (heading) => {
+            heading.addEventListener("click", (_evt) => {
+              callbacks.startReadingModeHere(scene.range);
+            });
+          },
+        );
         indexCard.createDiv(
           { cls: ["index-card-buttons", "show-on-hover"] },
           (buttons) => {

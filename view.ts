@@ -213,6 +213,9 @@ class ReadonlyViewState {
       startEditModeHere: (r: Range): void => {
         this.startEditModeHere(r);
       },
+      startReadingModeHere: (r: Range): void => {
+        this.scrollScriptLineIntoView(r);
+      },
     };
     const fp = this.script();
     if ("error" in fp) {
@@ -239,31 +242,19 @@ class ReadonlyViewState {
     if (this.blackout) {
       this.installToggleBlackoutHandlers();
     }
-
-    mainblock.addEventListener("click", (e) => {
-      if (this.showMode === ShowMode.IndexCards && e.target != null) {
-        const target = e.target as HTMLElement;
-        if (target.id !== null && target.matches(".scene-heading")) {
-          const id = target.id;
-          this.pstate.mode = ShowMode.Script;
-          this.render();
-          requestAnimationFrame(() => {
-            const targetElement = document.getElementById(id);
-            if (targetElement) {
-              targetElement.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-              });
-            }
-          });
-        }
-      }
-    });
   }
 
-  scrollLineIntoView(r: Range) {
-    const targetElement = document.querySelector(`[data-range^="${r.start},"]`);
-    targetElement?.scrollIntoView();
+  scrollScriptLineIntoView(r: Range) {
+    if (this.pstate.mode !== ShowMode.Script) {
+      this.toggleIndexCards();
+    }
+    requestAnimationFrame(() => {
+      const targetElement = document.querySelector(
+        `[data-range^="${r.start},"]`,
+      );
+      console.log("scroll line into view", r, targetElement);
+      targetElement?.scrollIntoView();
+    });
   }
 
   public setPersistentState(pstate: ReadonlyViewPersistedState) {
@@ -542,6 +533,13 @@ export class FountainView extends TextFileView {
     }
   }
 
+  startReadingModeHere(r: Range): void {
+    this.switchToReadonlyMode();
+    if (this.state instanceof ReadonlyViewState) {
+      this.state.scrollScriptLineIntoView(r);
+    }
+  }
+
   isEditMode(): boolean {
     return this.state instanceof EditorViewState;
   }
@@ -607,7 +605,7 @@ export class FountainView extends TextFileView {
       this.state.render();
       const es = this.state;
       requestAnimationFrame(() => {
-        es.scrollLineIntoView(firstLine);
+        es.scrollScriptLineIntoView(firstLine);
       });
     } else {
       // Switch to editor
@@ -627,12 +625,10 @@ export class FountainView extends TextFileView {
   }
 
   onLoadFile(file: TFile): Promise<void> {
-    console.log("onloadfile", file);
     return super.onLoadFile(file);
   }
 
   onUnloadFile(file: TFile): Promise<void> {
-    console.log("onunloadfile", file);
     return super.onUnloadFile(file);
   }
 
@@ -649,7 +645,6 @@ export class FountainView extends TextFileView {
   }
 
   setViewData(data: string, clear: boolean): void {
-    console.log("setViewData", data, clear, this.file?.path);
     const path = this.file?.path;
     if (path) {
       this.state.setViewData(path, data, clear);
