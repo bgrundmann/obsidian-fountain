@@ -1,5 +1,6 @@
 import { EditorState } from "@codemirror/state";
-import { EditorView, type ViewUpdate } from "@codemirror/view";
+import { EditorView, type ViewUpdate, drawSelection } from "@codemirror/view";
+import { history } from "@codemirror/commands";
 import { FuzzySelectString } from "fuzzy_select_string";
 import {
   Menu,
@@ -346,6 +347,8 @@ class EditorViewState {
       doc: text,
       extensions: [
         theme,
+        history(),
+        drawSelection(),
         EditorView.editorAttributes.of({ class: "screenplay" }),
         EditorView.lineWrapping,
         createFountainEditorPlugin(() => path),
