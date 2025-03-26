@@ -1,6 +1,6 @@
+import { history } from "@codemirror/commands";
 import { EditorState } from "@codemirror/state";
 import { EditorView, type ViewUpdate, drawSelection } from "@codemirror/view";
-import { history } from "@codemirror/commands";
 import { FuzzySelectString } from "fuzzy_select_string";
 import {
   Menu,

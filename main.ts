@@ -12,20 +12,47 @@ export default class FountainPlugin extends Plugin {
     // Is there a way to "unregister" the View and extensions?
   }
 
+  private newFountainDocumentCommand() {
+    let destination = "Untitled.fountain";
+    const activeFile = this.app.workspace.getActiveFile();
+    if (activeFile !== null) {
+      if (activeFile?.parent) {
+        destination = `${activeFile.parent.path}/Untitled.fountain`;
+      }
+    }
+    this.app.vault.create(destination, "").then((newFile) => {
+      const leaf = this.app.workspace.getLeaf(false);
+      leaf.openFile(newFile);
+    });
+  }
+
+  private toggleFountainEditModeCommand(checking: boolean): boolean {
+    const fv = this.app.workspace.getActiveViewOfType(FountainView);
+    if (checking) return fv !== null;
+    if (fv) {
+      fv.toggleEditMode();
+    }
+    return true;
+  }
+
   /** Install ribbon icons and commands. */
   private registerCommands() {
     this.addRibbonIcon("square-pen", "New fountain document", (evt) => {
-      let destination = "Untitled.fountain";
-      const activeFile = this.app.workspace.getActiveFile();
-      if (activeFile !== null) {
-        if (activeFile?.parent) {
-          destination = `${activeFile.parent.path}/Untitled.fountain`;
-        }
-      }
-      this.app.vault.create(destination, "").then((newFile) => {
-        const leaf = this.app.workspace.getLeaf(false);
-        leaf.openFile(newFile);
-      });
+      this.newFountainDocumentCommand();
+    });
+    this.addCommand({
+      id: "new-fountain-document",
+      name: "New fountain document",
+      callback: () => {
+        this.newFountainDocumentCommand();
+      },
+    });
+    this.addCommand({
+      id: "toggle-fountain-edit-mode",
+      name: "Toggle edit mode",
+      checkCallback: (checking: boolean) => {
+        this.toggleFountainEditModeCommand(checking);
+      },
     });
   }
 }
