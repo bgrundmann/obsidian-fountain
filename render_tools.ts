@@ -1,7 +1,4 @@
-import type { Range } from "./fountain";
-
-/** Unicode non breaking space. Use this instead of &nbsp; so we don't need to set innerHTML */
-export const NBSP = "\u00A0";
+import { NBSP, type Range } from "./fountain";
 
 export function dataRange(r: Range): { "data-range": string } {
   return { "data-range": `${r.start},${r.end}` };

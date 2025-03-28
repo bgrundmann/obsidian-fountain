@@ -110,50 +110,6 @@ function installDragAndDropHandlers(
   });
 }
 
-// function installIndexCardEventHandlers(mainblock: HTMLDivElement) {
-//   const indexCards = mainblock.querySelectorAll<HTMLElement>(
-//     ".screenplay-index-card",
-//   );
-//   for (const indexCard of indexCards) {
-//     const indexCardRange = getDataRange(indexCard);
-//     if (!indexCardRange) continue;
-//     indexCard.addEventListener("dragstart", (evt: DragEvent) => {
-//       this.dragstartHandler(mainblock, indexCardRange, evt);
-//     });
-//     this.addDragOverLeaveDropHandlers(indexCard, indexCardRange);
-//     const bt = indexCard.querySelector("button.copy") as HTMLElement;
-//     setIcon(bt, "more-vertical");
-//     bt.addEventListener("click", (_ev) => {
-//       this.copyScene(indexCardRange);
-//     });
-//   }
-//   /*
-//   const sections = mainblock.querySelectorAll<HTMLElement>(".section");
-//   for (const section of sections) {
-//     const start = Number.parseInt(section.getAttribute("data-start") || "-1");
-//     // TODO think about if that is always the right thing for sections
-//     const range = rangeFromStart(start);
-//     this.addDragOverLeaveDropHandlers(section, range);
-//   }
-//   */
-
-//   const editableSynopsis = mainblock.querySelectorAll("[data-synopsis]");
-//   for (const es_ of editableSynopsis) {
-//     const es = es_ as HTMLElement;
-//     // TODO: figure out better ways to handle that range.
-//     const lineRanges: Range[] = Array.from(
-//       es.querySelectorAll("[data-range]"),
-//     ).map((e) => getDataRange(e as HTMLElement) || { start: 0, end: 0 });
-
-//     es.addEventListener("click", (ev) => {
-//       const range = getDataRange(es, "synopsis");
-//       if (range === null) return;
-
-//       this.onEditSynopsisInIndexCardHandler(es, range, lineRanges);
-//     });
-//   }
-// }
-
 function assertNever(x: never): never {
   throw new Error(`Unexpected object: ${x}`);
 }

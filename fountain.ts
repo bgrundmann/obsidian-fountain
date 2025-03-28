@@ -14,7 +14,9 @@ export type {
   FountainElement,
   Note,
 };
-import { NBSP } from "render_tools";
+
+/** Unicode non breaking space. Use this instead of &nbsp; so we don't need to set innerHTML */
+export const NBSP = "\u00A0";
 
 export type ShowHideSettings = {
   hideSynopsis?: boolean; // undefined also false

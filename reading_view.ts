@@ -6,8 +6,10 @@ import type {
   Line,
   Range,
   ShowHideSettings,
+  Synopsis,
 } from "./fountain";
-import { NBSP, dataRange, renderBlankLine } from "./render_tools";
+import { NBSP } from "./fountain";
+import { dataRange, renderBlankLine } from "./render_tools";
 export { renderFountain, getDataRange, rangeOfFirstVisibleLine };
 
 function renderAction(
@@ -108,6 +110,25 @@ function renderLines(
   }
 }
 
+function renderSynopsis(
+  parent: HTMLElement,
+  script: FountainScript,
+  synopsis: Synopsis,
+  settings: ShowHideSettings,
+): void {
+  if (settings.hideSynopsis) {
+    return;
+  }
+  for (const l of synopsis.linesOfText) {
+    parent.createDiv({
+      cls: "synopsis",
+      attr: dataRange(l),
+      text: script.unsafeExtractRaw(l, true),
+    });
+  }
+  renderBlankLine(parent, synopsis.range);
+}
+
 /**
  * Render the content of the script (everything but the title page).
  */
@@ -138,16 +159,7 @@ function renderContent(
         break;
 
       case "synopsis":
-        if (settings.hideSynopsis) {
-          return;
-        }
-        for (const l of el.linesOfText) {
-          parent.createDiv({
-            cls: "synopsis",
-            attr: dataRange(l),
-            text: script.unsafeExtractRaw(l, true),
-          });
-        }
+        renderSynopsis(parent, script, el, settings);
         break;
 
       case "section":
