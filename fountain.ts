@@ -325,15 +325,20 @@ class FountainScript {
     return text.split("&").map((s) => s.trim());
   }
 
+  /** @returns false if all elements passed in where hidden because of settings. */
   styledTextToHtml(
     parent: HTMLElement,
     st: StyledTextWithNotesAndBoneyard,
     settings: ShowHideSettings,
     escapeLeadingSpaces: boolean,
-  ): void {
-    st.map((el) =>
-      this.renderTextElement(parent, el, settings, escapeLeadingSpaces),
-    );
+  ): boolean {
+    let allHidden = true;
+    for (const el of st) {
+      allHidden =
+        !this.renderTextElement(parent, el, settings, escapeLeadingSpaces) &&
+        allHidden;
+    }
+    return !allHidden || st.length > 0;
   }
 
   private renderStyledTextElement(
@@ -348,14 +353,16 @@ class FountainScript {
     });
   }
 
-  /// Extract a text element from the fountain document safe to be used as
-  /// HTML source.
+  /** Extract a text element from the fountain document safe to be used as
+      HTML source.
+      @returns false if the element was hidden because of settings.
+    */
   private renderTextElement(
     parent: HTMLElement,
     el: TextElementWithNotesAndBoneyard,
     settings: ShowHideSettings,
     escapeLeadingSpaces: boolean,
-  ): void {
+  ): boolean {
     switch (el.kind) {
       case "text":
         parent.appendText(
@@ -364,16 +371,17 @@ class FountainScript {
             this.unsafeExtractRaw(el.range),
           ),
         );
-        break;
+        return true;
       case "bold":
       case "italics":
       case "underline":
         this.renderStyledTextElement(parent, el, settings);
-        break;
+        return true;
+
       case "note":
         {
           if (settings.hideNotes) {
-            return;
+            return false;
           }
           let noteKindClass = "";
           switch (el.noteKind) {
@@ -402,9 +410,11 @@ class FountainScript {
             );
           });
         }
-        break;
+        return true;
+
       case "boneyard":
-      /// TODO: support
+        /// TODO: support
+        return false;
     }
   }
 

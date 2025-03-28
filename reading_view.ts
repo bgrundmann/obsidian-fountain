@@ -18,8 +18,9 @@ function renderAction(
   script: FountainScript,
   settings: ShowHideSettings,
 ): void {
-  renderLines(parent, script, ["action"], action.lines, true, settings);
-  renderBlankLine(parent, action.range);
+  if (renderLines(parent, script, ["action"], action.lines, true, settings)) {
+    renderBlankLine(parent, action.range);
+  }
 }
 
 function renderDialogue(
@@ -81,6 +82,7 @@ function getDataRange(target: HTMLElement, name = "range"): Range | null {
   }
 }
 
+/** @returns false if lines contained ONLY elements that were hidden because of settings. */
 function renderLines(
   parent: HTMLElement,
   script: FountainScript,
@@ -88,7 +90,8 @@ function renderLines(
   lines: Line[],
   escapeLeadingSpaces: boolean,
   settings: ShowHideSettings,
-): void {
+): boolean {
+  let everythingHidden = true;
   for (const line of lines) {
     const centered = line.centered ? "centered" : "";
     // Merge the lineClasses array with centered if present
@@ -99,15 +102,18 @@ function renderLines(
         // Need a nbsp so that the div is not empty and gets regular text height
         innerDiv.appendText(NBSP);
       } else {
-        script.styledTextToHtml(
-          innerDiv,
-          line.elements,
-          settings,
-          escapeLeadingSpaces,
-        );
+        everythingHidden =
+          everythingHidden &&
+          !script.styledTextToHtml(
+            innerDiv,
+            line.elements,
+            settings,
+            escapeLeadingSpaces,
+          );
       }
     });
   }
+  return !everythingHidden || lines.length > 0;
 }
 
 function renderSynopsis(
