@@ -67,12 +67,13 @@ export class TocView extends ItemView {
     const attr = section.section ? { open: "" } : undefined;
     parent.createEl(tag, { attr: attr }, (s) => {
       if (section.section) {
-        const heading = section.section;
+        const sect = section.section;
         const d = s.createEl("summary", {
-          text: script.unsafeExtractRaw(heading.range),
+          cls: "section",
+          text: script.unsafeExtractRaw(sect.range),
         });
         d.addEventListener("click", (evt: Event) => {
-          this.scrollActiveScriptToHere(heading.range);
+          this.scrollActiveScriptToHere(sect.range);
         });
       }
       for (const el of section.content) {
@@ -84,6 +85,7 @@ export class TocView extends ItemView {
             if (el.scene) {
               const el_scene = el.scene;
               const d = s.createDiv({
+                cls: "scene-heading",
                 text: script.unsafeExtractRaw(el_scene.range),
               });
               d.addEventListener("click", (evt: Event) => {
@@ -100,14 +102,16 @@ export class TocView extends ItemView {
     const ft = this.app.workspace.getActiveViewOfType(FountainView);
     const container = this.containerEl.children[1];
     container.empty();
-    if (ft) {
-      const script = ft.script();
-      if (!("error" in script)) {
-        for (const section of script.structure()) {
-          this.renderTocSection(container as HTMLElement, script, section);
+    container.createDiv({ cls: "screenplay-toc" }, (div) => {
+      if (ft) {
+        const script = ft.script();
+        if (!("error" in script)) {
+          for (const section of script.structure()) {
+            this.renderTocSection(div, script, section);
+          }
         }
       }
-    }
+    });
   }
 
   protected async onOpen(): Promise<void> {

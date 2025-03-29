@@ -32,7 +32,8 @@
 	font-display: swap;
 }
 
-.screenplay {
+.screenplay,
+.screenplay-toc {
 	--screenplay-font: "Courier Prime";
 	--bold-weight: 600;
 	--max-width: 62ch;
@@ -152,7 +153,8 @@
 
 /****** scene headings */
 
-.screenplay .scene-heading {
+.screenplay .scene-heading,
+.screenplay-toc .scene-heading {
 	padding: 0px !important;
 	text-transform: uppercase;
 	font-weight: var(--bold-weight);
@@ -175,7 +177,12 @@
 .screenplay h2,
 .screenplay h3,
 .screenplay h4,
-.screenplay h5 {
+.screenplay h5,
+.screenplay-toc h1,
+.screenplay-toc h2,
+.screenplay-toc h3,
+.screenplay-toc h4,
+.screenplay-toc h5 {
 	font-size: inherit;
 	text-align: left;
 	text-transform: uppercase;
@@ -185,7 +192,8 @@
 
 /********* sections */
 
-.screenplay .section {
+.screenplay .section,
+.screenplay-toc .section {
 	text-transform: uppercase;
 	font-weight: var(--bold-weight);
 	text-align: left;
