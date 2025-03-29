@@ -1,4 +1,5 @@
-import { Plugin } from "obsidian";
+import { Plugin, type WorkspaceLeaf } from "obsidian";
+import { TocView, VIEW_TYPE_TOC } from "toc_view";
 import { FountainView, VIEW_TYPE_FOUNTAIN } from "./view";
 
 export default class FountainPlugin extends Plugin {
@@ -6,10 +7,25 @@ export default class FountainPlugin extends Plugin {
     // Register our custom view and associate it with .fountain files
     this.registerView(VIEW_TYPE_FOUNTAIN, (leaf) => new FountainView(leaf));
     this.registerExtensions(["fountain"], VIEW_TYPE_FOUNTAIN);
+    this.registerView(VIEW_TYPE_TOC, (leaf) => new TocView(leaf));
     this.registerCommands();
+    this.registerTocInSideBar();
   }
+
   async onunload() {
     // Is there a way to "unregister" the View and extensions?
+  }
+
+  private async registerTocInSideBar() {
+    const { workspace } = this.app;
+    let leaf: WorkspaceLeaf | null = null;
+    const leaves = workspace.getLeavesOfType(VIEW_TYPE_TOC);
+    if (leaves.length > 0) {
+      leaf = leaves[0];
+    } else {
+      leaf = workspace.getRightLeaf(false);
+      await leaf?.setViewState({ type: VIEW_TYPE_TOC, active: true });
+    }
   }
 
   private newFountainDocumentCommand() {

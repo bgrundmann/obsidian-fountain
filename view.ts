@@ -166,11 +166,9 @@ class ReadonlyViewState {
         hideNotes: this.pstate.hideNotes || false,
       },
     };
-    console.log(this.pstate.rehearsal);
     this.pstate.hideBoneyard = true;
     this.pstate.hideNotes = true;
     this.pstate.hideSynopsis = true;
-    console.log(this.pstate.rehearsal);
     this.render();
   }
 
@@ -215,7 +213,7 @@ class ReadonlyViewState {
         this.startEditModeHere(r);
       },
       startReadingModeHere: (r: Range): void => {
-        this.scrollScriptLineIntoView(r);
+        this.scrollToHere(r);
       },
     };
     const fp = this.script();
@@ -245,12 +243,11 @@ class ReadonlyViewState {
     }
   }
 
-  scrollScriptLineIntoView(r: Range) {
+  scrollToHere(r: Range) {
     const scroll = () => {
       const targetElement = document.querySelector(
         `[data-range^="${r.start},"]`,
       );
-      console.log("scroll line into view", r, targetElement);
       targetElement?.scrollIntoView();
     };
     if (this.pstate.mode !== ShowMode.Script) {
@@ -536,16 +533,16 @@ export class FountainView extends TextFileView {
 
   startEditModeHere(r: Range): void {
     this.switchToEditMode();
-    if (this.state instanceof EditorViewState) {
-      this.state.scrollToHere(r);
-    }
+    this.scrollToHere(r);
   }
 
   startReadingModeHere(r: Range): void {
     this.switchToReadonlyMode();
-    if (this.state instanceof ReadonlyViewState) {
-      this.state.scrollScriptLineIntoView(r);
-    }
+    this.scrollToHere(r);
+  }
+
+  scrollToHere(r: Range): void {
+    this.state.scrollToHere(r);
   }
 
   isEditMode(): boolean {
@@ -613,7 +610,7 @@ export class FountainView extends TextFileView {
       this.state.render();
       const es = this.state;
       requestAnimationFrame(() => {
-        es.scrollScriptLineIntoView(firstLine);
+        es.scrollToHere(firstLine);
       });
     } else {
       // Switch to editor

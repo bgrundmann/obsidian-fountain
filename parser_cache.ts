@@ -24,13 +24,11 @@ export function parse(
 
   // If cache exists and input matches cached document, return cached result
   if (cached && cached.document === input) {
-    console.log("cache saved work", path);
     return cached.result;
   }
 
   // Otherwise parse the input and cache the result
   try {
-    console.log("cache did not save work", path);
     const result = fountain_parser.parse(input);
     parseCache.set(path, {
       document: input,
