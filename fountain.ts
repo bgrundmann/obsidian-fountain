@@ -334,9 +334,13 @@ class FountainScript {
   ): boolean {
     let allHidden = true;
     for (const el of st) {
-      allHidden =
-        !this.renderTextElement(parent, el, settings, escapeLeadingSpaces) &&
-        allHidden;
+      const thisElementWasHidden = !this.renderTextElement(
+        parent,
+        el,
+        settings,
+        escapeLeadingSpaces,
+      );
+      allHidden = thisElementWasHidden && allHidden;
     }
     return !allHidden || st.length > 0;
   }

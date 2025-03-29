@@ -102,14 +102,13 @@ function renderLines(
         // Need a nbsp so that the div is not empty and gets regular text height
         innerDiv.appendText(NBSP);
       } else {
-        everythingHidden =
-          everythingHidden &&
-          !script.styledTextToHtml(
-            innerDiv,
-            line.elements,
-            settings,
-            escapeLeadingSpaces,
-          );
+        const thisLineWasCompletelyHidden = !script.styledTextToHtml(
+          innerDiv,
+          line.elements,
+          settings,
+          escapeLeadingSpaces,
+        );
+        everythingHidden = everythingHidden && thisLineWasCompletelyHidden;
       }
     });
   }

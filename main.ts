@@ -9,7 +9,9 @@ export default class FountainPlugin extends Plugin {
     this.registerExtensions(["fountain"], VIEW_TYPE_FOUNTAIN);
     this.registerView(VIEW_TYPE_TOC, (leaf) => new TocView(leaf));
     this.registerCommands();
-    this.registerTocInSideBar();
+    this.app.workspace.onLayoutReady(() => {
+      this.registerTocInSideBar();
+    });
   }
 
   async onunload() {
