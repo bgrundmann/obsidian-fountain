@@ -94,6 +94,7 @@ class ReadonlyViewState {
     path: string,
     text: string,
     startEditModeHere: (range: Range) => void,
+    readonly requestSave: () => void,
   ) {
     this.text = text;
     this.contentEl = contentEl;
@@ -126,6 +127,7 @@ class ReadonlyViewState {
       extraNewLines +
       sceneText +
       this.text.slice(range.end);
+    this.requestSave();
   }
 
   /** move a scene making sure that it is properly terminated by an empty line  */
@@ -137,10 +139,12 @@ class ReadonlyViewState {
     const extraNewLines =
       lastTwo === "\n\n" ? "" : lastTwo[1] === "\n" ? "\n" : "\n\n";
     this.text = moveText(this.text, range, newPos, extraNewLines);
+    this.requestSave();
   }
 
   private replaceText(range: Range, s: string): void {
     this.text = replaceText(this.text, range, s);
+    this.requestSave();
   }
 
   public stopRehearsalMode() {
@@ -429,6 +433,7 @@ export class FountainView extends TextFileView {
       "",
       "",
       (r) => this.startEditModeHere(r),
+      () => this.requestSave(),
     );
     this.toggleEditAction = this.addAction(
       "edit",
@@ -606,6 +611,7 @@ export class FountainView extends TextFileView {
         this.file?.path ?? "",
         text,
         (r) => this.startEditModeHere(r),
+        () => this.requestSave(),
       );
       this.state.render();
       const es = this.state;
@@ -711,6 +717,7 @@ export class FountainView extends TextFileView {
         "",
         "",
         (r) => this.startEditModeHere(r),
+        () => this.requestSave(),
       );
     }
   }

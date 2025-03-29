@@ -30,7 +30,7 @@ export default class FountainPlugin extends Plugin {
     }
   }
 
-  private newFountainDocumentCommand() {
+  private async newFountainDocumentCommand() {
     let destination = "Untitled.fountain";
     const activeFile = this.app.workspace.getActiveFile();
     if (activeFile !== null) {
@@ -40,7 +40,12 @@ export default class FountainPlugin extends Plugin {
     }
     this.app.vault.create(destination, "").then((newFile) => {
       const leaf = this.app.workspace.getLeaf(false);
-      leaf.openFile(newFile);
+      leaf.openFile(newFile).then(() => {
+        if (leaf.view instanceof FountainView) {
+          leaf.view.switchToEditMode();
+        }
+        this.app.workspace.setActiveLeaf(leaf, { focus: true });
+      });
     });
   }
 
