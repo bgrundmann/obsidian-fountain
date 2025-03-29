@@ -1,4 +1,9 @@
-import type { FountainScript, Range, StructureSection } from "fountain";
+import {
+  type FountainScript,
+  type Range,
+  type StructureSection,
+  extractNotes,
+} from "fountain";
 import { ItemView, type WorkspaceLeaf, debounce } from "obsidian";
 import { FountainView } from "view";
 
@@ -82,15 +87,28 @@ export class TocView extends ItemView {
             this.renderTocSection(s, script, el);
             break;
           case "scene":
-            if (el.scene) {
-              const el_scene = el.scene;
-              const d = s.createDiv({
-                cls: "scene-heading",
-                text: script.unsafeExtractRaw(el_scene.range),
-              });
-              d.addEventListener("click", (evt: Event) => {
-                this.scrollActiveScriptToHere(el_scene.range);
-              });
+            {
+              if (el.scene) {
+                const el_scene = el.scene;
+                const d = s.createDiv({
+                  cls: "scene-heading",
+                  text: script.unsafeExtractRaw(el_scene.range),
+                });
+                d.addEventListener("click", (evt: Event) => {
+                  this.scrollActiveScriptToHere(el_scene.range);
+                });
+              }
+              const todos = extractNotes(el.content).filter(
+                (n) => n.noteKind === "todo",
+              );
+              for (const note of todos) {
+                s.createDiv({}, (div) => {
+                  script.styledTextToHtml(div, [note], {}, false);
+                  div.addEventListener("click", () =>
+                    this.scrollActiveScriptToHere(note.range),
+                  );
+                });
+              }
             }
             break;
         }

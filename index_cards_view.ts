@@ -235,10 +235,10 @@ function renderIndexCard(
           heading.range.end,
           callbacks,
         );
-        const notes = extractNotes(content).filter(
+        const todos = extractNotes(content).filter(
           (n) => n.noteKind === "todo",
         );
-        for (const note of notes) {
+        for (const note of todos) {
           indexCard.createDiv({}, (div) => {
             script.styledTextToHtml(div, [note], {}, false);
             div.addEventListener("click", () =>
