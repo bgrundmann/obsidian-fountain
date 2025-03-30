@@ -9,7 +9,7 @@ import type {
 } from "./fountain";
 import { extractNotes } from "./fountain";
 
-type Callbacks = {
+export type Callbacks = {
   moveScene: (rangeOfScene: Range, newStart: number) => void;
   copyScene: (rangeOfScene: Range) => void;
   replaceText: (range: Range, s: string) => void;

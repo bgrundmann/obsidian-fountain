@@ -1,5 +1,5 @@
 import { history } from "@codemirror/commands";
-import { EditorState } from "@codemirror/state";
+import { EditorSelection, EditorState } from "@codemirror/state";
 import { EditorView, type ViewUpdate, drawSelection } from "@codemirror/view";
 import { FuzzySelectString } from "fuzzy_select_string";
 import {
@@ -12,7 +12,7 @@ import {
 } from "obsidian";
 import type { FountainScript, Range, ShowHideSettings } from "./fountain";
 import { createFountainEditorPlugin } from "./fountain_editor";
-import { renderIndexCards } from "./index_cards_view";
+import { type Callbacks, renderIndexCards } from "./index_cards_view";
 import { type ParseError, parse } from "./parser_cache";
 import { rangeOfFirstVisibleLine, renderFountain } from "./reading_view";
 
@@ -197,7 +197,7 @@ class ReadonlyViewState {
 
   render() {
     this.contentEl.empty();
-    const callbacks = {
+    const callbacks: Callbacks = {
       moveScene: (r: Range, p: number) => {
         this.moveScene(r, p);
       },
@@ -395,6 +395,7 @@ class EditorViewState {
   scrollToHere(r: Range): void {
     this.cmEditor.dispatch({
       effects: EditorView.scrollIntoView(r.start, { y: "start" }),
+      selection: EditorSelection.single(r.start),
     });
     this.cmEditor.focus();
   }
