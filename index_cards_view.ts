@@ -147,6 +147,42 @@ function editSynopsisHandler(
   });
 }
 
+function editSceneHeadingHandler(
+  indexCardDiv: HTMLDivElement,
+  script: FountainScript,
+  headingRange: Range,
+  callbacks: Callbacks,
+): void {
+  const heading = indexCardDiv.querySelector(".scene-heading");
+  const headingTextWithNewlines = script.unsafeExtractRaw(headingRange);
+  const headingText = headingTextWithNewlines.replace(/\n{1,2}/, "");
+  const numNewlines = headingTextWithNewlines.length - headingText.length;
+
+  if (heading) {
+    const headingInput = createEl("input", {
+      cls: "scene-heading",
+      type: "text",
+      value: headingText,
+    });
+    headingInput.addEventListener("keyup", (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        callbacks.reRender();
+        event.preventDefault();
+      } else if (event.key === "Enter") {
+        callbacks.replaceText(
+          headingRange,
+          headingInput.value + "\n".repeat(numNewlines),
+        );
+        callbacks.reRender();
+        event.preventDefault();
+      }
+    });
+    //headingInput.addEventListener(type, listener)
+    heading.replaceWith(headingInput);
+    headingInput.focus();
+  }
+}
+
 function renderSynopsis(
   div: HTMLElement,
   script: FountainScript,
@@ -216,9 +252,15 @@ function renderIndexCard(
             attr: dataRange(heading.range),
             text: script.unsafeExtractRaw(heading.range),
           },
-          (heading) => {
-            heading.addEventListener("click", (_evt) => {
-              callbacks.startReadingModeHere(scene.range);
+          (headingEl) => {
+            headingEl.addEventListener("click", (_evt) => {
+              //callbacks.startReadingModeHere(scene.range);
+              editSceneHeadingHandler(
+                indexCard,
+                script,
+                heading.range,
+                callbacks,
+              );
             });
           },
         );
