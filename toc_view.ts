@@ -127,7 +127,7 @@ export class TocView extends ItemView {
   }
 
   private render() {
-    const ft = this.app.workspace.getActiveViewOfType(FountainView);
+    const ft = this.theFountainView();
     const container = this.contentEl;
     container.empty();
     container.createDiv({ cls: "screenplay-toc" }, (div) => {
@@ -140,6 +140,14 @@ export class TocView extends ItemView {
                 bt,
                 this.expanded ? "chevrons-down-up" : "chevrons-up-down",
               );
+              bt.addEventListener("click", (evt: Event) => {
+                this.expanded = !this.expanded;
+                setIcon(
+                  bt,
+                  this.expanded ? "chevrons-down-up" : "chevrons-up-down",
+                );
+                this.render();
+              });
             });
             tocControls.createEl(
               "input",
