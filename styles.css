@@ -287,6 +287,10 @@
 	);
 }
 
+.screenplay .cm-cursorLayer .cm-cursor {
+	border-left: 2px solid var(--caret-color);
+}
+
 /****************************** index view */
 
 .screenplay-index-cards {
