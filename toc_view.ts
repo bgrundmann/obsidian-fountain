@@ -4,7 +4,7 @@ import {
   type StructureSection,
   extractNotes,
 } from "fountain";
-import { ItemView, type WorkspaceLeaf, debounce } from "obsidian";
+import { ItemView, type WorkspaceLeaf, debounce, setIcon } from "obsidian";
 import { FountainView } from "view";
 
 export const VIEW_TYPE_TOC = "obsidian-toc";
@@ -15,10 +15,14 @@ export const VIEW_TYPE_TOC = "obsidian-toc";
 // what it should...)
 export class TocView extends ItemView {
   private updateToc: () => void;
+  private expanded: boolean;
+  private showTodos: boolean;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
     this.updateToc = debounce(() => this.render(), 500, true);
+    this.expanded = false;
+    this.showTodos = true;
   }
 
   getViewType(): string {
@@ -54,13 +58,18 @@ export class TocView extends ItemView {
   private scrollActiveScriptToHere(range: Range) {
     // In the moment of clicking on a toc element, the toc is active
     // so let's see if before that a fountainview was active.
+    this.theFountainView()?.scrollToHere(range);
+  }
+
+  private theFountainView(): FountainView | null {
     const leaf = this.app.workspace.getMostRecentLeaf(
       this.app.workspace.rootSplit,
     );
     if (leaf && leaf.view instanceof FountainView) {
       const ft = leaf.view;
-      ft.scrollToHere(range);
+      return ft;
     }
+    return null;
   }
 
   private renderTocSection(
@@ -69,7 +78,8 @@ export class TocView extends ItemView {
     section: StructureSection,
   ) {
     const tag = section.section ? "details" : "section";
-    const attr = section.section ? { open: "" } : undefined;
+    const startsExpanded = !section.section || this.expanded;
+    const attr = startsExpanded ? { open: "" } : undefined;
     parent.createEl(tag, { attr: attr }, (s) => {
       if (section.section) {
         const sect = section.section;
@@ -102,7 +112,7 @@ export class TocView extends ItemView {
                 (n) => n.noteKind === "todo",
               );
               for (const note of todos) {
-                s.createDiv({}, (div) => {
+                s.createDiv({ cls: "todo" }, (div) => {
                   script.styledTextToHtml(div, [note], {}, false);
                   div.addEventListener("click", () =>
                     this.scrollActiveScriptToHere(note.range),
@@ -118,12 +128,43 @@ export class TocView extends ItemView {
 
   private render() {
     const ft = this.app.workspace.getActiveViewOfType(FountainView);
-    const container = this.containerEl.children[1];
+    const container = this.contentEl;
     container.empty();
     container.createDiv({ cls: "screenplay-toc" }, (div) => {
       if (ft) {
         const script = ft.script();
         if (!("error" in script)) {
+          div.createDiv({ cls: "toc-controls" }, (tocControls) => {
+            tocControls.createEl("button", { cls: "clickable-icon" }, (bt) => {
+              setIcon(
+                bt,
+                this.expanded ? "chevrons-down-up" : "chevrons-up-down",
+              );
+            });
+            tocControls.createEl(
+              "input",
+              {
+                type: "checkbox",
+                attr: {
+                  name: "todos",
+                  ...(this.showTodos ? { checked: "" } : {}),
+                },
+              },
+              (checkbox) => {
+                checkbox.addEventListener("change", (event: Event) => {
+                  this.showTodos = checkbox.checked;
+                  for (const todo_ of container.querySelectorAll(".todo")) {
+                    const todo = todo_ as HTMLElement;
+                    todo.style.display = this.showTodos ? "block" : "none";
+                  }
+                });
+              },
+            );
+            tocControls.createEl("label", {
+              attr: { for: "todos" },
+              text: "Show todos?",
+            });
+          });
           for (const section of script.structure()) {
             this.renderTocSection(div, script, section);
           }

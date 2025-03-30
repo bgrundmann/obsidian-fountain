@@ -259,6 +259,13 @@
 	margin-left: 20px;
 }
 
+.screenplay-toc .toc-controls {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: nowrap;
+	align-items: center;
+}
+
 .screenplay .note {
 	color: var(--text-muted);
 	font-style: italic;
