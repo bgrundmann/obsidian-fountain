@@ -1,3 +1,4 @@
+import { Menu, setIcon } from "obsidian";
 import { dataRange } from "render_tools";
 import type {
   FountainScript,
@@ -264,12 +265,33 @@ function renderIndexCard(
             });
           },
         );
-        indexCard.createDiv(
-          { cls: ["index-card-buttons", "show-on-hover"] },
-          (buttons) => {
-            buttons.createEl("button", { cls: "copy" });
-          },
-        );
+        indexCard.createDiv({ cls: ["index-card-buttons"] }, (buttons) => {
+          buttons.createEl("button", { cls: "clickable-icon" }, (bt) => {
+            setIcon(bt, "ellipsis");
+            bt.addEventListener("click", (evt: MouseEvent) => {
+              const m = new Menu();
+              m.addItem((item) => {
+                item
+                  .setTitle("Copy")
+                  .setIcon("copy")
+                  .onClick(() => {
+                    callbacks.copyScene(scene.range);
+                    callbacks.reRender();
+                  });
+              });
+              m.addItem((item) => {
+                item
+                  .setTitle("Edit")
+                  .setIcon("edit")
+                  .onClick(() => {
+                    callbacks.startEditModeHere(scene.range);
+                  });
+              });
+
+              m.showAtMouseEvent(evt);
+            });
+          });
+        });
         renderSynopsis(
           indexCard,
           script,
