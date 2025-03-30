@@ -394,7 +394,9 @@ class EditorViewState {
 
   scrollToHere(r: Range): void {
     this.cmEditor.dispatch({
+      // scroll the view
       effects: EditorView.scrollIntoView(r.start, { y: "start" }),
+      // move the cursor as well
       selection: EditorSelection.single(r.start),
     });
     this.cmEditor.focus();
