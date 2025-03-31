@@ -1,8 +1,4 @@
-import { NBSP, type Range } from "./fountain";
-
-export function dataRange(r: Range): { "data-range": string } {
-  return { "data-range": `${r.start},${r.end}` };
-}
+import { NBSP, type Range, dataRange } from "./fountain";
 
 export function endOfRange(r: Range): Range {
   return { start: r.end, end: r.end };

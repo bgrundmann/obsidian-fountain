@@ -8,8 +8,8 @@ import type {
   ShowHideSettings,
   Synopsis,
 } from "./fountain";
-import { NBSP } from "./fountain";
-import { dataRange, renderBlankLine } from "./render_tools";
+import { NBSP, dataRange } from "./fountain";
+import { renderBlankLine } from "./render_tools";
 export { renderFountain, getDataRange, rangeOfFirstVisibleLine };
 
 function renderAction(

@@ -1,5 +1,4 @@
 import { Menu, setIcon } from "obsidian";
-import { dataRange } from "render_tools";
 import type {
   FountainScript,
   Range,
@@ -7,7 +6,7 @@ import type {
   StructureSection,
   Synopsis,
 } from "./fountain";
-import { extractNotes } from "./fountain";
+import { dataRange, extractNotes } from "./fountain";
 
 export type Callbacks = {
   moveScene: (rangeOfScene: Range, newStart: number) => void;

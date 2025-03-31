@@ -29,6 +29,10 @@ interface Range {
   end: number;
 }
 
+export function dataRange(r: Range): { "data-range": string } {
+  return { "data-range": `${r.start},${r.end}` };
+}
+
 function intersect(r1: Range, r2: Range): boolean {
   return r1.start < r2.end && r2.start < r1.end;
 }
@@ -402,17 +406,21 @@ class FountainScript {
               noteKindClass = "note";
               break;
           }
-          parent.createEl("span", { cls: noteKindClass }, (span) => {
-            if (el.noteKind === "todo") {
-              span.createEl("b", { text: "TODO: " });
-            }
-            span.appendText(
-              maybeEscapeLeadingSpaces(
-                true,
-                this.unsafeExtractRaw(el.textRange),
-              ),
-            );
-          });
+          parent.createEl(
+            "span",
+            { cls: noteKindClass, attr: dataRange(el.range) },
+            (span) => {
+              if (el.noteKind === "todo") {
+                span.createEl("b", { text: "TODO: " });
+              }
+              span.appendText(
+                maybeEscapeLeadingSpaces(
+                  true,
+                  this.unsafeExtractRaw(el.textRange),
+                ),
+              );
+            },
+          );
         }
         return true;
 
