@@ -112,11 +112,14 @@ export class TocView extends ItemView {
                 (n) => n.noteKind === "todo",
               );
               for (const note of todos) {
-                const todos.createDiv({ cls: "todo" }, (div) => {
+                s.createDiv({ cls: "todo" }, (div) => {
                   script.styledTextToHtml(div, [note], {}, false);
                   div.addEventListener("click", () =>
                     this.scrollActiveScriptToHere(note.range),
                   );
+                  if (!this.showTodos) {
+                    div.style.display = "none";
+                  }
                 });
               }
             }
