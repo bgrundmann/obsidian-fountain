@@ -31,22 +31,33 @@ export default class FountainPlugin extends Plugin {
   }
 
   private async newFountainDocumentCommand() {
-    let destination = "Untitled.fountain";
+    let destination = "Untitled";
     const activeFile = this.app.workspace.getActiveFile();
     if (activeFile !== null) {
       if (activeFile?.parent) {
-        destination = `${activeFile.parent.path}/Untitled.fountain`;
+        destination = `${activeFile.parent.path}/Untitled`;
       }
     }
-    this.app.vault.create(destination, "").then((newFile) => {
-      const leaf = this.app.workspace.getLeaf(false);
-      leaf.openFile(newFile).then(() => {
-        if (leaf.view instanceof FountainView) {
-          leaf.view.switchToEditMode();
-        }
-        this.app.workspace.setActiveLeaf(leaf, { focus: true });
-      });
-    });
+    const createFile = (suffix: number | null) => {
+      const fileName = suffix
+        ? `${destination}-${suffix}.fountain`
+        : `${destination}.fountain`;
+      this.app.vault.create(fileName, "").then(
+        (newFile) => {
+          const leaf = this.app.workspace.getLeaf(false);
+          leaf.openFile(newFile).then(() => {
+            if (leaf.view instanceof FountainView) {
+              leaf.view.switchToEditMode();
+            }
+            this.app.workspace.setActiveLeaf(leaf, { focus: true });
+          });
+        },
+        () => {
+          createFile(suffix ? suffix + 1 : 1);
+        },
+      );
+    };
+    createFile(null);
   }
 
   private toggleFountainEditModeCommand(checking: boolean): boolean {
