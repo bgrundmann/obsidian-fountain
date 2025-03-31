@@ -135,6 +135,7 @@ function editSynopsisHandler(
     text: "OK",
   });
   el.replaceWith(textarea, buttonContainer);
+  textarea.focus();
   cancelButton.addEventListener("click", () => {
     callbacks.reRender();
   });
