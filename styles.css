@@ -209,6 +209,15 @@
 	background-color: var(--background-primary-alt);
 }
 
+.screenplay-toc .synopsis {
+	color: var(--text-muted);
+	font-style: italic;
+	margin-left: var(--synopsis-margin);
+	margin-right: var(--synopsis-margin);
+	background-color: var(--background-primary-alt);
+	font-size: 11px;
+}
+
 .screenplay .boneyard {
 	color: var(--text-faint);
 	font-style: italic;
@@ -317,6 +326,10 @@
 	position: relative;
 	display: flex;
 	flex-direction: column;
+}
+
+.screenplay-index-card.dashed {
+	border: 1px dashed #ccc;
 }
 
 .show-on-hover {

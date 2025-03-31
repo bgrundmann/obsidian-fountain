@@ -1,4 +1,5 @@
 import { Menu, setIcon } from "obsidian";
+import { endOfRange } from "render_tools";
 import type {
   FountainScript,
   Range,
@@ -286,6 +287,12 @@ function renderIndexCard(
                     callbacks.startEditModeHere(scene.range);
                   });
               });
+              m.addItem((item) => {
+                item.setTitle("Delete").onClick(() => {
+                  callbacks.replaceText(scene.range, "");
+                  callbacks.reRender();
+                });
+              });
 
               m.showAtMouseEvent(evt);
             });
@@ -366,6 +373,20 @@ function renderSection(
           break;
       }
     }
+    sectionDiv.createDiv(
+      {
+        cls: ["screenplay-index-card", "dashed"],
+        attr: {},
+      },
+      (div) => {
+        setIcon(div, "plus");
+        div.addEventListener("click", (evt: MouseEvent) => {
+          const r = section.range;
+          callbacks.replaceText(endOfRange(r), ".SCENE HEADING\n\n");
+          callbacks.reRender();
+        });
+      },
+    );
   });
 }
 

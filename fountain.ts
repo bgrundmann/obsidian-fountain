@@ -258,20 +258,43 @@ function mergeConsecutiveActions(script: FountainElement[]): FountainElement[] {
   return merged;
 }
 
-export type StructureSection = {
-  kind: "section";
-  section?: Section;
-  synopsis?: Synopsis;
-  content: (StructureSection | StructureScene)[];
-};
+export class StructureSection {
+  readonly content: (StructureSection | StructureScene)[];
+  readonly kind: "section";
+
+  constructor(
+    public section?: Section,
+    public synopsis?: Synopsis,
+  ) {
+    this.kind = "section";
+    this.content = [];
+  }
+
+  get range(): Range {
+    const starts: number[] = [
+      this.synopsis?.range.start,
+      this.content[0]?.range.start,
+    ].filter((r): r is number => r !== undefined);
+    const ends: number[] = [
+      this.synopsis?.range.end,
+      this.content[this.content.length - 1]?.range.end,
+    ].filter((r): r is number => r !== undefined);
+
+    return { start: Math.min(...starts), end: Math.max(...ends) };
+  }
+}
 
 export class StructureScene {
+  readonly kind: "scene";
+  readonly content: Exclude<FountainElement, Scene>[];
+
   constructor(
-    readonly kind: "scene",
-    readonly content: Exclude<FountainElement, Scene>[],
     public scene?: Scene,
     public synopsis?: Synopsis,
-  ) {}
+  ) {
+    this.content = [];
+    this.kind = "scene";
+  }
 
   get range(): Range {
     const starts: number[] = [
@@ -472,8 +495,8 @@ class FountainScript {
   */
   structure(): StructureSection[] {
     const res: StructureSection[] = [];
-    let currentSection: StructureSection = { kind: "section", content: [] };
-    let currentScene: StructureScene = new StructureScene("scene", []);
+    let currentSection: StructureSection = new StructureSection();
+    let currentScene: StructureScene = new StructureScene();
 
     const isCurrentSceneEmpty = () =>
       !currentScene.content.length &&
@@ -502,10 +525,10 @@ class FountainScript {
                 // otherwise finish the current scene and start a new section
                 if (!isCurrentSceneEmpty()) {
                   currentSection.content.push(currentScene);
-                  currentScene = new StructureScene("scene", []);
+                  currentScene = new StructureScene();
                 }
                 res.push(currentSection);
-                currentSection = { kind: "section", section: fe, content: [] };
+                currentSection = new StructureSection(fe);
               }
             } else {
               // Sections of depth 4 and greater are used to structure scenes...
@@ -519,7 +542,7 @@ class FountainScript {
               // This is the start of a new scene.
               currentSection.content.push(currentScene);
             }
-            currentScene = new StructureScene("scene", [], fe);
+            currentScene = new StructureScene(fe);
           }
           break;
         case "synopsis":

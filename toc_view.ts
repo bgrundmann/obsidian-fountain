@@ -2,9 +2,11 @@ import {
   type FountainScript,
   type Range,
   type StructureSection,
+  type Synopsis,
+  dataRange,
   extractNotes,
 } from "fountain";
-import { ItemView, type WorkspaceLeaf, debounce, setIcon } from "obsidian";
+import { ItemView, type WorkspaceLeaf, debounce } from "obsidian";
 import { FountainView } from "view";
 
 export const VIEW_TYPE_TOC = "obsidian-toc";
@@ -17,12 +19,14 @@ export class TocView extends ItemView {
   private updateToc: () => void;
   private expanded: boolean;
   private showTodos: boolean;
+  private showSynopsis: boolean;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
     this.updateToc = debounce(() => this.render(), 500, true);
     this.expanded = false;
     this.showTodos = true;
+    this.showSynopsis = false;
   }
 
   getViewType(): string {
@@ -72,18 +76,34 @@ export class TocView extends ItemView {
     return null;
   }
 
+  private renderSynopsis(
+    s: HTMLElement,
+    script: FountainScript,
+    synopsis?: Synopsis,
+  ) {
+    if (synopsis) {
+      for (const l of synopsis.linesOfText) {
+        const d = s.createDiv({
+          cls: "synopsis",
+          attr: dataRange(l),
+          text: script.unsafeExtractRaw(l, true),
+        });
+        d.addEventListener("click", (evt: Event) => {
+          this.scrollActiveScriptToHere(l);
+        });
+      }
+    }
+  }
+
   private renderTocSection(
     parent: HTMLElement,
     script: FountainScript,
     section: StructureSection,
   ) {
-    const tag = section.section ? "details" : "section";
-    const startsExpanded = !section.section || this.expanded;
-    const attr = startsExpanded ? { open: "" } : undefined;
-    parent.createEl(tag, { attr: attr }, (s) => {
+    parent.createEl("section", {}, (s) => {
       if (section.section) {
         const sect = section.section;
-        const d = s.createEl("summary", {
+        const d = s.createEl("h1", {
           cls: "section",
           text: script.unsafeExtractRaw(sect.range),
         });
@@ -91,6 +111,7 @@ export class TocView extends ItemView {
           this.scrollActiveScriptToHere(sect.range);
         });
       }
+      this.renderSynopsis(s, script, section.synopsis);
       for (const el of section.content) {
         switch (el.kind) {
           case "section":
@@ -108,6 +129,7 @@ export class TocView extends ItemView {
                   this.scrollActiveScriptToHere(el_scene.range);
                 });
               }
+              this.renderSynopsis(s, script, el.synopsis);
               const todos = extractNotes(el.content).filter(
                 (n) => n.noteKind === "todo",
               );
@@ -138,20 +160,6 @@ export class TocView extends ItemView {
         const script = ft.script();
         if (!("error" in script)) {
           div.createDiv({ cls: "toc-controls" }, (tocControls) => {
-            tocControls.createEl("button", { cls: "clickable-icon" }, (bt) => {
-              setIcon(
-                bt,
-                this.expanded ? "chevrons-down-up" : "chevrons-up-down",
-              );
-              bt.addEventListener("click", (evt: Event) => {
-                this.expanded = !this.expanded;
-                setIcon(
-                  bt,
-                  this.expanded ? "chevrons-down-up" : "chevrons-up-down",
-                );
-                this.render();
-              });
-            });
             tocControls.createEl(
               "input",
               {
@@ -164,21 +172,51 @@ export class TocView extends ItemView {
               (checkbox) => {
                 checkbox.addEventListener("change", (event: Event) => {
                   this.showTodos = checkbox.checked;
-                  for (const todo_ of container.querySelectorAll(".todo")) {
-                    const todo = todo_ as HTMLElement;
-                    todo.style.display = this.showTodos ? "block" : "none";
+                  for (const el of container.querySelectorAll<HTMLElement>(
+                    ".todo",
+                  )) {
+                    el.style.display = this.showTodos ? "block" : "none";
                   }
                 });
               },
             );
             tocControls.createEl("label", {
               attr: { for: "todos" },
-              text: "Show todos?",
+              text: "todos?",
+            });
+            tocControls.createEl(
+              "input",
+              {
+                type: "checkbox",
+                attr: {
+                  name: "synopsis",
+                  ...(this.showSynopsis ? { checked: "" } : {}),
+                },
+              },
+              (checkbox) => {
+                checkbox.addEventListener("change", (event: Event) => {
+                  this.showSynopsis = checkbox.checked;
+                  for (const el of container.querySelectorAll<HTMLElement>(
+                    ".synopsis",
+                  )) {
+                    el.style.display = this.showSynopsis ? "block" : "none";
+                  }
+                });
+              },
+            );
+            tocControls.createEl("label", {
+              attr: { for: "synopsis" },
+              text: "synopsis?",
             });
           });
           for (const section of script.structure()) {
             this.renderTocSection(div, script, section);
           }
+        }
+      }
+      if (!this.showSynopsis) {
+        for (const el of div.querySelectorAll<HTMLElement>(".synopsis")) {
+          el.style.display = "none";
         }
       }
     });
