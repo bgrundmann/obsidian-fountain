@@ -234,7 +234,7 @@ class ReadonlyViewState {
     // the recommended obsidian create... calls.
     switch (this.showMode) {
       case ShowMode.IndexCards:
-        renderIndexCards(mainblock, fp, callbacks);
+        renderIndexCards(mainblock, this.path, fp, callbacks);
         break;
 
       case ShowMode.Script:

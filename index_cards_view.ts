@@ -19,12 +19,17 @@ export type Callbacks = {
   startReadingModeHere: (range: Range) => void;
 };
 
-function getDragData(evt: DragEvent): Range | null {
+type DragData = {
+  path: string;
+  range: Range;
+};
+
+function getDragData(evt: DragEvent): DragData | null {
   try {
     const json = evt.dataTransfer?.getData("application/json");
     if (!json) return null;
-    const r: Range = JSON.parse(json);
-    return r;
+    const d: DragData = JSON.parse(json);
+    return d;
   } catch (error) {
     return null;
   }
@@ -36,16 +41,16 @@ function dropHandler(
   callbacks: Callbacks,
   evt: DragEvent,
 ) {
-  const draggedRange = getDragData(evt);
-  if (!draggedRange) return;
-  if (draggedRange.start === dropZoneRange.start) return;
+  const dragData = getDragData(evt);
+  if (!dragData) return;
+  if (dragData.range.start === dropZoneRange.start) return;
   const before = dropZone.classList.contains("drop-left");
   if (!before && !dropZone.classList.contains("drop-right")) return;
   dropZone.classList.remove("drop-left");
   dropZone.classList.remove("drop-right");
   evt.preventDefault();
   callbacks.moveScene(
-    draggedRange,
+    dragData.range,
     before ? dropZoneRange.start : dropZoneRange.end,
   );
   callbacks.reRender();
@@ -85,13 +90,17 @@ function dragoverHandler(
 }
 
 /** When we start dragging we store the range of the scene. */
-function dragstartHandler(range: Range, evt: DragEvent): void {
+function dragstartHandler(path: string, range: Range, evt: DragEvent): void {
   if (!evt.dataTransfer) return;
   evt.dataTransfer.clearData();
-  evt.dataTransfer.setData("application/json", JSON.stringify(range));
+  evt.dataTransfer.setData(
+    "application/json",
+    JSON.stringify({ path: path, range: range }),
+  );
 }
 
 function installDragAndDropHandlers(
+  path: string,
   callbacks: Callbacks,
   indexCard: HTMLElement,
   range: Range,
@@ -107,7 +116,7 @@ function installDragAndDropHandlers(
     dropHandler(indexCard, range, callbacks, e);
   });
   indexCard.addEventListener("dragstart", (evt: DragEvent) => {
-    dragstartHandler(range, evt);
+    dragstartHandler(path, range, evt);
   });
 }
 
@@ -230,6 +239,7 @@ function renderSynopsis(
 and if the scene heading was followed by a synopsis, that synopsis. */
 function renderIndexCard(
   div: HTMLElement,
+  path: string,
   script: FountainScript,
   scene: StructureScene,
   callbacks: Callbacks,
@@ -246,7 +256,7 @@ function renderIndexCard(
         },
       },
       (indexCard) => {
-        installDragAndDropHandlers(callbacks, indexCard, scene.range);
+        installDragAndDropHandlers(path, callbacks, indexCard, scene.range);
         indexCard.createEl(
           "h3",
           {
@@ -327,6 +337,7 @@ scenes that section contains. If the document started immediately with a a scene
 the section might be an unnamed section and not have a section header. */
 function renderSection(
   parent: HTMLElement,
+  path: string,
   script: FountainScript,
   section: StructureSection,
   callbacks: Callbacks,
@@ -362,10 +373,10 @@ function renderSection(
     for (const el of section.content) {
       switch (el.kind) {
         case "scene":
-          renderIndexCard(sectionDiv, script, el, callbacks);
+          renderIndexCard(sectionDiv, path, script, el, callbacks);
           break;
         case "section":
-          renderSection(sectionDiv, script, el, callbacks);
+          renderSection(sectionDiv, path, script, el, callbacks);
           break;
         default:
           {
@@ -398,12 +409,13 @@ function renderSection(
  */
 export function renderIndexCards(
   div: HTMLElement,
+  path: string,
   script: FountainScript,
   callbacks: Callbacks,
 ): void {
   const structure = script.structure();
   div.empty();
   for (const s of structure) {
-    renderSection(div, script, s, callbacks);
+    renderSection(div, path, script, s, callbacks);
   }
 }
