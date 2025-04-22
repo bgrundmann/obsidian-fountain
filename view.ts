@@ -64,23 +64,6 @@ class ReadonlyViewState {
     return fountainFiles.get(this.path);
   }
 
-  /** copy a scene making sure that it is properly terminated by an empty line */
-  private copyScene(range: Range): void {
-    fountainFiles.duplicateScene(this.path, range);
-    this.requestSave();
-  }
-
-  /** move a scene making sure that it is properly terminated by an empty line  */
-  private moveScene(range: Range, newPos: number): void {
-    fountainFiles.moveScene(this.path, range, newPos);
-    this.requestSave();
-  }
-
-  private replaceText(range: Range, s: string): void {
-    fountainFiles.replaceText(this.path, range, s);
-    this.requestSave();
-  }
-
   public stopRehearsalMode() {
     if (this.pstate.rehearsal) {
       this.pstate = {
@@ -132,6 +115,9 @@ class ReadonlyViewState {
   render() {
     this.contentEl.empty();
     const callbacks: Callbacks = {
+      requestSave: (): void => {
+        this.requestSave();
+      },
       reRender: (): void => {
         this.render();
       },

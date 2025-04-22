@@ -12,6 +12,7 @@ import { dataRange, extractNotes } from "./fountain";
 
 export type Callbacks = {
   reRender: () => void;
+  requestSave: () => void;
   startEditModeHere: (range: Range) => void;
   startReadingModeHere: (range: Range) => void;
 };
@@ -34,6 +35,7 @@ function getDragData(evt: DragEvent): DragData | null {
 
 function dropHandler(
   dropZone: Element,
+  path: string,
   dropZoneRange: Range,
   callbacks: Callbacks,
   evt: DragEvent,
@@ -49,8 +51,10 @@ function dropHandler(
   fountainFiles.moveScene(
     dragData.path,
     dragData.range,
+    path,
     before ? dropZoneRange.start : dropZoneRange.end,
   );
+  callbacks.requestSave();
   callbacks.reRender();
 }
 
@@ -111,7 +115,7 @@ function installDragAndDropHandlers(
     indexCard.classList.remove("drop-right");
   });
   indexCard.addEventListener("drop", (e: DragEvent) => {
-    dropHandler(indexCard, range, callbacks, e);
+    dropHandler(indexCard, path, range, callbacks, e);
   });
   indexCard.addEventListener("dragstart", (evt: DragEvent) => {
     dragstartHandler(path, range, evt);
@@ -153,6 +157,7 @@ function editSynopsisHandler(
       .map((l) => `= ${l}`)
       .join("\n");
     fountainFiles.replaceText(path, range, `${synopsified}\n`);
+    callbacks.requestSave();
     callbacks.reRender();
   });
 }
@@ -185,6 +190,7 @@ function editSceneHeadingHandler(
           headingRange,
           headingInput.value + "\n".repeat(numNewlines),
         );
+        callbacks.requestSave();
         callbacks.reRender();
         event.preventDefault();
       }
@@ -291,6 +297,7 @@ function renderIndexCard(
                   .setIcon("copy")
                   .onClick(() => {
                     fountainFiles.duplicateScene(path, scene.range);
+                    callbacks.requestSave();
                     callbacks.reRender();
                   });
               });
@@ -305,6 +312,7 @@ function renderIndexCard(
               m.addItem((item) => {
                 item.setTitle("Delete").onClick(() => {
                   fountainFiles.replaceText(path, scene.range, "");
+                  callbacks.requestSave();
                   callbacks.reRender();
                 });
               });
@@ -401,6 +409,7 @@ function renderSection(
         div.addEventListener("click", (evt: MouseEvent) => {
           const r = section.range;
           fountainFiles.replaceText(path, endOfRange(r), ".SCENE HEADING\n\n");
+          callbacks.requestSave();
           callbacks.reRender();
         });
       },

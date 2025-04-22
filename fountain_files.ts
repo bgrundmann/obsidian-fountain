@@ -124,7 +124,7 @@ export class FountainFiles {
    * @param range complete scene heading + content
    * @param newPos
    */
-  moveScene(path: string, range: Range, newPos: number) {
+  moveSceneInScript(path: string, range: Range, newPos: number) {
     const doc = this.get(path);
     const text = doc.document;
     const lastTwo = text.slice(
@@ -135,6 +135,31 @@ export class FountainFiles {
       lastTwo === "\n\n" ? "" : lastTwo[1] === "\n" ? "\n" : "\n\n";
     const newText = moveText(text, range, newPos, extraNewLines);
     this.set(path, newText);
+  }
+
+  moveScene(
+    srcPath: string,
+    srcRange: Range,
+    dstPath: string,
+    dstNewPos: number,
+  ) {
+    if (srcPath === dstPath) {
+      this.moveSceneInScript(srcPath, srcRange, dstNewPos);
+    } else {
+      const sceneText = this.getText(srcPath, srcRange);
+      this.replaceText(srcPath, srcRange, "");
+      const sceneLastTwo = sceneText.slice(
+        sceneText.length - 2,
+        sceneText.length,
+      );
+      const sceneExtraNewLines =
+        sceneLastTwo === "\n\n" ? "" : sceneLastTwo[1] === "\n" ? "\n" : "\n\n";
+      this.replaceText(
+        dstPath,
+        { start: dstNewPos, end: dstNewPos },
+        sceneText + sceneExtraNewLines,
+      );
+    }
   }
 
   /** Get a subset of the text of a document */
