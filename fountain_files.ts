@@ -137,6 +137,13 @@ export class FountainFiles {
     this.set(path, newText);
   }
 
+  /** Get a subset of the text of a document */
+  getText(path: string, range: Range): string {
+    const doc = this.get(path);
+    const text = doc.document;
+    return text.slice(range.start, range.end);
+  }
+
   /**
    * Duplicate a scene in the document.
    * @param path in the vault

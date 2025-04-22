@@ -132,20 +132,6 @@ class ReadonlyViewState {
   render() {
     this.contentEl.empty();
     const callbacks: Callbacks = {
-      moveScene: (r: Range, p: number) => {
-        this.moveScene(r, p);
-      },
-      copyScene: (r: Range) => {
-        this.copyScene(r);
-      },
-      replaceText: (range: Range, replacement: string) => {
-        this.replaceText(range, replacement);
-      },
-      getText: (range: Range): string => {
-        return fountainFiles
-          .get(this.path)
-          .document.slice(range.start, range.end);
-      },
       reRender: (): void => {
         this.render();
       },
