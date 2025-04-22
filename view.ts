@@ -1,6 +1,7 @@
 import { history } from "@codemirror/commands";
 import { EditorSelection, EditorState } from "@codemirror/state";
 import { EditorView, type ViewUpdate, drawSelection } from "@codemirror/view";
+import { fountainFiles } from "fountain_files";
 import { FuzzySelectString } from "fuzzy_select_string";
 import {
   Menu,
@@ -13,7 +14,6 @@ import {
 import type { FountainScript, Range, ShowHideSettings } from "./fountain";
 import { createFountainEditorPlugin } from "./fountain_editor";
 import { type Callbacks, renderIndexCards } from "./index_cards_view";
-import { type ParseError, parse } from "./parser_cache";
 import { rangeOfFirstVisibleLine, renderFountain } from "./reading_view";
 
 export const VIEW_TYPE_FOUNTAIN = "fountain";
@@ -21,54 +21,6 @@ export const VIEW_TYPE_FOUNTAIN = "fountain";
 enum ShowMode {
   Script = "script",
   IndexCards = "index-cards",
-}
-
-/** Move the range of text to a new position. The newStart position is required
-to not be within range.
-*/
-function moveText(
-  text: string,
-  range: Range,
-  newStart: number,
-  newTrailer = "",
-): string {
-  // Extract the text to be moved
-  const movedPortion = text.slice(range.start, range.end);
-  const beforeRange = text.slice(0, range.start);
-  const afterRange = text.slice(range.end);
-
-  // If moving forward
-  if (newStart >= range.end) {
-    return (
-      beforeRange +
-      afterRange.slice(0, newStart - range.end) +
-      movedPortion +
-      newTrailer +
-      afterRange.slice(newStart - range.end)
-    );
-  }
-  // If moving backward
-  return (
-    text.slice(0, newStart) +
-    movedPortion +
-    newTrailer +
-    text.slice(newStart, range.start) +
-    afterRange
-  );
-}
-
-/**
- * Replace a range of text.
- *
- * @param text the overall text
- * @param range range of text to replace
- * @param replacement text that replaces the text in range
- * @returns the modified text
- */
-function replaceText(text: string, range: Range, replacement: string): string {
-  const beforeRange = text.slice(0, range.start);
-  const afterRange = text.slice(range.end);
-  return beforeRange + replacement + afterRange;
 }
 
 type Rehearsal = {
@@ -82,7 +34,6 @@ type ReadonlyViewPersistedState = {
 } & ShowHideSettings;
 
 class ReadonlyViewState {
-  private text: string;
   public pstate: ReadonlyViewPersistedState;
   private contentEl: HTMLElement;
   private startEditModeHere: (range: Range) => void;
@@ -92,11 +43,9 @@ class ReadonlyViewState {
     contentEl: HTMLElement,
     pstate: ReadonlyViewPersistedState,
     path: string,
-    text: string,
     startEditModeHere: (range: Range) => void,
     readonly requestSave: () => void,
   ) {
-    this.text = text;
     this.contentEl = contentEl;
     this.startEditModeHere = startEditModeHere;
     this.path = path;
@@ -111,39 +60,24 @@ class ReadonlyViewState {
     return this.pstate.rehearsal?.character ?? null;
   }
 
-  script(): FountainScript | ParseError {
-    return parse(this.path, this.text);
+  script(): FountainScript {
+    return fountainFiles.get(this.path);
   }
 
   /** copy a scene making sure that it is properly terminated by an empty line */
   private copyScene(range: Range): void {
-    const sceneText = this.text.slice(range.start, range.end);
-    const lastTwo = sceneText.slice(-2);
-    const extraNewLines =
-      lastTwo === "\n\n" ? "" : lastTwo[1] === "\n" ? "\n" : "\n\n";
-
-    this.text =
-      this.text.slice(0, range.end) +
-      extraNewLines +
-      sceneText +
-      this.text.slice(range.end);
+    fountainFiles.duplicateScene(this.path, range);
     this.requestSave();
   }
 
   /** move a scene making sure that it is properly terminated by an empty line  */
   private moveScene(range: Range, newPos: number): void {
-    const lastTwo = this.text.slice(
-      range.end - range.start - 2,
-      range.end - range.start,
-    );
-    const extraNewLines =
-      lastTwo === "\n\n" ? "" : lastTwo[1] === "\n" ? "\n" : "\n\n";
-    this.text = moveText(this.text, range, newPos, extraNewLines);
+    fountainFiles.moveScene(this.path, range, newPos);
     this.requestSave();
   }
 
   private replaceText(range: Range, s: string): void {
-    this.text = replaceText(this.text, range, s);
+    fountainFiles.replaceText(this.path, range, s);
     this.requestSave();
   }
 
@@ -208,7 +142,9 @@ class ReadonlyViewState {
         this.replaceText(range, replacement);
       },
       getText: (range: Range): string => {
-        return this.text.slice(range.start, range.end);
+        return fountainFiles
+          .get(this.path)
+          .document.slice(range.start, range.end);
       },
       reRender: (): void => {
         this.render();
@@ -283,17 +219,17 @@ class ReadonlyViewState {
   }
 
   getViewData(): string {
-    return this.text;
+    return fountainFiles.get(this.path).document;
   }
 
   setViewData(path: string, text: string, _clear: boolean): void {
     this.path = path;
-    this.text = text;
+    fountainFiles.set(path, text);
     this.render();
   }
 
   clear(): void {
-    this.text = "";
+    //TODO: When do I need this?
   }
 
   rangeOfFirstVisibleLine(): Range | null {
@@ -367,8 +303,8 @@ class EditorViewState {
     });
   }
 
-  script(): FountainScript | ParseError {
-    return parse(this.path, this.cmEditor.state.doc.toString());
+  script(): FountainScript {
+    return fountainFiles.get(this.path);
   }
 
   setViewData(path: string, text: string, _clear: boolean) {
@@ -433,7 +369,6 @@ export class FountainView extends TextFileView {
     this.state = new ReadonlyViewState(
       this.contentEl,
       this.readonlyViewState,
-      "",
       "",
       (r) => this.startEditModeHere(r),
       () => this.requestSave(),
@@ -597,7 +532,7 @@ export class FountainView extends TextFileView {
     }
   }
 
-  script(): FountainScript | ParseError {
+  script(): FountainScript {
     return this.state.script();
   }
 
@@ -612,7 +547,6 @@ export class FountainView extends TextFileView {
         this.contentEl,
         this.readonlyViewState,
         this.file?.path ?? "",
-        text,
         (r) => this.startEditModeHere(r),
         () => this.requestSave(),
       );
@@ -717,7 +651,6 @@ export class FountainView extends TextFileView {
       this.state = new ReadonlyViewState(
         this.contentEl,
         this.readonlyViewState,
-        "",
         "",
         (r) => this.startEditModeHere(r),
         () => this.requestSave(),
