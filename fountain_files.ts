@@ -62,6 +62,13 @@ export class FountainFiles {
   /// issues), but one could replace this by some bounded cache
   private documents: Map<string, FountainScript | string> = new Map();
 
+  constructor() {
+    // We store an empty document at the empty path.
+    // This is so we have a state representing the
+    // freshly created empty buffer.
+    this.documents.set("", parse("", {}));
+  }
+
   /**
    * The result of parsing the document at the given path.
    * @param path path in the vault
@@ -70,7 +77,7 @@ export class FountainFiles {
   get(path: string): FountainScript {
     const doc = this.documents.get(path);
     if (doc === undefined) {
-      throw new Error(`No fountain file stored at ${path}`);
+      throw new Error(`No fountain file stored at "${path}"`);
     }
     if (typeof doc === "string") {
       const script: FountainScript | ParseError = parse(doc, {});
