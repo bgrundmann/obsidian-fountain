@@ -1,3 +1,4 @@
+import { fountainFiles } from "fountain_files";
 import { Menu, setIcon } from "obsidian";
 import { endOfRange } from "render_tools";
 import type {
@@ -10,21 +11,23 @@ import type {
 import { dataRange, extractNotes } from "./fountain";
 
 export type Callbacks = {
-  moveScene: (rangeOfScene: Range, newStart: number) => void;
-  copyScene: (rangeOfScene: Range) => void;
-  replaceText: (range: Range, s: string) => void;
-  getText: (range: Range) => string;
   reRender: () => void;
+  requestSave: () => void;
   startEditModeHere: (range: Range) => void;
   startReadingModeHere: (range: Range) => void;
 };
 
-function getDragData(evt: DragEvent): Range | null {
+type DragData = {
+  path: string;
+  range: Range;
+};
+
+function getDragData(evt: DragEvent): DragData | null {
   try {
     const json = evt.dataTransfer?.getData("application/json");
     if (!json) return null;
-    const r: Range = JSON.parse(json);
-    return r;
+    const d: DragData = JSON.parse(json);
+    return d;
   } catch (error) {
     return null;
   }
@@ -32,22 +35,26 @@ function getDragData(evt: DragEvent): Range | null {
 
 function dropHandler(
   dropZone: Element,
+  path: string,
   dropZoneRange: Range,
   callbacks: Callbacks,
   evt: DragEvent,
 ) {
-  const draggedRange = getDragData(evt);
-  if (!draggedRange) return;
-  if (draggedRange.start === dropZoneRange.start) return;
+  const dragData = getDragData(evt);
+  if (!dragData) return;
+  if (dragData.range.start === dropZoneRange.start) return;
   const before = dropZone.classList.contains("drop-left");
   if (!before && !dropZone.classList.contains("drop-right")) return;
   dropZone.classList.remove("drop-left");
   dropZone.classList.remove("drop-right");
   evt.preventDefault();
-  callbacks.moveScene(
-    draggedRange,
+  fountainFiles.moveScene(
+    dragData.path,
+    dragData.range,
+    path,
     before ? dropZoneRange.start : dropZoneRange.end,
   );
+  callbacks.requestSave();
   callbacks.reRender();
 }
 
@@ -85,13 +92,17 @@ function dragoverHandler(
 }
 
 /** When we start dragging we store the range of the scene. */
-function dragstartHandler(range: Range, evt: DragEvent): void {
+function dragstartHandler(path: string, range: Range, evt: DragEvent): void {
   if (!evt.dataTransfer) return;
   evt.dataTransfer.clearData();
-  evt.dataTransfer.setData("application/json", JSON.stringify(range));
+  evt.dataTransfer.setData(
+    "application/json",
+    JSON.stringify({ path: path, range: range }),
+  );
 }
 
 function installDragAndDropHandlers(
+  path: string,
   callbacks: Callbacks,
   indexCard: HTMLElement,
   range: Range,
@@ -104,10 +115,10 @@ function installDragAndDropHandlers(
     indexCard.classList.remove("drop-right");
   });
   indexCard.addEventListener("drop", (e: DragEvent) => {
-    dropHandler(indexCard, range, callbacks, e);
+    dropHandler(indexCard, path, range, callbacks, e);
   });
   indexCard.addEventListener("dragstart", (evt: DragEvent) => {
-    dragstartHandler(range, evt);
+    dragstartHandler(path, range, evt);
   });
 }
 
@@ -117,11 +128,12 @@ function assertNever(x: never): never {
 
 function editSynopsisHandler(
   el: HTMLElement,
+  path: string,
   range: Range,
   linesOfText: Range[],
   callbacks: Callbacks,
 ) {
-  const lines = linesOfText.map((r) => callbacks.getText(r));
+  const lines = linesOfText.map((r) => fountainFiles.getText(path, r));
   const textarea = createEl("textarea", {
     text: lines.join("\n"),
   });
@@ -144,13 +156,15 @@ function editSynopsisHandler(
       .split("\n")
       .map((l) => `= ${l}`)
       .join("\n");
-    callbacks.replaceText(range, `${synopsified}\n`);
+    fountainFiles.replaceText(path, range, `${synopsified}\n`);
+    callbacks.requestSave();
     callbacks.reRender();
   });
 }
 
 function editSceneHeadingHandler(
   indexCardDiv: HTMLDivElement,
+  path: string,
   script: FountainScript,
   headingRange: Range,
   callbacks: Callbacks,
@@ -171,10 +185,12 @@ function editSceneHeadingHandler(
         callbacks.reRender();
         event.preventDefault();
       } else if (event.key === "Enter") {
-        callbacks.replaceText(
+        fountainFiles.replaceText(
+          path,
           headingRange,
           headingInput.value + "\n".repeat(numNewlines),
         );
+        callbacks.requestSave();
         callbacks.reRender();
         event.preventDefault();
       }
@@ -187,6 +203,7 @@ function editSceneHeadingHandler(
 
 function renderSynopsis(
   div: HTMLElement,
+  path: string,
   script: FountainScript,
   synopsis: Synopsis | undefined,
   startPosIfEmpty: number,
@@ -204,6 +221,7 @@ function renderSynopsis(
       div2.addEventListener("click", (_evt: Event) => {
         editSynopsisHandler(
           div2,
+          path,
           synopsisRange,
           synopsis?.linesOfText || [],
           callbacks,
@@ -230,6 +248,7 @@ function renderSynopsis(
 and if the scene heading was followed by a synopsis, that synopsis. */
 function renderIndexCard(
   div: HTMLElement,
+  path: string,
   script: FountainScript,
   scene: StructureScene,
   callbacks: Callbacks,
@@ -246,7 +265,7 @@ function renderIndexCard(
         },
       },
       (indexCard) => {
-        installDragAndDropHandlers(callbacks, indexCard, scene.range);
+        installDragAndDropHandlers(path, callbacks, indexCard, scene.range);
         indexCard.createEl(
           "h3",
           {
@@ -259,6 +278,7 @@ function renderIndexCard(
               //callbacks.startReadingModeHere(scene.range);
               editSceneHeadingHandler(
                 indexCard,
+                path,
                 script,
                 heading.range,
                 callbacks,
@@ -276,7 +296,8 @@ function renderIndexCard(
                   .setTitle("Copy")
                   .setIcon("copy")
                   .onClick(() => {
-                    callbacks.copyScene(scene.range);
+                    fountainFiles.duplicateScene(path, scene.range);
+                    callbacks.requestSave();
                     callbacks.reRender();
                   });
               });
@@ -290,7 +311,8 @@ function renderIndexCard(
               });
               m.addItem((item) => {
                 item.setTitle("Delete").onClick(() => {
-                  callbacks.replaceText(scene.range, "");
+                  fountainFiles.replaceText(path, scene.range, "");
+                  callbacks.requestSave();
                   callbacks.reRender();
                 });
               });
@@ -301,6 +323,7 @@ function renderIndexCard(
         });
         renderSynopsis(
           indexCard,
+          path,
           script,
           scene.synopsis,
           heading.range.end,
@@ -327,6 +350,7 @@ scenes that section contains. If the document started immediately with a a scene
 the section might be an unnamed section and not have a section header. */
 function renderSection(
   parent: HTMLElement,
+  path: string,
   script: FountainScript,
   section: StructureSection,
   callbacks: Callbacks,
@@ -352,6 +376,7 @@ function renderSection(
   if (section.synopsis) {
     renderSynopsis(
       parent,
+      path,
       script,
       section.synopsis,
       section.synopsis.range.start,
@@ -362,10 +387,10 @@ function renderSection(
     for (const el of section.content) {
       switch (el.kind) {
         case "scene":
-          renderIndexCard(sectionDiv, script, el, callbacks);
+          renderIndexCard(sectionDiv, path, script, el, callbacks);
           break;
         case "section":
-          renderSection(sectionDiv, script, el, callbacks);
+          renderSection(sectionDiv, path, script, el, callbacks);
           break;
         default:
           {
@@ -383,7 +408,8 @@ function renderSection(
         setIcon(div, "plus");
         div.addEventListener("click", (evt: MouseEvent) => {
           const r = section.range;
-          callbacks.replaceText(endOfRange(r), ".SCENE HEADING\n\n");
+          fountainFiles.replaceText(path, endOfRange(r), ".SCENE HEADING\n\n");
+          callbacks.requestSave();
           callbacks.reRender();
         });
       },
@@ -398,12 +424,13 @@ function renderSection(
  */
 export function renderIndexCards(
   div: HTMLElement,
+  path: string,
   script: FountainScript,
   callbacks: Callbacks,
 ): void {
   const structure = script.structure();
   div.empty();
   for (const s of structure) {
-    renderSection(div, script, s, callbacks);
+    renderSection(div, path, script, s, callbacks);
   }
 }

@@ -144,6 +144,10 @@ describe("Parser tests", () => {
   test_script("forced scene heading at end of input", ".A SCENE", [
     { kind: "scene", range: { start: 0, end: 8 } },
   ]);
+  test_script("empty script is valid", "", []);
+  test_script("a blank line is valid", "\n", [
+    { kind: "action", lines: [{ elements: [], range: { start: 0, end: 1 } }] },
+  ]);
   test_script("forced scene heading + newline at end of input", ".A SCENE\n", [
     { kind: "scene", range: { start: 0, end: 9 } },
   ]);

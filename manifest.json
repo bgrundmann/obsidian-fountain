@@ -1,11 +1,10 @@
 {
-  "id": "obsidian-fountain",
-  "name": "Obsidian Fountain",
-  "version": "1.0.0",
-  "minAppVersion": "0.15.0",
-  "description": "Obsidian Fountain Support",
-  "author": "Benedikt Grundmann",
-  "authorUrl": "",
-  "fundingUrl": "",
-  "isDesktopOnly": false
+	"id": "obsidian-fountain",
+	"name": "Obsidian Fountain",
+	"version": "0.8.0",
+	"minAppVersion": "0.15.0",
+	"description": "Write and view screenplays in Fountain format with index cards, boneyard sections, and specialized editor support",
+	"author": "Benedikt Grundmann",
+	"authorUrl": "https://github.com/bgrundmann",
+	"isDesktopOnly": false
 }

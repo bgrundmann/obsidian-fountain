@@ -488,10 +488,11 @@ class FountainScript {
   /** Return a structured representation of the script.
       Note that in this representation the first synopsis of a section
       or scene will not appear inside content, but inside the synopsis
-      field. Even if empty action lines (which will appear inside content)
-      where between the scene or section header and the synopsis.
-      So if exact reproduction of the document or iteration in the order
+      field. Even when empty action lines (which will appear inside content)
+      are between the scene or section header and the synopsis.
+      So if an exact reproduction of the document or the order
       in which the elements appear in the script is important, use this.script()
+      instead.
   */
   structure(): StructureSection[] {
     const res: StructureSection[] = [];
