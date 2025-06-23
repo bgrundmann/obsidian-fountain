@@ -140,7 +140,7 @@ export class TocView extends ItemView {
                     this.scrollActiveScriptToHere(note.range),
                   );
                   if (!this.showTodos) {
-                    div.style.display = "none";
+                    div.hide();
                   }
                 });
               }
@@ -175,7 +175,7 @@ export class TocView extends ItemView {
                   for (const el of container.querySelectorAll<HTMLElement>(
                     ".todo",
                   )) {
-                    el.style.display = this.showTodos ? "block" : "none";
+                    el.toggle(this.showTodos);
                   }
                 });
               },
@@ -199,7 +199,7 @@ export class TocView extends ItemView {
                   for (const el of container.querySelectorAll<HTMLElement>(
                     ".synopsis",
                   )) {
-                    el.style.display = this.showSynopsis ? "block" : "none";
+                    el.toggle(this.showSynopsis);
                   }
                 });
               },
@@ -216,7 +216,7 @@ export class TocView extends ItemView {
       }
       if (!this.showSynopsis) {
         for (const el of div.querySelectorAll<HTMLElement>(".synopsis")) {
-          el.style.display = "none";
+          el.hide();
         }
       }
     });
