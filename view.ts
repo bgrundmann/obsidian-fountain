@@ -288,6 +288,7 @@ class EditorViewState {
         insert: text,
       },
     });
+    fountainFiles.set(path, text);
   }
 
   getViewData(): string {
