@@ -21,6 +21,15 @@ On the maybe one day list:
 
 - a way to actually create a print/pdf version of the script
 
+## Screenshots
+
+![reading view](https://github.com/user-attachments/assets/56ddc475-4417-4b7b-b916-669cd3e29dce)
+
+![editing](https://github.com/user-attachments/assets/eae1ec17-5fd6-458e-a936-5182c8e4f0da)
+
+![index cards](https://github.com/user-attachments/assets/0f0a7c3b-f7a6-4ad7-a809-75da6991d103)
+
+
 ## Why did I do this?
 
 This is the result of me realising that https://github.com/Darakah/obsidian-fountain isn't a thing
