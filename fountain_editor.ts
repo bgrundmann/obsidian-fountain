@@ -188,6 +188,9 @@ class FountainEditorPlugin implements PluginValue {
         }
       }
     } catch (error) {
+      // I claim this is not unnecessary logging. Rationale: If this ever does
+      // fail I do would like to know, but I haven't seen these fail in regular
+      // environments.
       console.log("decoration failed", error);
     }
     return builder.finish();

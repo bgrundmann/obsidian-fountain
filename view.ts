@@ -130,6 +130,9 @@ class ReadonlyViewState {
     };
     const fp = this.script();
     if ("error" in fp) {
+      // I claim this is not unnecessary logging. Rationale: If this ever does
+      // fail I do would like to know, but I haven't seen these fail in regular
+      // environments.
       console.log("error parsing script", fp);
       return;
     }
@@ -348,7 +351,7 @@ export class FountainView extends TextFileView {
     );
     this.toggleEditAction = this.addAction(
       "edit",
-      "Toggle Edit/Readonly",
+      "Toggle readonly",
       (_evt) => {
         this.toggleEditMode();
         this.app.workspace.requestSaveLayout();
@@ -419,7 +422,7 @@ export class FountainView extends TextFileView {
         menu.addSeparator();
         if (this.blackoutCharacter()) {
           menu.addItem((item) => {
-            item.setTitle("Stop Rehearsal").onClick(() => {
+            item.setTitle("Stop rehearsal").onClick(() => {
               this.stopRehearsalMode();
             });
           });
