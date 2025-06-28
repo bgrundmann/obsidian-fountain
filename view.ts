@@ -130,10 +130,10 @@ class ReadonlyViewState {
     };
     const fp = this.script();
     if ("error" in fp) {
-      // I claim this is not unnecessary logging. Rationale: If this ever does
-      // fail I do would like to know, but I haven't seen these fail in regular
-      // environments.
-      console.log("error parsing script", fp);
+      // The parser should not fail but handle bad inputs as action lines
+      // if you managed to construct a script for which that is not true
+      // please report this as a bug.
+      console.error("error parsing script", fp);
       return;
     }
     const mainblock = this.contentEl.createDiv(
