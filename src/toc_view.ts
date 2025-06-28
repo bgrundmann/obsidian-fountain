@@ -1,3 +1,4 @@
+import { ItemView, type WorkspaceLeaf, debounce } from "obsidian";
 import {
   type FountainScript,
   type Range,
@@ -5,9 +6,8 @@ import {
   type Synopsis,
   dataRange,
   extractNotes,
-} from "fountain";
-import { ItemView, type WorkspaceLeaf, debounce } from "obsidian";
-import { FountainView } from "view";
+} from "./fountain";
+import { FountainView } from "./view";
 
 export const VIEW_TYPE_TOC = "obsidian-toc";
 

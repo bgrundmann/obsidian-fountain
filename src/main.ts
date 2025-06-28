@@ -1,5 +1,5 @@
 import { Plugin, type WorkspaceLeaf } from "obsidian";
-import { TocView, VIEW_TYPE_TOC } from "toc_view";
+import { TocView, VIEW_TYPE_TOC } from "./toc_view";
 import { FountainView, VIEW_TYPE_FOUNTAIN } from "./view";
 
 export default class FountainPlugin extends Plugin {

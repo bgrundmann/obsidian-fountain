@@ -1,6 +1,6 @@
 import { describe, expect, test } from "@jest/globals";
-import type { FountainScript } from "../fountain";
-import { parse } from "../fountain_parser";
+import type { FountainScript } from "../src/fountain";
+import { parse } from "../src/fountain_parser";
 
 function test_script(
   label: string,

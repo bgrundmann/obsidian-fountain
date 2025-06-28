@@ -1,6 +1,4 @@
-import { fountainFiles } from "fountain_files";
 import { Menu, setIcon } from "obsidian";
-import { endOfRange } from "render_tools";
 import type {
   FountainScript,
   Range,
@@ -9,6 +7,8 @@ import type {
   Synopsis,
 } from "./fountain";
 import { dataRange, extractNotes } from "./fountain";
+import { fountainFiles } from "./fountain_files";
+import { endOfRange } from "./render_tools";
 
 export type Callbacks = {
   reRender: () => void;

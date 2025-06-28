@@ -8,8 +8,8 @@ import {
   ViewPlugin,
   type ViewUpdate,
 } from "@codemirror/view";
-import { fountainFiles } from "fountain_files";
 import { type Line, type StyledTextElement, intersect } from "./fountain";
+import { fountainFiles } from "./fountain_files";
 export { createFountainEditorPlugin };
 
 /// This extends CodeMirror 6 to syntax highlight fountain.

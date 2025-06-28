@@ -1,5 +1,5 @@
-import type { FountainScript, Range } from "fountain";
-import { parse } from "fountain_parser";
+import type { FountainScript, Range } from "./fountain";
+import { parse } from "./fountain_parser";
 
 export type ParseError = {
   error: unknown;

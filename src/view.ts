@@ -1,8 +1,6 @@
 import { history } from "@codemirror/commands";
 import { EditorSelection, EditorState } from "@codemirror/state";
 import { EditorView, type ViewUpdate, drawSelection } from "@codemirror/view";
-import { fountainFiles } from "fountain_files";
-import { FuzzySelectString } from "fuzzy_select_string";
 import {
   Menu,
   type TFile,
@@ -13,6 +11,8 @@ import {
 } from "obsidian";
 import type { FountainScript, Range, ShowHideSettings } from "./fountain";
 import { createFountainEditorPlugin } from "./fountain_editor";
+import { fountainFiles } from "./fountain_files";
+import { FuzzySelectString } from "./fuzzy_select_string";
 import { type Callbacks, renderIndexCards } from "./index_cards_view";
 import { rangeOfFirstVisibleLine, renderFountain } from "./reading_view";
 
