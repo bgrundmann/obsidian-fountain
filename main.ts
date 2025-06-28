@@ -15,7 +15,8 @@ export default class FountainPlugin extends Plugin {
   }
 
   async onunload() {
-    // Is there a way to "unregister" the View and extensions?
+    // Note that there is no unregisterView or unregisterExtensions methods
+    // because obsidian already does this automatically when the plugin is unloaded.
   }
 
   private async registerTocInSideBar() {
