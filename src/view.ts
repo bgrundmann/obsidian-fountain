@@ -373,9 +373,7 @@ class EditorViewState {
         EditorView.lineWrapping,
         createFountainEditorPlugin(
           () => parentView.getCachedScript() || parse("", {}),
-          (script: string) => {
-            parentView.setViewData(script, false);
-          },
+          (script: FountainScript) => parentView.updateScriptDirectly(script),
         ),
         EditorView.updateListener.of((update: ViewUpdate) => {
           if (update.docChanged) {
@@ -639,6 +637,20 @@ export class FountainView extends TextFileView {
     if (this.state instanceof ReadonlyViewState) {
       this.state.render();
     }
+  }
+
+  updateScriptDirectly(newScript: FountainScript) {
+    this.cachedScript = newScript;
+    // Update other views without triggering CodeMirror updates
+    this.app.workspace.iterateAllLeaves((leaf) => {
+      if (
+        leaf.view instanceof FountainView &&
+        leaf.view !== this &&
+        leaf.view.file?.path === this.file?.path
+      ) {
+        leaf.view.updateScript(newScript);
+      }
+    });
   }
 
   private updateAllViewsForFile(path: string, newScript: FountainScript) {

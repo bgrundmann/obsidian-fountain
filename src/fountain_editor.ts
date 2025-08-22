@@ -14,6 +14,7 @@ import {
   type StyledTextElement,
   intersect,
 } from "./fountain";
+import { parse } from "./fountain_parser";
 export { createFountainEditorPlugin };
 
 /// This extends CodeMirror 6 to syntax highlight fountain.
@@ -34,7 +35,7 @@ class FountainEditorPlugin implements PluginValue {
   constructor(
     view: EditorView,
     readonly getScript: () => FountainScript,
-    readonly updateScript: (script: string) => void,
+    readonly updateScriptDirectly: (script: FountainScript) => void,
   ) {
     this.bold = Decoration.mark({ class: "bold" });
     this.italics = Decoration.mark({ class: "italics" });
@@ -48,10 +49,13 @@ class FountainEditorPlugin implements PluginValue {
   }
 
   update(update: ViewUpdate) {
+    if (update.docChanged) {
+      const newText = update.view.state.doc.toString();
+      const newScript = parse(newText, {});
+      this.updateScriptDirectly(newScript);
+    }
     if (update.docChanged || update.viewportChanged) {
-      // We need to update the script here.
-      this.updateScript(update.view.state.doc.toString());
-      //this.decorations = this.buildDecorations(update.view);
+      this.decorations = this.buildDecorations(update.view);
     }
   }
 
@@ -207,9 +211,9 @@ const pluginSpec: PluginSpec<FountainEditorPlugin> = {
 
 function createFountainEditorPlugin(
   getScript: () => FountainScript,
-  updateScript: (script: string) => void,
+  updateScriptDirectly: (script: FountainScript) => void,
 ): ViewPlugin<FountainEditorPlugin> {
   return ViewPlugin.define((view) => {
-    return new FountainEditorPlugin(view, getScript, updateScript);
+    return new FountainEditorPlugin(view, getScript, updateScriptDirectly);
   }, pluginSpec);
 }
