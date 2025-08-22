@@ -379,7 +379,7 @@ class FountainScript {
   ): void {
     parent.createEl("span", { cls: el.kind }, (span) => {
       for (const e of el.elements) {
-        this.renderTextElement(parent, e, settings, false);
+        this.renderTextElement(span, e, settings, false);
       }
     });
   }
