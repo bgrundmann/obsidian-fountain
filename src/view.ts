@@ -12,6 +12,7 @@ import {
 import type { FountainScript, Range, ShowHideSettings } from "./fountain";
 import { createFountainEditorPlugin } from "./fountain_editor";
 import { fountainFiles } from "./fountain_files";
+import { parse } from "./fountain_parser";
 import { FuzzySelectString } from "./fuzzy_select_string";
 import { type Callbacks, renderIndexCards } from "./index_cards_view";
 import { rangeOfFirstVisibleLine, renderFountain } from "./reading_view";
@@ -45,6 +46,7 @@ class ReadonlyViewState {
     path: string,
     startEditModeHere: (range: Range) => void,
     readonly requestSave: () => void,
+    private parentView: FountainView,
   ) {
     this.contentEl = contentEl;
     this.startEditModeHere = startEditModeHere;
@@ -61,7 +63,8 @@ class ReadonlyViewState {
   }
 
   script(): FountainScript {
-    return fountainFiles.get(this.path);
+    // Prefer parent view's cached script, fallback to global cache during Phase 1
+    return this.parentView.getCachedScript() ?? fountainFiles.get(this.path);
   }
 
   public stopRehearsalMode() {
@@ -235,6 +238,7 @@ class EditorViewState {
     path: string,
     text: string,
     requestSave: () => void,
+    private parentView: FountainView,
   ) {
     contentEl.empty();
     const editorContainer = contentEl.createDiv("custom-editor-component");
@@ -279,7 +283,8 @@ class EditorViewState {
   }
 
   script(): FountainScript {
-    return fountainFiles.get(this.path);
+    // Prefer parent view's cached script, fallback to global cache during Phase 1
+    return this.parentView.getCachedScript() ?? fountainFiles.get(this.path);
   }
 
   setViewData(path: string, text: string, _clear: boolean) {
@@ -336,18 +341,22 @@ export class FountainView extends TextFileView {
   private toggleEditAction: HTMLElement;
   private showViewMenuAction: HTMLElement;
   private stopRehearsalModeAction: HTMLElement;
+  private cachedScript: FountainScript;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
     this.readonlyViewState = {
       mode: ShowMode.Script,
     };
+    // Initialize with empty document
+    this.cachedScript = parse("", {});
     this.state = new ReadonlyViewState(
       this.contentEl,
       this.readonlyViewState,
       "",
       (r) => this.startEditModeHere(r),
       () => this.requestSave(),
+      this,
     );
     this.toggleEditAction = this.addAction(
       "edit",
@@ -512,6 +521,81 @@ export class FountainView extends TextFileView {
     return this.state.script();
   }
 
+  getCachedScript(): FountainScript | null {
+    return this.cachedScript;
+  }
+
+  private updateScript(newScript: FountainScript) {
+    this.cachedScript = newScript;
+    // Trigger re-render if in readonly mode
+    if (this.state instanceof ReadonlyViewState) {
+      this.state.render();
+    }
+  }
+
+  private updateAllViewsForFile(path: string, newScript: FountainScript) {
+    this.app.workspace.iterateAllLeaves((leaf) => {
+      if (leaf.view instanceof FountainView && leaf.view.file?.path === path) {
+        leaf.view.updateScript(newScript);
+      }
+    });
+  }
+
+  replaceText(range: Range, replacement: string): string {
+    const path = this.file?.path;
+    if (!path) throw new Error("No file path available");
+
+    // Use global cache during Phase 1, but trigger synchronization
+    fountainFiles.replaceText(path, range, replacement);
+    const newScript = fountainFiles.get(path);
+    this.updateAllViewsForFile(path, newScript);
+
+    return newScript.document;
+  }
+
+  moveScene(range: Range, newPos: number): string {
+    const path = this.file?.path;
+    if (!path) throw new Error("No file path available");
+
+    // Use global cache during Phase 1, but trigger synchronization
+    fountainFiles.moveSceneInScript(path, range, newPos);
+    const newScript = fountainFiles.get(path);
+    this.updateAllViewsForFile(path, newScript);
+
+    return newScript.document;
+  }
+
+  duplicateScene(range: Range): string {
+    const path = this.file?.path;
+    if (!path) throw new Error("No file path available");
+
+    // Use global cache during Phase 1, but trigger synchronization
+    fountainFiles.duplicateScene(path, range);
+    const newScript = fountainFiles.get(path);
+    this.updateAllViewsForFile(path, newScript);
+
+    return newScript.document;
+  }
+
+  moveSceneCrossFile(
+    srcRange: Range,
+    dstPath: string,
+    dstNewPos: number,
+  ): void {
+    const srcPath = this.file?.path;
+    if (!srcPath) throw new Error("No source file path available");
+
+    // Use global cache during Phase 1, but trigger synchronization
+    fountainFiles.moveScene(srcPath, srcRange, dstPath, dstNewPos);
+
+    // Update both source and destination views
+    const srcScript = fountainFiles.get(srcPath);
+    this.updateAllViewsForFile(srcPath, srcScript);
+
+    const dstScript = fountainFiles.get(dstPath);
+    this.updateAllViewsForFile(dstPath, dstScript);
+  }
+
   toggleEditMode() {
     const text = this.state.getViewData();
     if (this.state instanceof EditorViewState) {
@@ -525,6 +609,7 @@ export class FountainView extends TextFileView {
         this.file?.path ?? "",
         (r) => this.startEditModeHere(r),
         () => this.requestSave(),
+        this,
       );
       this.state.render();
       const es = this.state;
@@ -541,6 +626,7 @@ export class FountainView extends TextFileView {
         this.file?.path ?? "",
         text,
         this.requestSave,
+        this,
       );
       if (r !== null) this.state.scrollToHere(r);
     }
@@ -571,6 +657,17 @@ export class FountainView extends TextFileView {
   setViewData(data: string, clear: boolean): void {
     const path = this.file?.path;
     if (path) {
+      // Short circuit if data unchanged to avoid redundant parsing
+      // when Obsidian calls setViewData on all views for the same file
+      if (this.cachedScript.document === data) return;
+
+      const newScript = parse(data, {});
+      this.updateAllViewsForFile(path, newScript);
+
+      // Also update global cache during Phase 1 for compatibility
+      fountainFiles.set(path, data);
+
+      // Delegate to current state for any state-specific handling
       this.state.setViewData(path, data, clear);
     }
   }
@@ -630,6 +727,7 @@ export class FountainView extends TextFileView {
         "",
         (r) => this.startEditModeHere(r),
         () => this.requestSave(),
+        this,
       );
     }
   }

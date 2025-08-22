@@ -50,30 +50,67 @@ class FountainView extends TextFileView {
 }
 ```
 
+**Required changes in view.ts:**
+
+1. **Add script field to FountainView:**
+   - Add `private script: FountainScript` field
+   - Initialize in constructor with empty document: `this.script = parse("", {})`
+
+2. **Update FountainView.script() method:**
+   - Change from `return this.state.script()` to `return this.script`
+
+3. **Update view state script() methods:**
+   - In `ReadonlyViewState.script()`: change from `fountainFiles.get(this.path)` to access parent view's script
+   - In `EditorViewState.script()`: change from `fountainFiles.get(this.path)` to access parent view's script
+   - Both need reference to parent FountainView to access the cached script
+
+4. **Modify view state constructors:**
+   - Pass FountainView reference to both ReadonlyViewState and EditorViewState constructors
+   - Remove dependency on global fountainFiles in script() methods
+
 #### 2. Multi-View Synchronization
 When a document is modified, we need to parse it once and then update all views that are using it:
 
+**Required changes in view.ts:**
+
+1. **Update FountainView.setViewData():**
 ```typescript
-
-// In FountainView setViewData
-private setViewData(data: string, _clear: boolean) {
-	/// We need to short circuit the update if the data is unchanged
-	/// as obsidian will call setViewData for all views on this file
-	/// and we don't want to parse the same text multiple times
-	if (this.script.document === data) return;
-	const newScript = parse(newText, {});
-	this.updateFountainScript(path, newScript)
+setViewData(data: string, clear: boolean) {
+  // Short circuit if data unchanged to avoid redundant parsing
+  // when Obsidian calls setViewData on all views for the same file
+  if (this.script.document === data) return;
+  
+  const newScript = parse(data, {});
+  this.updateAllViewsForFile(this.file?.path || "", newScript);
+  
+  // Delegate to current state for any state-specific handling
+  this.state.setViewData(data, clear);
 }
+```
 
-private updateFountainScript(path: string, newScript: FountainScript) {
-  // Find all FountainView instances for this path
+2. **Add synchronization method to FountainView:**
+```typescript
+private updateAllViewsForFile(path: string, newScript: FountainScript) {
   this.app.workspace.iterateAllLeaves(leaf => {
     if (leaf.view instanceof FountainView && leaf.view.file?.path === path) {
-      leaf.view.setScript(newScript);
+      leaf.view.updateScript(newScript);
     }
   });
 }
+
+private updateScript(newScript: FountainScript) {
+  this.script = newScript;
+  // Trigger any necessary re-renders in current state
+  if (this.state instanceof ReadonlyViewState) {
+    this.state.render();
+  }
+}
 ```
+
+3. **Update view state setViewData() methods:**
+   - Remove `fountainFiles.set(path, data)` calls
+   - Keep only state-specific logic (if any)
+   - The parsing and caching is now handled by parent FountainView
 
 #### 3. Editing Operations Migration
 Current editing methods in `FountainFiles` need to be moved:
@@ -81,9 +118,60 @@ Current editing methods in `FountainFiles` need to be moved:
 - These methods should work with the view's cached script and trigger synchronization
 - The methods should return the modified text, which the caller uses to update the file
 
+**Required changes in view.ts:**
+
+1. **Add editing methods to FountainView:**
+```typescript
+replaceText(range: Range, replacement: string): string {
+  const newText = replaceTextInString(this.script.document, range, replacement);
+  this.setViewData(newText, false);
+  return newText;
+}
+
+moveScene(range: Range, newPos: number): string {
+  const newText = moveSceneInString(this.script.document, range, newPos);
+  this.setViewData(newText, false);
+  return newText;
+}
+
+duplicateScene(range: Range): string {
+  const newText = duplicateSceneInString(this.script.document, range);
+  this.setViewData(newText, false);
+  return newText;
+}
+```
+
+2. **Update components using these methods:**
+   - Change from `fountainFiles.replaceText(path, ...)` to `view.replaceText(...)`
+   - Change from `fountainFiles.moveScene(path, ...)` to `view.moveScene(...)`
+   - Change from `fountainFiles.duplicateScene(path, ...)` to `view.duplicateScene(...)`
+
 #### 4. Editor Plugin Integration
 The `FountainEditorPlugin` needs to access the view's cached script instead of the global cache:
-- For that we will pass two closures to the plugin: one for getting the script and another for updating it.
+
+**Required changes in view.ts:**
+
+1. **Update EditorViewState constructor:**
+```typescript
+constructor(contentEl: HTMLElement, path: string, parentView: FountainView) {
+  // ... existing setup ...
+  
+  this.cmEditor.setState(
+    EditorState.create({
+      // ... existing config ...
+      extensions: [
+        // ... existing extensions ...
+        fountainEditorPlugin(
+          () => parentView.script(), // getter closure
+          (script: FountainScript) => parentView.updateScript(script) // setter closure
+        ),
+      ],
+    })
+  );
+}
+```
+
+2. **Remove global cache dependency from editor plugin initialization**
 
 ### Migration Steps
 
@@ -107,6 +195,24 @@ The `FountainEditorPlugin` needs to access the view's cached script instead of t
 1. **External File Changes**: How to handle when file is modified outside of any open view? I believe obsidian will handle this automatically and eventually call setViewData.
 2. **View Creation**: When opening a file, should we parse immediately or wait for first access? The plan is to parse immediately.
 3. **Initialization**: How to handle the initial empty state before any file is loaded? Initialize with an empty document (and corresponding parsed representation).
+
+**Additional view.ts considerations:**
+
+4. **Clear method updates:**
+   - Remove `fountainFiles.clear()` calls from view state clear() methods
+   - Reset view's script to empty: `this.script = parse("", {})`
+
+5. **Path handling:**
+   - ReadonlyViewState and EditorViewState still need path for other operations
+   - But script access no longer uses path to look up in global cache
+
+6. **Constructor initialization:**
+   - FountainView constructor should initialize `this.script = parse("", {})` 
+   - This provides the empty state before any file is loaded
+
+7. **Memory management:**
+   - Scripts are automatically cleaned up when views are destroyed
+   - No explicit cleanup needed as script is a private field of the view
 
 ### Benefits of New Approach
 
