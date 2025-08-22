@@ -8,8 +8,12 @@ import {
   ViewPlugin,
   type ViewUpdate,
 } from "@codemirror/view";
-import { type Line, type StyledTextElement, intersect } from "./fountain";
-import { fountainFiles } from "./fountain_files";
+import {
+  type FountainScript,
+  type Line,
+  type StyledTextElement,
+  intersect,
+} from "./fountain";
 export { createFountainEditorPlugin };
 
 /// This extends CodeMirror 6 to syntax highlight fountain.
@@ -29,7 +33,8 @@ class FountainEditorPlugin implements PluginValue {
 
   constructor(
     view: EditorView,
-    readonly getPath: () => string,
+    readonly getScript: () => FountainScript,
+    readonly updateScript: (script: string) => void,
   ) {
     this.bold = Decoration.mark({ class: "bold" });
     this.italics = Decoration.mark({ class: "italics" });
@@ -44,8 +49,9 @@ class FountainEditorPlugin implements PluginValue {
 
   update(update: ViewUpdate) {
     if (update.docChanged || update.viewportChanged) {
-      fountainFiles.set(this.getPath(), update.view.state.doc.toString());
-      this.decorations = this.buildDecorations(update.view);
+      // We need to update the script here.
+      this.updateScript(update.view.state.doc.toString());
+      //this.decorations = this.buildDecorations(update.view);
     }
   }
 
@@ -103,7 +109,7 @@ class FountainEditorPlugin implements PluginValue {
 
   buildDecorations(view: EditorView): DecorationSet {
     const builder = new RangeSetBuilder<Decoration>();
-    const fscript = fountainFiles.get(this.getPath());
+    const fscript = this.getScript();
     const scene = Decoration.mark({ class: "scene-heading" });
     const section = Decoration.mark({ class: "section" });
     const synopsis = Decoration.mark({ class: "synopsis" });
@@ -200,9 +206,10 @@ const pluginSpec: PluginSpec<FountainEditorPlugin> = {
 };
 
 function createFountainEditorPlugin(
-  getPath: () => string,
+  getScript: () => FountainScript,
+  updateScript: (script: string) => void,
 ): ViewPlugin<FountainEditorPlugin> {
   return ViewPlugin.define((view) => {
-    return new FountainEditorPlugin(view, getPath);
+    return new FountainEditorPlugin(view, getScript, updateScript);
   }, pluginSpec);
 }

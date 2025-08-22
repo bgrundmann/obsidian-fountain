@@ -11,11 +11,97 @@ import {
 } from "obsidian";
 import type { FountainScript, Range, ShowHideSettings } from "./fountain";
 import { createFountainEditorPlugin } from "./fountain_editor";
-import { fountainFiles } from "./fountain_files";
 import { parse } from "./fountain_parser";
 import { FuzzySelectString } from "./fuzzy_select_string";
 import { type Callbacks, renderIndexCards } from "./index_cards_view";
 import { rangeOfFirstVisibleLine, renderFountain } from "./reading_view";
+
+/** Move the range of text to a new position. The newStart position is required
+to not be within range.
+*/
+function moveText(
+  text: string,
+  range: Range,
+  newStart: number,
+  newTrailer = "",
+): string {
+  // Extract the text to be moved
+  const movedPortion = text.slice(range.start, range.end);
+  const beforeRange = text.slice(0, range.start);
+  const afterRange = text.slice(range.end);
+
+  // If moving forward
+  if (newStart >= range.end) {
+    return (
+      beforeRange +
+      afterRange.slice(0, newStart - range.end) +
+      movedPortion +
+      newTrailer +
+      afterRange.slice(newStart - range.end)
+    );
+  }
+  // If moving backward
+  return (
+    text.slice(0, newStart) +
+    movedPortion +
+    newTrailer +
+    text.slice(newStart, range.start) +
+    afterRange
+  );
+}
+
+/**
+ * Replace a range of text.
+ *
+ * @param text the overall text
+ * @param range range of text to replace
+ * @param replacement text that replaces the text in range
+ * @returns the modified text
+ */
+function replaceTextInString(
+  text: string,
+  range: Range,
+  replacement: string,
+): string {
+  const beforeRange = text.slice(0, range.start);
+  const afterRange = text.slice(range.end);
+  return beforeRange + replacement + afterRange;
+}
+
+/**
+ * Move the scene to a new position in the document.
+ * @param text the document text
+ * @param range complete scene heading + content
+ * @param newPos new position
+ * @returns the modified text
+ */
+function moveSceneInString(text: string, range: Range, newPos: number): string {
+  const lastTwo = text.slice(range.end - 2, range.end);
+  const extraNewLines =
+    lastTwo === "\n\n" ? "" : lastTwo[1] === "\n" ? "\n" : "\n\n";
+  return moveText(text, range, newPos, extraNewLines);
+}
+
+/**
+ * Duplicate a scene in the document.
+ * @param text the document text
+ * @param range the range of the complete scene heading + content
+ * @returns the modified text
+ */
+function duplicateSceneInString(text: string, range: Range): string {
+  const sceneText = text.slice(range.start, range.end);
+  // If the scene was the last scene of the document
+  // it might not have been properly terminated by an empty
+  // line, in that case we must add the empty line between
+  // the two scenes.
+  const lastTwo = sceneText.slice(-2);
+  const extraNewLines =
+    lastTwo === "\n\n" ? "" : lastTwo[1] === "\n" ? "\n" : "\n\n";
+
+  return (
+    text.slice(0, range.end) + extraNewLines + sceneText + text.slice(range.end)
+  );
+}
 
 export const VIEW_TYPE_FOUNTAIN = "fountain";
 
@@ -63,8 +149,7 @@ class ReadonlyViewState {
   }
 
   script(): FountainScript {
-    // Prefer parent view's cached script, fallback to global cache during Phase 1
-    return this.parentView.getCachedScript() ?? fountainFiles.get(this.path);
+    return this.parentView.getCachedScript() || parse("", {});
   }
 
   public stopRehearsalMode() {
@@ -129,6 +214,25 @@ class ReadonlyViewState {
       },
       startReadingModeHere: (r: Range): void => {
         this.scrollToHere(r);
+      },
+      replaceText: (range: Range, replacement: string): void => {
+        this.parentView.replaceText(range, replacement);
+      },
+      moveScene: (range: Range, newPos: number): void => {
+        this.parentView.moveScene(range, newPos);
+      },
+      duplicateScene: (range: Range): void => {
+        this.parentView.duplicateScene(range);
+      },
+      moveSceneCrossFile: (
+        srcRange: Range,
+        dstPath: string,
+        dstNewPos: number,
+      ): void => {
+        this.parentView.moveSceneCrossFile(srcRange, dstPath, dstNewPos);
+      },
+      getText: (range: Range): string => {
+        return this.parentView.getText(range);
       },
     };
     const fp = this.script();
@@ -197,12 +301,12 @@ class ReadonlyViewState {
   }
 
   getViewData(): string {
-    return fountainFiles.get(this.path).document;
+    return this.parentView.getCachedScript()?.document || "";
   }
 
   setViewData(path: string, text: string, _clear: boolean): void {
     this.path = path;
-    fountainFiles.set(path, text);
+    // Parsing and updating is handled by parent view's setViewData
     this.render();
   }
 
@@ -267,7 +371,12 @@ class EditorViewState {
         drawSelection(),
         EditorView.editorAttributes.of({ class: "screenplay" }),
         EditorView.lineWrapping,
-        createFountainEditorPlugin(() => path),
+        createFountainEditorPlugin(
+          () => parentView.getCachedScript() || parse("", {}),
+          (script: string) => {
+            parentView.setViewData(script, false);
+          },
+        ),
         EditorView.updateListener.of((update: ViewUpdate) => {
           if (update.docChanged) {
             requestSave();
@@ -283,8 +392,7 @@ class EditorViewState {
   }
 
   script(): FountainScript {
-    // Prefer parent view's cached script, fallback to global cache during Phase 1
-    return this.parentView.getCachedScript() ?? fountainFiles.get(this.path);
+    return this.parentView.getCachedScript() || parse("", {});
   }
 
   setViewData(path: string, text: string, _clear: boolean) {
@@ -296,7 +404,7 @@ class EditorViewState {
         insert: text,
       },
     });
-    fountainFiles.set(path, text);
+    // Parsing and updating is handled by parent view's setViewData
   }
 
   getViewData(): string {
@@ -525,7 +633,7 @@ export class FountainView extends TextFileView {
     return this.cachedScript;
   }
 
-  private updateScript(newScript: FountainScript) {
+  updateScript(newScript: FountainScript) {
     this.cachedScript = newScript;
     // Trigger re-render if in readonly mode
     if (this.state instanceof ReadonlyViewState) {
@@ -545,36 +653,54 @@ export class FountainView extends TextFileView {
     const path = this.file?.path;
     if (!path) throw new Error("No file path available");
 
-    // Use global cache during Phase 1, but trigger synchronization
-    fountainFiles.replaceText(path, range, replacement);
-    const newScript = fountainFiles.get(path);
+    // Use utility function instead of global cache
+    const currentText = this.cachedScript.document;
+    const newText = replaceTextInString(currentText, range, replacement);
+    const newScript = parse(newText, {});
     this.updateAllViewsForFile(path, newScript);
 
-    return newScript.document;
+    // Trigger file save
+    if (this.file) {
+      this.app.vault.modify(this.file, newText);
+    }
+
+    return newText;
   }
 
   moveScene(range: Range, newPos: number): string {
     const path = this.file?.path;
     if (!path) throw new Error("No file path available");
 
-    // Use global cache during Phase 1, but trigger synchronization
-    fountainFiles.moveSceneInScript(path, range, newPos);
-    const newScript = fountainFiles.get(path);
+    // Use utility function instead of global cache
+    const currentText = this.cachedScript.document;
+    const newText = moveSceneInString(currentText, range, newPos);
+    const newScript = parse(newText, {});
     this.updateAllViewsForFile(path, newScript);
 
-    return newScript.document;
+    // Trigger file save
+    if (this.file) {
+      this.app.vault.modify(this.file, newText);
+    }
+
+    return newText;
   }
 
   duplicateScene(range: Range): string {
     const path = this.file?.path;
     if (!path) throw new Error("No file path available");
 
-    // Use global cache during Phase 1, but trigger synchronization
-    fountainFiles.duplicateScene(path, range);
-    const newScript = fountainFiles.get(path);
+    // Use utility function instead of global cache
+    const currentText = this.cachedScript.document;
+    const newText = duplicateSceneInString(currentText, range);
+    const newScript = parse(newText, {});
     this.updateAllViewsForFile(path, newScript);
 
-    return newScript.document;
+    // Trigger file save
+    if (this.file) {
+      this.app.vault.modify(this.file, newText);
+    }
+
+    return newText;
   }
 
   moveSceneCrossFile(
@@ -585,15 +711,54 @@ export class FountainView extends TextFileView {
     const srcPath = this.file?.path;
     if (!srcPath) throw new Error("No source file path available");
 
-    // Use global cache during Phase 1, but trigger synchronization
-    fountainFiles.moveScene(srcPath, srcRange, dstPath, dstNewPos);
+    // Extract scene text from source
+    const srcText = this.cachedScript.document;
+    const sceneText = srcText.slice(srcRange.start, srcRange.end);
 
-    // Update both source and destination views
-    const srcScript = fountainFiles.get(srcPath);
-    this.updateAllViewsForFile(srcPath, srcScript);
+    // Remove scene from source
+    const newSrcText = replaceTextInString(srcText, srcRange, "");
+    const newSrcScript = parse(newSrcText, {});
+    this.updateAllViewsForFile(srcPath, newSrcScript);
 
-    const dstScript = fountainFiles.get(dstPath);
-    this.updateAllViewsForFile(dstPath, dstScript);
+    // Add scene to destination - need to get destination view
+    this.app.workspace.iterateAllLeaves((leaf) => {
+      if (
+        leaf.view instanceof FountainView &&
+        leaf.view.file?.path === dstPath
+      ) {
+        const dstText = leaf.view.cachedScript.document;
+        const sceneLastTwo = sceneText.slice(-2);
+        const sceneExtraNewLines =
+          sceneLastTwo === "\n\n"
+            ? ""
+            : sceneLastTwo[1] === "\n"
+              ? "\n"
+              : "\n\n";
+        const newDstText = replaceTextInString(
+          dstText,
+          { start: dstNewPos, end: dstNewPos },
+          sceneText + sceneExtraNewLines,
+        );
+        const newDstScript = parse(newDstText, {});
+        leaf.view.updateAllViewsForFile(dstPath, newDstScript);
+
+        // Trigger file save for destination
+        if (leaf.view.file) {
+          leaf.view.app.vault.modify(leaf.view.file, newDstText);
+        }
+      }
+    });
+
+    // Trigger file save for source
+    if (this.file) {
+      this.app.vault.modify(this.file, newSrcText);
+    }
+  }
+
+  getText(range: Range): string {
+    const script = this.getCachedScript();
+    if (!script) return "";
+    return script.document.slice(range.start, range.end);
   }
 
   toggleEditMode() {
@@ -663,9 +828,6 @@ export class FountainView extends TextFileView {
 
       const newScript = parse(data, {});
       this.updateAllViewsForFile(path, newScript);
-
-      // Also update global cache during Phase 1 for compatibility
-      fountainFiles.set(path, data);
 
       // Delegate to current state for any state-specific handling
       this.state.setViewData(path, data, clear);

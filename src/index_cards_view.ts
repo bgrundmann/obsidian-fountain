@@ -7,7 +7,7 @@ import type {
   Synopsis,
 } from "./fountain";
 import { dataRange, extractNotes } from "./fountain";
-import { fountainFiles } from "./fountain_files";
+
 import { endOfRange } from "./render_tools";
 
 export type Callbacks = {
@@ -15,6 +15,15 @@ export type Callbacks = {
   requestSave: () => void;
   startEditModeHere: (range: Range) => void;
   startReadingModeHere: (range: Range) => void;
+  replaceText: (range: Range, replacement: string) => void;
+  moveScene: (range: Range, newPos: number) => void;
+  duplicateScene: (range: Range) => void;
+  moveSceneCrossFile: (
+    srcRange: Range,
+    dstPath: string,
+    dstNewPos: number,
+  ) => void;
+  getText: (range: Range) => string;
 };
 
 type DragData = {
@@ -48,8 +57,7 @@ function dropHandler(
   dropZone.classList.remove("drop-left");
   dropZone.classList.remove("drop-right");
   evt.preventDefault();
-  fountainFiles.moveScene(
-    dragData.path,
+  callbacks.moveSceneCrossFile(
     dragData.range,
     path,
     before ? dropZoneRange.start : dropZoneRange.end,
@@ -133,7 +141,7 @@ function editSynopsisHandler(
   linesOfText: Range[],
   callbacks: Callbacks,
 ) {
-  const lines = linesOfText.map((r) => fountainFiles.getText(path, r));
+  const lines = linesOfText.map((r) => callbacks.getText(r));
   const textarea = createEl("textarea", {
     text: lines.join("\n"),
   });
@@ -156,7 +164,7 @@ function editSynopsisHandler(
       .split("\n")
       .map((l) => `= ${l}`)
       .join("\n");
-    fountainFiles.replaceText(path, range, `${synopsified}\n`);
+    callbacks.replaceText(range, `${synopsified}\n`);
     callbacks.requestSave();
     callbacks.reRender();
   });
@@ -185,8 +193,7 @@ function editSceneHeadingHandler(
         callbacks.reRender();
         event.preventDefault();
       } else if (event.key === "Enter") {
-        fountainFiles.replaceText(
-          path,
+        callbacks.replaceText(
           headingRange,
           headingInput.value + "\n".repeat(numNewlines),
         );
@@ -296,7 +303,7 @@ function renderIndexCard(
                   .setTitle("Copy")
                   .setIcon("copy")
                   .onClick(() => {
-                    fountainFiles.duplicateScene(path, scene.range);
+                    callbacks.duplicateScene(scene.range);
                     callbacks.requestSave();
                     callbacks.reRender();
                   });
@@ -311,7 +318,7 @@ function renderIndexCard(
               });
               m.addItem((item) => {
                 item.setTitle("Delete").onClick(() => {
-                  fountainFiles.replaceText(path, scene.range, "");
+                  callbacks.replaceText(scene.range, "");
                   callbacks.requestSave();
                   callbacks.reRender();
                 });
@@ -408,7 +415,7 @@ function renderSection(
         setIcon(div, "plus");
         div.addEventListener("click", (evt: MouseEvent) => {
           const r = section.range;
-          fountainFiles.replaceText(path, endOfRange(r), ".SCENE HEADING\n\n");
+          callbacks.replaceText(endOfRange(r), ".SCENE HEADING\n\n");
           callbacks.requestSave();
           callbacks.reRender();
         });
