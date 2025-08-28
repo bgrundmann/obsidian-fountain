@@ -24,6 +24,10 @@ export type ShowHideSettings = {
   hideBoneyard?: boolean; // undefined also false
 };
 
+// ============================================================================
+// Range
+// ============================================================================
+
 interface Range {
   start: number;
   end: number;
@@ -37,29 +41,55 @@ function intersect(r1: Range, r2: Range): boolean {
   return r1.start < r2.end && r2.start < r1.end;
 }
 
-/**
- * Extracts all notes from a list of FountainElements
- * @param elements List of FountainElements to extract notes from
- * @returns Array of all Note elements found
- */
-function extractNotes(elements: FountainElement[]): Note[] {
-  const notes: Note[] = [];
+// ============================================================================
+// Text Element Types
+// ============================================================================
 
-  // Check if element has lines property (action and dialogue elements)
-  for (const element of elements) {
-    if ("lines" in element) {
-      for (const line of element.lines) {
-        for (const textElement of line.elements) {
-          if (textElement.kind === "note") {
-            notes.push(textElement);
-          }
-        }
-      }
-    }
-  }
+/// The type of a piece of text. Text never contains any newlines!
+type BasicTextElement = {
+  range: Range;
+  kind: "text";
+};
 
-  return notes;
-}
+type StyledTextElement = {
+  range: Range;
+  kind: "bold" | "italics" | "underline";
+  elements: StyledText;
+};
+
+type TextElement = BasicTextElement | StyledTextElement;
+
+type StyledText = TextElement[];
+
+type Note = {
+  kind: "note";
+  noteKind: string;
+  range: Range;
+  textRange: Range;
+};
+
+type Boneyard = {
+  kind: "boneyard";
+  range: Range;
+};
+
+type TextElementWithNotesAndBoneyard =
+  | BasicTextElement
+  | StyledTextElement
+  | Note
+  | Boneyard;
+
+type StyledTextWithNotesAndBoneyard = TextElementWithNotesAndBoneyard[];
+
+type Line = {
+  range: Range;
+  elements: TextElementWithNotesAndBoneyard[];
+  centered: boolean;
+};
+
+// ============================================================================
+// Fountain AST Element Types
+// ============================================================================
 
 // In all the fountain element AST types, range is always
 // the range of the complete element (so if you wanted to
@@ -97,13 +127,6 @@ type Transition = {
   range: Range;
 };
 
-type Line = {
-  range: Range;
-  elements: TextElementWithNotesAndBoneyard[];
-
-  centered: boolean;
-};
-
 type Dialogue = {
   kind: "dialogue";
   range: Range; /// range of everything
@@ -128,33 +151,15 @@ type FountainElement =
   | Section
   | PageBreak;
 
-type Note = {
-  kind: "note";
-  noteKind: string;
-  range: Range;
-  textRange: Range;
-};
-
-type Boneyard = {
-  kind: "boneyard";
+type KeyValue = {
+  key: string;
+  values: StyledText[];
   range: Range;
 };
 
-/// The type of a piece of text. Text never contains any newlines!
-type BasicTextElement = {
-  range: Range;
-  kind: "text";
-};
-
-type StyledTextElement = {
-  range: Range;
-  kind: "bold" | "italics" | "underline";
-  elements: StyledText;
-};
-
-type TextElement = BasicTextElement | StyledTextElement;
-
-type StyledText = TextElement[];
+// ============================================================================
+// Utility Functions
+// ============================================================================
 
 /** Is this one or more explicit blank lines? That is an Action element only consisting of one or more blank lines? */
 export function isBlankLines(f: FountainElement) {
@@ -186,18 +191,29 @@ function mergeText(elts: StyledText): StyledText {
   return res;
 }
 
-type TextElementWithNotesAndBoneyard =
-  | BasicTextElement
-  | StyledTextElement
-  | Note
-  | Boneyard;
-type StyledTextWithNotesAndBoneyard = TextElementWithNotesAndBoneyard[];
+/**
+ * Extracts all notes from a list of FountainElements
+ * @param elements List of FountainElements to extract notes from
+ * @returns Array of all Note elements found
+ */
+function extractNotes(elements: FountainElement[]): Note[] {
+  const notes: Note[] = [];
 
-type KeyValue = {
-  key: string;
-  values: StyledText[];
-  range: Range;
-};
+  // Check if element has lines property (action and dialogue elements)
+  for (const element of elements) {
+    if ("lines" in element) {
+      for (const line of element.lines) {
+        for (const textElement of line.elements) {
+          if (textElement.kind === "note") {
+            notes.push(textElement);
+          }
+        }
+      }
+    }
+  }
+
+  return notes;
+}
 
 function escapeHtml(s: string): string {
   return s
@@ -258,6 +274,10 @@ function mergeConsecutiveActions(script: FountainElement[]): FountainElement[] {
   return merged;
 }
 
+// ============================================================================
+// Structure Classes
+// ============================================================================
+
 export class StructureSection {
   readonly content: (StructureSection | StructureScene)[];
   readonly kind: "section";
@@ -312,11 +332,38 @@ export class StructureScene {
   }
 }
 
+// ============================================================================
+// Main FountainScript Class
+// ============================================================================
+
 class FountainScript {
   readonly titlePage: KeyValue[];
   readonly script: FountainElement[];
   readonly document: string;
   readonly allCharacters: Set<string>;
+
+  constructor(
+    document: string,
+    titlePage: KeyValue[],
+    script: FountainElement[],
+  ) {
+    this.document = document;
+    this.titlePage = titlePage;
+    this.script = mergeConsecutiveActions(script);
+    const characters = new Set<string>();
+    for (const el of this.script) {
+      switch (el.kind) {
+        case "dialogue":
+          for (const c of this.charactersOf(el)) {
+            characters.add(c);
+          }
+          break;
+        default:
+          break;
+      }
+    }
+    this.allCharacters = characters;
+  }
 
   /**  Extract some text from the fountain document safe to be used
    as HTML source.
@@ -451,29 +498,6 @@ class FountainScript {
         /// TODO: support
         return false;
     }
-  }
-
-  constructor(
-    document: string,
-    titlePage: KeyValue[],
-    script: FountainElement[],
-  ) {
-    this.document = document;
-    this.titlePage = titlePage;
-    this.script = mergeConsecutiveActions(script);
-    const characters = new Set<string>();
-    for (const el of this.script) {
-      switch (el.kind) {
-        case "dialogue":
-          for (const c of this.charactersOf(el)) {
-            characters.add(c);
-          }
-          break;
-        default:
-          break;
-      }
-    }
-    this.allCharacters = characters;
   }
 
   with_source(): (FountainElement & { source: string })[] {
