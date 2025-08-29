@@ -18,7 +18,7 @@ Screenplay formatting follows established industry standards dating back to type
 
 ### Element Positioning (from left margin)
 - **Scene Number**: 1.25" (13 spaces)
-- **Scene Heading**: 1.75" (19 spaces) 
+- **Scene Heading**: 1.75" (19 spaces)
 - **Action**: 1.75" (19 spaces), max 55 chars per line
 - **Character Name**: Centered (~4.25", 43 spaces)
 - **Dialogue**: 2.75" (29 spaces), max 35 chars per line
@@ -147,24 +147,24 @@ type PageState = {
   // Vertical position tracking
   currentY: number;        // Current vertical position (points from top)
   remainingHeight: number; // Remaining usable height on current page
-  
+
   // Page information
   pageNumber: number;      // Current page number (1-based)
-  isFirstPage: boolean;    // Whether this is the title page
-  
+  isTitlePage: boolean;    // Whether this is the title page
+
   // Layout constraints
   margins: {
     top: number;
-    bottom: number; 
+    bottom: number;
     left: number;
     right: number;
   };
-  
+
   // Text formatting state
   fontSize: number;        // Current font size
   lineHeight: number;      // Current line height
   font: PDFFont;          // Embedded Courier font
-  
+
   // Element spacing
   lastElementType: string | null; // Type of previous element for spacing rules
   pendingSpacing: number;         // Additional spacing needed before next element
@@ -173,31 +173,29 @@ type PageState = {
 
 **Note**: PDFDocument is passed separately to render functions. Functions get the current page via `doc.getPages()[doc.getPageCount() - 1]` or create new pages as needed.
 
-## Open Questions & Decisions Needed
-
 ### Text Rendering Strategy
-- **Option A**: Use pdf-lib's built-in text methods with custom positioning functions
-- **Option B**: Draw each line individually with low-level drawing functions
-- **Recommendation**: Option A for simplicity, fall back to B if needed
+- Use pdf-lib's built-in text methods with custom positioning functions
 
 ### State Management
-- **Option A**: Pass page state as parameters between functions
-- **Option B**: Use a shared state object/context
-- **Recommendation**: Option A for better testability and functional purity
+- Pass page state as parameters between functions
 
 ### Page Break Algorithm
 - How aggressive should we be about keeping elements together?
+  Let's start with the simplest possible algorithm.
 - Should we allow single lines of action at bottom of pages?
+  Yes (again simplest possible algorithm -- user can always add explicit page breaks).
 - How do we handle very long dialogue blocks?
+  In the first pass, let's just fail and log an error.
 
 ### Performance Considerations
 - For large scripts (120+ pages), should we implement streaming/chunked processing?
+  No.
 - Memory usage with embedded fonts and large documents?
+  Not a problem, courier is a default font.
 
 ### Error Handling
-- How do we handle malformed fountain elements?
 - What if text doesn't fit even with maximum wrapping?
-- Fallback strategies for edge cases?
+  Let's just break the line at the maximum width, when that happens, if necessary, repeat the process until the text fits.
 
 ## Testing Strategy
 
@@ -207,7 +205,7 @@ type PageState = {
 - Element rendering functions with mock PDF documents
 - Page break logic functions
 
-### Integration Tests  
+### Integration Tests
 - Full document generation from sample scripts
 - Page break behavior across different element types
 - Font embedding and text measurement accuracy
