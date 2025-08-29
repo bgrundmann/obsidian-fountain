@@ -74,7 +74,7 @@ FountainToPDF
 - [ ] Set up pdf-lib integration
 - [ ] Implement basic page layout with correct margins
 - [ ] Embed Courier font
-- [ ] Create simple text rendering
+- [ ] Create simple text rendering (e.g. just a hello world pdf).
 
 #### Phase 2: Core Elements
 - [ ] Implement scene headings

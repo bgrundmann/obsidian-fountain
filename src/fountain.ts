@@ -6,6 +6,7 @@ export type {
   KeyValue,
   Line,
   StyledTextElement,
+  StyledText,
   TextElementWithNotesAndBoneyard,
   Action,
   Dialogue,
