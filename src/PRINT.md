@@ -80,7 +80,7 @@ FountainToPDF
 - [X] Add a command to generate a PDF from the current document. Generated pdf should be saved to the vault, next to the original file.
 
 #### Phase 2: Core Elements
-- [ ] Implement scene headings
+- [X] Implement scene headings
 - [ ] Implement action blocks with proper wrapping
 - [ ] Implement dialogue (character, parentheticals, speech)
 - [ ] Implement transitions
@@ -223,6 +223,7 @@ type PageState = {
  - The user will verify after a local deploy that pdf generation can be triggered
    in the test-vault and that the generated pdfs are correct. The user will tell
    you if they are not.
+ - Do NOT run npm run dev. Use npm run build to build the project.
 
 ## Success Metrics
 

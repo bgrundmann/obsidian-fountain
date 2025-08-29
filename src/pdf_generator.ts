@@ -1,6 +1,7 @@
 import { PDFDocument, type PDFFont, StandardFonts, rgb } from "pdf-lib";
 import type {
   FountainScript,
+  Scene,
   StyledText,
   TextElementWithNotesAndBoneyard,
 } from "./fountain";
@@ -17,13 +18,13 @@ const MARGIN_BOTTOM = 72; // 1"
 const MARGIN_LEFT = 90; // 1.25"
 const MARGIN_RIGHT = 72; // 1"
 
-// TODO: These will be used in Phase 2 for element positioning
-// const SCENE_NUMBER_INDENT = 90; // 1.25"
-// const SCENE_HEADING_INDENT = 126; // 1.75"
-// const ACTION_INDENT = 126; // 1.75"
-// const CHARACTER_INDENT = 306; // ~4.25" (centered)
-// const DIALOGUE_INDENT = 198; // 2.75"
-// const PARENTHETICAL_INDENT = 252; // 3.5"
+// Element positions (from left edge) - Phase 2 implementation
+// const SCENE_NUMBER_INDENT = 90; // 1.25" - TODO: Use when implementing scene numbers
+const SCENE_HEADING_INDENT = 126; // 1.75"
+// const ACTION_INDENT = 126; // 1.75" - TODO: Use when implementing action blocks
+// const CHARACTER_INDENT = 306; // ~4.25" (centered) - TODO: Use when implementing dialogue
+// const DIALOGUE_INDENT = 198; // 2.75" - TODO: Use when implementing dialogue
+// const PARENTHETICAL_INDENT = 252; // 3.5" - TODO: Use when implementing parentheticals
 
 // Page state type for tracking position and layout
 type PageState = {
@@ -67,7 +68,7 @@ export async function generatePDF(
   const courierFont = await pdfDoc.embedFont(StandardFonts.Courier);
 
   // Create first page
-  const firstPage = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+  pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
 
   // Initialize page state
   const pageState: PageState = {
@@ -88,57 +89,113 @@ export async function generatePDF(
     pendingSpacing: 0,
   };
 
-  // For Phase 1 Step 1: Create a simple "Hello World" PDF to verify pdf-lib integration
-  // This will be replaced with actual fountain rendering in subsequent steps
-  firstPage.drawText("Hello World - PDF Generation Test", {
-    x: pageState.margins.left,
-    y: pageState.currentY,
-    size: pageState.fontSize,
-    font: pageState.font,
-    color: rgb(0, 0, 0),
-  });
-
-  // Add test text to verify proper formatting
-  pageState.currentY -= pageState.lineHeight * 2;
-  const titleKv = fountainScript.titlePage.find(
-    (kv) => kv.key.toLowerCase() === "title",
-  );
-  const titleText = titleKv
-    ? extractPlainText(titleKv.values, fountainScript.document)
-    : "Untitled";
-  firstPage.drawText(`Fountain Script Title: ${titleText}`, {
-    x: pageState.margins.left,
-    y: pageState.currentY,
-    size: pageState.fontSize,
-    font: pageState.font,
-    color: rgb(0, 0, 0),
-  });
-
-  pageState.currentY -= pageState.lineHeight * 2;
-  firstPage.drawText(`Script Elements: ${fountainScript.script.length}`, {
-    x: pageState.margins.left,
-    y: pageState.currentY,
-    size: pageState.fontSize,
-    font: pageState.font,
-    color: rgb(0, 0, 0),
-  });
-
-  // TODO: In Phase 2, this will be replaced with:
-  // pageState = await renderTitlePage(pdfDoc, pageState, fountainScript.titlePage);
-  // pageState = await renderScript(pdfDoc, pageState, fountainScript.script);
+  // Phase 2: Render the actual script elements
+  await renderScript(pdfDoc, pageState, fountainScript);
 
   return pdfDoc;
 }
 
-// TODO: Phase 2 - Utility functions for page management
-// These will be implemented when we add proper page break handling
+/**
+ * Phase 2: Core rendering functions for script elements
+ */
 
+/**
+ * Renders the entire script by iterating through all elements
+ */
+async function renderScript(
+  doc: PDFDocument,
+  pageState: PageState,
+  fountainScript: FountainScript,
+): Promise<PageState> {
+  let currentState = pageState;
+
+  for (const element of fountainScript.script) {
+    switch (element.kind) {
+      case "scene":
+        currentState = await renderScene(
+          doc,
+          currentState,
+          element,
+          fountainScript,
+        );
+        break;
+      case "action":
+        // TODO: Phase 2 - implement action rendering
+        break;
+      case "dialogue":
+        // TODO: Phase 2 - implement dialogue rendering
+        break;
+      case "transition":
+        // TODO: Phase 2 - implement transition rendering
+        break;
+      case "synopsis":
+      case "section":
+      case "page-break":
+        // TODO: Phase 3 - implement advanced elements
+        break;
+    }
+  }
+
+  return currentState;
+}
+
+/**
+ * Renders a scene heading with proper positioning and formatting
+ */
+async function renderScene(
+  doc: PDFDocument,
+  pageState: PageState,
+  scene: Scene,
+  fountainScript: FountainScript,
+): Promise<PageState> {
+  // Extract the scene text from the document
+  const sceneText = fountainScript.document
+    .substring(scene.range.start, scene.range.end)
+    .trim()
+    .toUpperCase(); // Scene headings are typically uppercase
+
+  // Get the current page
+  const currentPage = doc.getPages()[doc.getPageCount() - 1];
+
+  // Add spacing before scene heading if there was a previous element
+  let newY = pageState.currentY;
+  if (pageState.lastElementType !== null) {
+    newY -= pageState.lineHeight; // Single line spacing before scene
+  }
+
+  // Check if we need a page break (simplified logic for Phase 2)
+  if (newY - pageState.lineHeight < pageState.margins.bottom) {
+    // Create new page
+    doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    newY = PAGE_HEIGHT - pageState.margins.top;
+  }
+
+  // Render the scene heading
+  currentPage.drawText(sceneText, {
+    x: SCENE_HEADING_INDENT,
+    y: newY,
+    size: pageState.fontSize,
+    font: pageState.font,
+    color: rgb(0, 0, 0),
+  });
+
+  // Update page state
+  return {
+    ...pageState,
+    currentY: newY - pageState.lineHeight,
+    lastElementType: "scene",
+    pendingSpacing: 0,
+  };
+}
+
+// Utility functions for page management - TODO: Use these when implementing advanced page break logic
 // function createNewPage(doc: PDFDocument, pageState: PageState): PageState {
 //   const newPage = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
 //   return {
 //     ...pageState,
 //     currentY: PAGE_HEIGHT - pageState.margins.top,
-//     remainingHeight: PAGE_HEIGHT - pageState.margins.top - pageState.margins.bottom,
+//     remainingHeight:
+//       PAGE_HEIGHT - pageState.margins.top - pageState.margins.bottom,
 //     pageNumber: pageState.pageNumber + 1,
 //     isTitlePage: false,
 //     lastElementType: null,
