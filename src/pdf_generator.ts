@@ -1,4 +1,4 @@
-import { PDFDocument, type PDFFont, rgb } from "pdf-lib";
+import { PDFDocument, type PDFFont, StandardFonts, rgb } from "pdf-lib";
 import type {
   FountainScript,
   StyledText,
@@ -64,7 +64,7 @@ export async function generatePDF(
   const pdfDoc = await PDFDocument.create();
 
   // Embed Courier font (essential for proper screenplay formatting)
-  const courierFont = await pdfDoc.embedFont("Courier");
+  const courierFont = await pdfDoc.embedFont(StandardFonts.Courier, );
 
   // Create first page
   const firstPage = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
