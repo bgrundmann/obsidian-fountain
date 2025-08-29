@@ -208,15 +208,21 @@ type PageState = {
 - Element rendering functions with mock PDF documents
 - Page break logic functions
 
-### Integration Tests
+### Integration Tests (by user)
 - Full document generation from sample scripts
 - Page break behavior across different element types
 - Font embedding and text measurement accuracy
 
-### Visual Regression Tests
+### Visual Regression Tests (by user)
 - Compare generated PDFs against reference implementations
 - Verify formatting matches industry standards
 - Test with various script lengths and element combinations
+
+### What NOT to DO
+ - Do NOT generate test scripts to verify that PDF generation works programmatically.
+ - The user will verify after a local deploy that pdf generation can be triggered
+   in the test-vault and that the generated pdfs are correct. The user will tell
+   you if they are not.
 
 ## Success Metrics
 
