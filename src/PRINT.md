@@ -71,10 +71,13 @@ FountainToPDF
 ### Implementation Phases
 
 #### Phase 1: Basic Structure
-- [ ] Set up pdf-lib integration
-- [ ] Implement basic page layout with correct margins
-- [ ] Embed Courier font
-- [ ] Create simple text rendering (e.g. just a hello world pdf).
+- [X] Set up pdf-lib integration
+- [X] Implement basic page layout with correct margins
+- [X] Embed Courier font
+- [X] Create simple text rendering (e.g. just a hello world pdf).
+
+#### Phase 1.5: Integration with obsidian
+- [X] Add a command to generate a PDF from the current document. Generated pdf should be saved to the vault, next to the original file.
 
 #### Phase 2: Core Elements
 - [ ] Implement scene headings
