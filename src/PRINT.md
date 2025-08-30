@@ -81,7 +81,7 @@ FountainToPDF
 
 #### Phase 2: Core Elements
 - [X] Implement scene headings
-- [ ] Implement action blocks with proper wrapping
+- [X] Implement action blocks with proper wrapping
 - [ ] Implement dialogue (character, parentheticals, speech)
 - [ ] Implement transitions
 

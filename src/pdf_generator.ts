@@ -1,10 +1,19 @@
 import { PDFDocument, type PDFFont, StandardFonts, rgb } from "pdf-lib";
 import type {
+  Action,
   FountainScript,
   Scene,
   StyledText,
   TextElementWithNotesAndBoneyard,
 } from "./fountain";
+
+// Type for tracking styled text segments during rendering
+type StyledTextSegment = {
+  text: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+};
 
 // Page layout constants (all measurements in PDF points - 1/72 inch)
 const FONT_SIZE = 12;
@@ -21,7 +30,7 @@ const MARGIN_RIGHT = 72; // 1"
 // Element positions (from left edge) - Phase 2 implementation
 // const SCENE_NUMBER_INDENT = 90; // 1.25" - TODO: Use when implementing scene numbers
 const SCENE_HEADING_INDENT = 126; // 1.75"
-// const ACTION_INDENT = 126; // 1.75" - TODO: Use when implementing action blocks
+const ACTION_INDENT = 126; // 1.75"
 // const CHARACTER_INDENT = 306; // ~4.25" (centered) - TODO: Use when implementing dialogue
 // const DIALOGUE_INDENT = 198; // 2.75" - TODO: Use when implementing dialogue
 // const PARENTHETICAL_INDENT = 252; // 3.5" - TODO: Use when implementing parentheticals
@@ -120,7 +129,12 @@ async function renderScript(
         );
         break;
       case "action":
-        // TODO: Phase 2 - implement action rendering
+        currentState = await renderAction(
+          doc,
+          currentState,
+          element,
+          fountainScript,
+        );
         break;
       case "dialogue":
         // TODO: Phase 2 - implement dialogue rendering
@@ -186,6 +200,214 @@ async function renderScene(
     lastElementType: "scene",
     pendingSpacing: 0,
   };
+}
+
+/**
+ * Renders an action block with proper text wrapping and positioning
+ */
+async function renderAction(
+  doc: PDFDocument,
+  pageState: PageState,
+  action: Action,
+  fountainScript: FountainScript,
+): Promise<PageState> {
+  // Extract styled text from all lines in the action block
+  const actionLines: StyledTextSegment[][] = [];
+
+  for (const line of action.lines) {
+    if (line.elements.length > 0) {
+      // Extract styled text segments from the line elements
+      const styledSegments = extractStyledSegments(
+        line.elements,
+        fountainScript.document,
+      );
+      // Wrap styled segments to fit within action block width (max ~55 characters)
+      const wrappedLines = wrapStyledText(styledSegments, 55);
+      actionLines.push(...wrappedLines);
+    } else {
+      // Empty line - preserve spacing
+      actionLines.push([]);
+    }
+  }
+
+  // Get the current page
+  let currentPage = doc.getPages()[doc.getPageCount() - 1];
+  let currentY = pageState.currentY;
+
+  // Add spacing before action block if there was a previous element
+  if (pageState.lastElementType !== null) {
+    currentY -= pageState.lineHeight; // Single line spacing before action
+  }
+
+  // Render each line of the action block
+  for (let i = 0; i < actionLines.length; i++) {
+    const line = actionLines[i];
+
+    // Check if we need a page break
+    if (currentY - pageState.lineHeight < pageState.margins.bottom) {
+      // Create new page
+      doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+      currentPage = doc.getPages()[doc.getPageCount() - 1];
+      currentY = PAGE_HEIGHT - pageState.margins.top;
+    }
+
+    // Render the line with styled segments
+    if (line.length > 0) {
+      let currentX = ACTION_INDENT;
+      for (const segment of line) {
+        if (segment.text.length > 0) {
+          // NOTE: Currently rendering all text with base Courier font
+          // The styled segments preserve formatting information (bold, italic, underline)
+          // but visual formatting will be implemented in Phase 3 when we add:
+          // - Bold/italic font variants or text decoration
+          // - Proper font metrics calculation for mixed styles
+          // - Advanced text positioning for styled segments
+          currentPage.drawText(segment.text, {
+            x: currentX,
+            y: currentY,
+            size: pageState.fontSize,
+            font: pageState.font,
+            color: rgb(0, 0, 0),
+          });
+
+          // Calculate text width to position next segment
+          const textWidth = pageState.font.widthOfTextAtSize(
+            segment.text,
+            pageState.fontSize,
+          );
+          currentX += textWidth;
+        }
+      }
+    }
+
+    // Move to next line
+    currentY -= pageState.lineHeight;
+  }
+
+  // Update page state
+  return {
+    ...pageState,
+    currentY: currentY,
+    lastElementType: "action",
+    pendingSpacing: 0,
+  };
+}
+
+/**
+ * Extracts styled text segments from line elements, preserving formatting information
+ */
+function extractStyledSegments(
+  elements: TextElementWithNotesAndBoneyard[],
+  document: string,
+): StyledTextSegment[] {
+  const segments: StyledTextSegment[] = [];
+
+  for (const element of elements) {
+    switch (element.kind) {
+      case "text":
+        segments.push({
+          text: document.substring(element.range.start, element.range.end),
+        });
+        break;
+      case "bold": {
+        const boldSegments = extractStyledSegments(element.elements, document);
+        segments.push(...boldSegments.map((seg) => ({ ...seg, bold: true })));
+        break;
+      }
+      case "italics": {
+        const italicSegments = extractStyledSegments(
+          element.elements,
+          document,
+        );
+        segments.push(
+          ...italicSegments.map((seg) => ({ ...seg, italic: true })),
+        );
+        break;
+      }
+      case "underline": {
+        const underlineSegments = extractStyledSegments(
+          element.elements,
+          document,
+        );
+        segments.push(
+          ...underlineSegments.map((seg) => ({ ...seg, underline: true })),
+        );
+        break;
+      }
+      case "note":
+      case "boneyard":
+        // Skip notes and boneyard content for PDF output
+        break;
+    }
+  }
+
+  return segments;
+}
+
+/**
+ * Wraps styled text segments to fit within specified character limit while preserving styling
+ */
+function wrapStyledText(
+  segments: StyledTextSegment[],
+  maxChars: number,
+): StyledTextSegment[][] {
+  if (segments.length === 0) {
+    return [[]];
+  }
+
+  const lines: StyledTextSegment[][] = [];
+  let currentLine: StyledTextSegment[] = [];
+  let currentLineLength = 0;
+
+  for (const segment of segments) {
+    const words = segment.text.split(/(\s+)/); // Split on whitespace but keep separators
+
+    for (const word of words) {
+      if (word.length === 0) continue;
+
+      // Handle very long words
+      if (word.length > maxChars) {
+        // Finish current line if it has content
+        if (currentLine.length > 0) {
+          lines.push(currentLine);
+          currentLine = [];
+          currentLineLength = 0;
+        }
+
+        // Split long word into chunks
+        for (let i = 0; i < word.length; i += maxChars) {
+          const chunk = word.substring(i, i + maxChars);
+          lines.push([{ ...segment, text: chunk }]);
+        }
+        continue;
+      }
+
+      // Check if adding this word would exceed the limit
+      if (
+        currentLineLength + word.length > maxChars &&
+        currentLine.length > 0
+      ) {
+        // Start new line
+        lines.push(currentLine);
+        currentLine = [];
+        currentLineLength = 0;
+      }
+
+      // Add word to current line
+      if (word.trim().length > 0 || currentLine.length > 0) {
+        // Don't start lines with whitespace
+        currentLine.push({ ...segment, text: word });
+        currentLineLength += word.length;
+      }
+    }
+  }
+
+  // Add the last line if it has content
+  if (currentLine.length > 0) {
+    lines.push(currentLine);
+  }
+
+  return lines.length > 0 ? lines : [[]];
 }
 
 // Utility functions for page management - TODO: Use these when implementing advanced page break logic
