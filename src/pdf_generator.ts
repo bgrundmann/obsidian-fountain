@@ -88,6 +88,55 @@ type PageState = {
 };
 
 /**
+ * Helper function to ensure enough lines are available on the current page
+ * If not enough space, adds a new page instruction and updates page state
+ */
+function needLines(
+  instructions: Instruction[],
+  pageState: PageState,
+  numLines: number,
+): PageState {
+  const requiredSpace = numLines * pageState.lineHeight;
+
+  if (pageState.currentY - requiredSpace < pageState.margins.bottom) {
+    // Need a new page
+    instructions.push({
+      type: "new-page",
+      width: PAGE_WIDTH,
+      height: PAGE_HEIGHT,
+    });
+
+    return {
+      ...pageState,
+      currentY: PAGE_HEIGHT - pageState.margins.top,
+      pageNumber: pageState.pageNumber + 1,
+    };
+  }
+
+  return pageState;
+}
+
+/**
+ * Helper function to advance to the next line
+ */
+function advanceLine(pageState: PageState): PageState {
+  return {
+    ...pageState,
+    currentY: pageState.currentY - pageState.lineHeight,
+  };
+}
+
+/**
+ * Helper function to add spacing before an element if there was a previous element
+ */
+function addElementSpacing(pageState: PageState): PageState {
+  if (pageState.lastElementType !== null) {
+    return advanceLine(pageState);
+  }
+  return pageState;
+}
+
+/**
  * Main entry point for PDF generation
  * Converts a FountainScript AST into a properly formatted PDF document
  */
@@ -468,29 +517,16 @@ function generateSceneInstructions(
     .trim()
     .toUpperCase(); // Scene headings are typically uppercase
 
-  // Add spacing before scene heading if there was a previous element
-  let currentY = pageState.currentY;
-  if (pageState.lastElementType !== null) {
-    currentY -= pageState.lineHeight; // Single line spacing before scene
-  }
-
-  // Check if we need a page break
-  if (currentY - pageState.lineHeight < pageState.margins.bottom) {
-    // Create new page
-    instructions.push({
-      type: "new-page",
-      width: PAGE_WIDTH,
-      height: PAGE_HEIGHT,
-    });
-    currentY = PAGE_HEIGHT - pageState.margins.top;
-  }
+  // Add spacing before scene heading and ensure we have space
+  let currentState = addElementSpacing(pageState);
+  currentState = needLines(instructions, currentState, 1);
 
   // Generate instruction for scene heading
   instructions.push({
     type: "text",
     data: sceneText,
     x: SCENE_HEADING_INDENT,
-    y: currentY, // currentY is already in PDF coordinate system
+    y: currentState.currentY,
     bold: true,
     italic: false,
     underline: false,
@@ -498,8 +534,7 @@ function generateSceneInstructions(
 
   // Update page state
   return {
-    ...pageState,
-    currentY: currentY - pageState.lineHeight,
+    ...advanceLine(currentState),
     lastElementType: "scene",
     pendingSpacing: 0,
   };
@@ -530,24 +565,14 @@ function generateActionInstructions(
     }
   }
 
-  let currentY = pageState.currentY;
-
-  // Add spacing before action block if there was a previous element
-  if (pageState.lastElementType !== null) {
-    currentY -= pageState.lineHeight;
-  }
+  // Add spacing before action block and ensure we have space for all lines
+  let currentState = addElementSpacing(pageState);
+  currentState = needLines(instructions, currentState, actionLines.length);
 
   // Generate instructions for each line of the action block
   for (const line of actionLines) {
-    // Check if we need a page break
-    if (currentY - pageState.lineHeight < pageState.margins.bottom) {
-      instructions.push({
-        type: "new-page",
-        width: PAGE_WIDTH,
-        height: PAGE_HEIGHT,
-      });
-      currentY = PAGE_HEIGHT - pageState.margins.top;
-    }
+    // Ensure we have space for this line
+    currentState = needLines(instructions, currentState, 1);
 
     // Generate instructions for the line with styled segments
     if (line.length > 0) {
@@ -558,7 +583,7 @@ function generateActionInstructions(
             type: "text",
             data: segment.text,
             x: currentX,
-            y: currentY,
+            y: currentState.currentY,
             bold: segment.bold || false,
             italic: segment.italic || false,
             underline: segment.underline || false,
@@ -569,12 +594,11 @@ function generateActionInstructions(
       }
     }
 
-    currentY -= pageState.lineHeight;
+    currentState = advanceLine(currentState);
   }
 
   return {
-    ...pageState,
-    currentY,
+    ...currentState,
     lastElementType: "action",
     pendingSpacing: 0,
   };
@@ -589,12 +613,9 @@ function generateDialogueInstructions(
   dialogue: Dialogue,
   fountainScript: FountainScript,
 ): PageState {
-  let currentY = pageState.currentY;
-
-  // Add spacing before dialogue block if there was a previous element
-  if (pageState.lastElementType !== null) {
-    currentY -= pageState.lineHeight;
-  }
+  // Add spacing before dialogue block and ensure space for character name
+  let currentState = addElementSpacing(pageState);
+  currentState = needLines(instructions, currentState, 1);
 
   // Extract character name
   const characterName = fountainScript.document
@@ -618,42 +639,20 @@ function generateDialogueInstructions(
 
   const fullCharacterLine = characterName + characterExtensions;
 
-  // Check if we need a page break for character name
-  if (currentY - pageState.lineHeight < pageState.margins.bottom) {
-    instructions.push({
-      type: "new-page",
-      width: PAGE_WIDTH,
-      height: PAGE_HEIGHT,
-    });
-    currentY = PAGE_HEIGHT - pageState.margins.top;
-  }
-
   // Generate instruction for character name
   instructions.push({
     type: "text",
     data: fullCharacterLine,
     x: CHARACTER_INDENT,
-    y: currentY,
+    y: currentState.currentY,
     bold: false,
     italic: false,
     underline: false,
   });
-  currentY += pageState.lineHeight;
+  currentState = advanceLine(currentState);
 
   // Generate instructions for parenthetical if it exists
   if (dialogue.parenthetical) {
-    if (
-      currentY + pageState.lineHeight >
-      PAGE_HEIGHT - pageState.margins.bottom
-    ) {
-      instructions.push({
-        type: "new-page",
-        width: PAGE_WIDTH,
-        height: PAGE_HEIGHT,
-      });
-      currentY = PAGE_HEIGHT - pageState.margins.top;
-    }
-
     const parentheticalText = fountainScript.document
       .substring(dialogue.parenthetical.start, dialogue.parenthetical.end)
       .trim();
@@ -661,25 +660,18 @@ function generateDialogueInstructions(
     const wrappedParentheticals = wrapPlainText(parentheticalText, 16);
 
     for (const parentheticalLine of wrappedParentheticals) {
-      if (currentY - pageState.lineHeight < pageState.margins.bottom) {
-        instructions.push({
-          type: "new-page",
-          width: PAGE_WIDTH,
-          height: PAGE_HEIGHT,
-        });
-        currentY = PAGE_HEIGHT - pageState.margins.top;
-      }
+      currentState = needLines(instructions, currentState, 1);
 
       instructions.push({
         type: "text",
         data: parentheticalLine,
         x: PARENTHETICAL_INDENT,
-        y: currentY,
+        y: currentState.currentY,
         bold: false,
         italic: false,
         underline: false,
       });
-      currentY -= pageState.lineHeight;
+      currentState = advanceLine(currentState);
     }
   }
 
@@ -693,14 +685,7 @@ function generateDialogueInstructions(
       const wrappedLines = wrapStyledText(styledSegments, 35);
 
       for (const wrappedLine of wrappedLines) {
-        if (currentY - pageState.lineHeight < pageState.margins.bottom) {
-          instructions.push({
-            type: "new-page",
-            width: PAGE_WIDTH,
-            height: PAGE_HEIGHT,
-          });
-          currentY = PAGE_HEIGHT - pageState.margins.top;
-        }
+        currentState = needLines(instructions, currentState, 1);
 
         if (wrappedLine.length > 0) {
           let currentX = DIALOGUE_INDENT;
@@ -710,7 +695,7 @@ function generateDialogueInstructions(
                 type: "text",
                 data: segment.text,
                 x: currentX,
-                y: currentY,
+                y: currentState.currentY,
                 bold: segment.bold || false,
                 italic: segment.italic || false,
                 underline: segment.underline || false,
@@ -720,24 +705,16 @@ function generateDialogueInstructions(
             }
           }
         }
-        currentY -= pageState.lineHeight;
+        currentState = advanceLine(currentState);
       }
     } else {
-      if (currentY - pageState.lineHeight < pageState.margins.bottom) {
-        instructions.push({
-          type: "new-page",
-          width: PAGE_WIDTH,
-          height: PAGE_HEIGHT,
-        });
-        currentY = PAGE_HEIGHT - pageState.margins.top;
-      }
-      currentY -= pageState.lineHeight;
+      currentState = needLines(instructions, currentState, 1);
+      currentState = advanceLine(currentState);
     }
   }
 
   return {
-    ...pageState,
-    currentY,
+    ...currentState,
     lastElementType: "dialogue",
     pendingSpacing: 0,
   };
@@ -758,22 +735,9 @@ function generateTransitionInstructions(
     .trim()
     .toUpperCase();
 
-  let currentY = pageState.currentY;
-
-  // Add spacing before transition if there was a previous element
-  if (pageState.lastElementType !== null) {
-    currentY -= pageState.lineHeight;
-  }
-
-  // Check if we need a page break
-  if (currentY - pageState.lineHeight < pageState.margins.bottom) {
-    instructions.push({
-      type: "new-page",
-      width: PAGE_WIDTH,
-      height: PAGE_HEIGHT,
-    });
-    currentY = PAGE_HEIGHT - pageState.margins.top;
-  }
+  // Add spacing before transition and ensure we have space
+  let currentState = addElementSpacing(pageState);
+  currentState = needLines(instructions, currentState, 1);
 
   // Calculate right-aligned position
   const textWidth = transitionText.length * (pageState.fontSize * 0.6);
@@ -784,15 +748,14 @@ function generateTransitionInstructions(
     type: "text",
     data: transitionText,
     x: rightAlignedX,
-    y: currentY,
+    y: currentState.currentY,
     bold: false,
     italic: false,
     underline: false,
   });
 
   return {
-    ...pageState,
-    currentY: currentY - pageState.lineHeight,
+    ...advanceLine(currentState),
     lastElementType: "transition",
     pendingSpacing: 0,
   };
