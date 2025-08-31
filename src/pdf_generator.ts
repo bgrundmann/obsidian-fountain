@@ -88,6 +88,33 @@ type PageState = {
 };
 
 /**
+ * Helper function to emit a text instruction and return the new x position
+ */
+function emitText(
+  instructions: Instruction[],
+  pageState: PageState,
+  options: {
+    data: string;
+    x: number;
+    bold: boolean;
+    italic: boolean;
+    underline: boolean;
+  },
+): number {
+  instructions.push({
+    type: "text",
+    data: options.data,
+    x: options.x,
+    y: pageState.currentY,
+    bold: options.bold,
+    italic: options.italic,
+    underline: options.underline,
+  });
+
+  return options.x + options.data.length * (pageState.fontSize * 0.6);
+}
+
+/**
  * Helper function to ensure enough lines are available on the current page
  * If not enough space, adds a new page instruction and updates page state
  */
@@ -372,18 +399,17 @@ function generateCenteredTitleElementInstructions(
         // Generate instruction for each segment with appropriate styling
         for (const segment of line) {
           if (segment.text.length > 0) {
-            instructions.push({
-              type: "text",
-              data: segment.text,
-              x,
-              y: currentY, // currentY is in PDF coordinate system
-              bold: segment.bold || false,
-              italic: segment.italic || false,
-              underline: segment.underline || false,
-            });
-
-            // Estimate segment width for positioning next segment
-            x += segment.text.length * (pageState.fontSize * 0.6);
+            x = emitText(
+              instructions,
+              { ...pageState, currentY },
+              {
+                data: segment.text,
+                x,
+                bold: segment.bold || false,
+                italic: segment.italic || false,
+                underline: segment.underline || false,
+              },
+            );
           }
         }
 
@@ -423,17 +449,17 @@ function generateLowerLeftTitleElementInstructions(
 
         for (const segment of line) {
           if (segment.text.length > 0) {
-            instructions.push({
-              type: "text",
-              data: segment.text,
-              x,
-              y: currentY,
-              bold: segment.bold || false,
-              italic: segment.italic || false,
-              underline: segment.underline || false,
-            });
-
-            x += segment.text.length * (pageState.fontSize * 0.6);
+            x = emitText(
+              instructions,
+              { ...pageState, currentY },
+              {
+                data: segment.text,
+                x,
+                bold: segment.bold || false,
+                italic: segment.italic || false,
+                underline: segment.underline || false,
+              },
+            );
           }
         }
 
@@ -478,17 +504,17 @@ function generateLowerRightTitleElementInstructions(
 
         for (const segment of line) {
           if (segment.text.length > 0) {
-            instructions.push({
-              type: "text",
-              data: segment.text,
-              x,
-              y: currentY,
-              bold: segment.bold || false,
-              italic: segment.italic || false,
-              underline: segment.underline || false,
-            });
-
-            x += segment.text.length * (pageState.fontSize * 0.6);
+            x = emitText(
+              instructions,
+              { ...pageState, currentY },
+              {
+                data: segment.text,
+                x,
+                bold: segment.bold || false,
+                italic: segment.italic || false,
+                underline: segment.underline || false,
+              },
+            );
           }
         }
 
@@ -522,11 +548,9 @@ function generateSceneInstructions(
   currentState = needLines(instructions, currentState, 1);
 
   // Generate instruction for scene heading
-  instructions.push({
-    type: "text",
+  emitText(instructions, currentState, {
     data: sceneText,
     x: SCENE_HEADING_INDENT,
-    y: currentState.currentY,
     bold: true,
     italic: false,
     underline: false,
@@ -579,17 +603,13 @@ function generateActionInstructions(
       let currentX = ACTION_INDENT;
       for (const segment of line) {
         if (segment.text.length > 0) {
-          instructions.push({
-            type: "text",
+          currentX = emitText(instructions, currentState, {
             data: segment.text,
             x: currentX,
-            y: currentState.currentY,
             bold: segment.bold || false,
             italic: segment.italic || false,
             underline: segment.underline || false,
           });
-
-          currentX += segment.text.length * (pageState.fontSize * 0.6);
         }
       }
     }
@@ -640,11 +660,9 @@ function generateDialogueInstructions(
   const fullCharacterLine = characterName + characterExtensions;
 
   // Generate instruction for character name
-  instructions.push({
-    type: "text",
+  emitText(instructions, currentState, {
     data: fullCharacterLine,
     x: CHARACTER_INDENT,
-    y: currentState.currentY,
     bold: false,
     italic: false,
     underline: false,
@@ -662,11 +680,9 @@ function generateDialogueInstructions(
     for (const parentheticalLine of wrappedParentheticals) {
       currentState = needLines(instructions, currentState, 1);
 
-      instructions.push({
-        type: "text",
+      emitText(instructions, currentState, {
         data: parentheticalLine,
         x: PARENTHETICAL_INDENT,
-        y: currentState.currentY,
         bold: false,
         italic: false,
         underline: false,
@@ -691,17 +707,13 @@ function generateDialogueInstructions(
           let currentX = DIALOGUE_INDENT;
           for (const segment of wrappedLine) {
             if (segment.text.length > 0) {
-              instructions.push({
-                type: "text",
+              currentX = emitText(instructions, currentState, {
                 data: segment.text,
                 x: currentX,
-                y: currentState.currentY,
                 bold: segment.bold || false,
                 italic: segment.italic || false,
                 underline: segment.underline || false,
               });
-
-              currentX += segment.text.length * (pageState.fontSize * 0.6);
             }
           }
         }
@@ -744,11 +756,9 @@ function generateTransitionInstructions(
   const rightAlignedX = TRANSITION_INDENT - textWidth;
 
   // Generate instruction for transition
-  instructions.push({
-    type: "text",
+  emitText(instructions, currentState, {
     data: transitionText,
     x: rightAlignedX,
-    y: currentState.currentY,
     bold: false,
     italic: false,
     underline: false,
