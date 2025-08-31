@@ -1,6 +1,7 @@
 import { PDFDocument, type PDFFont, StandardFonts, rgb } from "pdf-lib";
 import type {
   Action,
+  Dialogue,
   FountainScript,
   Scene,
   StyledText,
@@ -31,9 +32,9 @@ const MARGIN_RIGHT = 72; // 1"
 // const SCENE_NUMBER_INDENT = 90; // 1.25" - TODO: Use when implementing scene numbers
 const SCENE_HEADING_INDENT = 126; // 1.75"
 const ACTION_INDENT = 126; // 1.75"
-// const CHARACTER_INDENT = 306; // ~4.25" (centered) - TODO: Use when implementing dialogue
-// const DIALOGUE_INDENT = 198; // 2.75" - TODO: Use when implementing dialogue
-// const PARENTHETICAL_INDENT = 252; // 3.5" - TODO: Use when implementing parentheticals
+const CHARACTER_INDENT = 306; // ~4.25" (centered)
+const DIALOGUE_INDENT = 198; // 2.75"
+const PARENTHETICAL_INDENT = 252; // 3.5"
 
 // Page state type for tracking position and layout
 type PageState = {
@@ -150,7 +151,12 @@ async function renderScript(
         );
         break;
       case "dialogue":
-        // TODO: Phase 2 - implement dialogue rendering
+        currentState = await renderDialogue(
+          doc,
+          currentState,
+          element,
+          fountainScript,
+        );
         break;
       case "transition":
         // TODO: Phase 2 - implement transition rendering
@@ -470,6 +476,231 @@ function selectFont(pageState: PageState, segment: StyledTextSegment): PDFFont {
 // function checkPageBreak(elementHeight: number, pageState: PageState): boolean {
 //   return pageState.currentY - elementHeight < pageState.margins.bottom;
 // }
+
+/**
+ * Renders a dialogue block with character name, parenthetical, and speech lines
+ */
+async function renderDialogue(
+  doc: PDFDocument,
+  pageState: PageState,
+  dialogue: Dialogue,
+  fountainScript: FountainScript,
+): Promise<PageState> {
+  let currentPage = doc.getPages()[doc.getPageCount() - 1];
+  let currentY = pageState.currentY;
+
+  // Add spacing before dialogue block if there was a previous element
+  if (pageState.lastElementType !== null) {
+    currentY -= pageState.lineHeight; // Single line spacing before dialogue
+  }
+
+  // Extract character name (always uppercase for character names)
+  const characterName = fountainScript.document
+    .substring(dialogue.characterRange.start, dialogue.characterRange.end)
+    .trim()
+    .toUpperCase();
+
+  // Extract character extensions if they exist
+  let characterExtensions = "";
+  if (
+    dialogue.characterExtensionsRange.start !==
+    dialogue.characterExtensionsRange.end
+  ) {
+    characterExtensions = fountainScript.document
+      .substring(
+        dialogue.characterExtensionsRange.start,
+        dialogue.characterExtensionsRange.end,
+      )
+      .trim();
+  }
+
+  const fullCharacterLine = characterName + characterExtensions;
+
+  // Check if we need a page break for character name
+  if (currentY - pageState.lineHeight < pageState.margins.bottom) {
+    doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    currentPage = doc.getPages()[doc.getPageCount() - 1];
+    currentY = PAGE_HEIGHT - pageState.margins.top;
+  }
+
+  // Render character name (centered)
+  currentPage.drawText(fullCharacterLine, {
+    x: CHARACTER_INDENT,
+    y: currentY,
+    size: pageState.fontSize,
+    font: pageState.font,
+    color: rgb(0, 0, 0),
+  });
+  currentY -= pageState.lineHeight;
+
+  // Render parenthetical if it exists
+  if (dialogue.parenthetical) {
+    // Check if we need a page break for parenthetical
+    if (currentY - pageState.lineHeight < pageState.margins.bottom) {
+      doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+      currentPage = doc.getPages()[doc.getPageCount() - 1];
+      currentY = PAGE_HEIGHT - pageState.margins.top;
+    }
+
+    const parentheticalText = fountainScript.document
+      .substring(dialogue.parenthetical.start, dialogue.parenthetical.end)
+      .trim();
+
+    // Wrap parenthetical text to fit within limits (max ~16 characters)
+    const wrappedParentheticals = wrapPlainText(parentheticalText, 16);
+
+    for (const parentheticalLine of wrappedParentheticals) {
+      if (currentY - pageState.lineHeight < pageState.margins.bottom) {
+        doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+        currentPage = doc.getPages()[doc.getPageCount() - 1];
+        currentY = PAGE_HEIGHT - pageState.margins.top;
+      }
+
+      currentPage.drawText(parentheticalLine, {
+        x: PARENTHETICAL_INDENT,
+        y: currentY,
+        size: pageState.fontSize,
+        font: pageState.font,
+        color: rgb(0, 0, 0),
+      });
+      currentY -= pageState.lineHeight;
+    }
+  }
+
+  // Render dialogue lines
+  for (const line of dialogue.lines) {
+    if (line.elements.length > 0) {
+      // Extract styled text segments from the line elements
+      const styledSegments = extractStyledSegments(
+        line.elements,
+        fountainScript.document,
+      );
+      // Wrap styled segments to fit within dialogue width (max ~35 characters)
+      const wrappedLines = wrapStyledText(styledSegments, 35);
+
+      for (const wrappedLine of wrappedLines) {
+        // Check if we need a page break
+        if (currentY - pageState.lineHeight < pageState.margins.bottom) {
+          doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+          currentPage = doc.getPages()[doc.getPageCount() - 1];
+          currentY = PAGE_HEIGHT - pageState.margins.top;
+        }
+
+        // Render the line with styled segments
+        if (wrappedLine.length > 0) {
+          let currentX = DIALOGUE_INDENT;
+          for (const segment of wrappedLine) {
+            if (segment.text.length > 0) {
+              // Select appropriate font based on styling
+              const selectedFont = selectFont(pageState, segment);
+
+              // Render the text with appropriate font
+              currentPage.drawText(segment.text, {
+                x: currentX,
+                y: currentY,
+                size: pageState.fontSize,
+                font: selectedFont,
+                color: rgb(0, 0, 0),
+              });
+
+              // Draw underline if needed
+              if (segment.underline) {
+                const textWidth = selectedFont.widthOfTextAtSize(
+                  segment.text,
+                  pageState.fontSize,
+                );
+                const underlineY = currentY - 2; // Position underline slightly below baseline
+                currentPage.drawLine({
+                  start: { x: currentX, y: underlineY },
+                  end: { x: currentX + textWidth, y: underlineY },
+                  thickness: 1,
+                  color: rgb(0, 0, 0),
+                });
+              }
+
+              // Calculate text width to position next segment
+              const textWidth = selectedFont.widthOfTextAtSize(
+                segment.text,
+                pageState.fontSize,
+              );
+              currentX += textWidth;
+            }
+          }
+        }
+        currentY -= pageState.lineHeight;
+      }
+    } else {
+      // Empty line - preserve spacing
+      if (currentY - pageState.lineHeight < pageState.margins.bottom) {
+        doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+        currentPage = doc.getPages()[doc.getPageCount() - 1];
+        currentY = PAGE_HEIGHT - pageState.margins.top;
+      }
+      currentY -= pageState.lineHeight;
+    }
+  }
+
+  // Update page state
+  return {
+    ...pageState,
+    currentY: currentY,
+    lastElementType: "dialogue",
+    pendingSpacing: 0,
+  };
+}
+
+/**
+ * Simple text wrapping for plain text (used for parentheticals)
+ */
+function wrapPlainText(text: string, maxChars: number): string[] {
+  if (text.length <= maxChars) {
+    return [text];
+  }
+
+  const lines: string[] = [];
+  const words = text.split(/(\s+)/); // Split on whitespace but keep separators
+  let currentLine = "";
+
+  for (const word of words) {
+    if (word.length === 0) continue;
+
+    // Handle very long words
+    if (word.length > maxChars) {
+      // Finish current line if it has content
+      if (currentLine.length > 0) {
+        lines.push(currentLine.trim());
+        currentLine = "";
+      }
+
+      // Split long word into chunks
+      for (let i = 0; i < word.length; i += maxChars) {
+        const chunk = word.substring(i, i + maxChars);
+        lines.push(chunk);
+      }
+      continue;
+    }
+
+    // Check if adding this word would exceed the limit
+    if (currentLine.length + word.length > maxChars && currentLine.length > 0) {
+      // Start new line
+      lines.push(currentLine.trim());
+      currentLine = "";
+    }
+
+    // Add word to current line
+    if (word.trim().length > 0 || currentLine.length > 0) {
+      // Don't start lines with whitespace
+      currentLine += word;
+    }
+  }
+
+  // Add the last line if it has content
+  if (currentLine.length > 0) {
+    lines.push(currentLine.trim());
+  }
+
+  return lines.length > 0 ? lines : [""];
+}
 
 /**
  * Utility function to extract plain text from StyledText

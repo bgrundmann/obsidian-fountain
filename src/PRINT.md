@@ -83,7 +83,7 @@ FountainToPDF
 - [X] Implement scene headings
 - [X] Implement action blocks with proper wrapping
 - [X] Visual formatting for action blocks (bold, italic, underline)
-- [ ] Implement dialogue (character, parentheticals, speech)
+- [X] Implement dialogue (character, parentheticals, speech)
 - [ ] Implement transitions
 
 #### Phase 3: Advanced Features
