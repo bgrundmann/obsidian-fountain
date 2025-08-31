@@ -164,6 +164,49 @@ The instruction-based architecture makes it easy to add:
 
 This fix reduced a 127-page output to the expected 4 pages for standard fountain scripts.
 
+## Code Quality Improvements
+
+### Elimination of Code Duplication (Refactored)
+
+**Issue**: The initial instruction generation functions had significant code duplication:
+- Each function maintained its own `currentY` local variable  
+- Repetitive page break logic throughout multiple functions
+- Duplicated coordinate management and line advancement code
+
+**Solution**: Introduced helper functions to centralize common operations:
+
+```typescript
+function needLines(instructions: Instruction[], pageState: PageState, numLines: number): PageState
+function advanceLine(pageState: PageState): PageState  
+function addElementSpacing(pageState: PageState): PageState
+```
+
+**Benefits**:
+- **Reduced duplication**: Eliminated ~50 lines of repetitive code
+- **Consistent behavior**: All functions now use the same page break logic
+- **Maintainability**: Page management logic centralized in helper functions
+- **Readability**: Generation functions focus on content, not coordinate management
+
+**Before**:
+```typescript
+let currentY = pageState.currentY;
+if (pageState.lastElementType !== null) {
+  currentY -= pageState.lineHeight;
+}
+if (currentY - pageState.lineHeight < pageState.margins.bottom) {
+  // Create new page logic...
+  currentY = PAGE_HEIGHT - pageState.margins.top;
+}
+```
+
+**After**:
+```typescript
+let currentState = addElementSpacing(pageState);
+currentState = needLines(instructions, currentState, 1);
+```
+
+This refactoring maintains all functionality while significantly improving code quality and maintainability.
+
 ## Backward Compatibility
 
 The public API remains unchanged - `generatePDF()` still accepts a `FountainScript` and returns a `PDFDocument`. All existing code will continue to work without modification.
