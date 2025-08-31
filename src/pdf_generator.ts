@@ -1,10 +1,4 @@
-import {
-  PDFDocument,
-  type PDFFont,
-  type PDFPage,
-  StandardFonts,
-  rgb,
-} from "pdf-lib";
+import { PDFDocument, type PDFPage, StandardFonts, rgb } from "pdf-lib";
 import type {
   Action,
   Dialogue,
@@ -14,6 +8,25 @@ import type {
   TextElementWithNotesAndBoneyard,
   Transition,
 } from "./fountain";
+
+// Instruction types for PDF generation
+export type Instruction = NewPageInstruction | TextInstruction;
+
+export interface NewPageInstruction {
+  type: "new-page";
+  width: number; // Page width in points
+  height: number; // Page height in points
+}
+
+export interface TextInstruction {
+  type: "text";
+  data: string;
+  x: number; // X coordinate in points from left edge
+  y: number; // Y coordinate in points from bottom edge (PDF standard)
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+}
 
 // Type for tracking styled text segments during rendering
 type StyledTextSegment = {
@@ -35,8 +48,7 @@ const MARGIN_BOTTOM = 72; // 1"
 const MARGIN_LEFT = 90; // 1.25"
 const MARGIN_RIGHT = 72; // 1"
 
-// Element positions (from left edge) - Phase 2 implementation
-// const SCENE_NUMBER_INDENT = 90; // 1.25" - TODO: Use when implementing scene numbers
+// Element positions (from left edge)
 const SCENE_HEADING_INDENT = 126; // 1.75"
 const ACTION_INDENT = 126; // 1.75"
 const CHARACTER_INDENT = 306; // ~4.25" (centered)
@@ -50,7 +62,7 @@ const TITLE_PAGE_CENTER_X = 306; // Page center (PAGE_WIDTH / 2)
 
 // Page state type for tracking position and layout
 type PageState = {
-  // Vertical position tracking
+  // Vertical position tracking (measured from top of page)
   currentY: number; // Current vertical position (points from top)
   remainingHeight: number; // Remaining usable height on current page
 
@@ -69,10 +81,6 @@ type PageState = {
   // Text formatting state
   fontSize: number; // Current font size
   lineHeight: number; // Current line height
-  font: PDFFont; // Base Courier font
-  boldFont: PDFFont; // Bold Courier font
-  italicFont: PDFFont; // Italic Courier font
-  boldItalicFont: PDFFont; // Bold italic Courier font
 
   // Element spacing
   lastElementType: string | null; // Type of previous element for spacing rules
@@ -86,21 +94,20 @@ type PageState = {
 export async function generatePDF(
   fountainScript: FountainScript,
 ): Promise<PDFDocument> {
-  // Create new PDF document
-  const pdfDoc = await PDFDocument.create();
+  // Generate instructions
+  const instructions = generateInstructions(fountainScript);
 
-  // Embed Courier font variants (essential for proper screenplay formatting)
-  const courierFont = await pdfDoc.embedFont(StandardFonts.Courier);
-  const courierBoldFont = await pdfDoc.embedFont(StandardFonts.CourierBold);
-  const courierObliqueFont = await pdfDoc.embedFont(
-    StandardFonts.CourierOblique,
-  );
-  const courierBoldObliqueFont = await pdfDoc.embedFont(
-    StandardFonts.CourierBoldOblique,
-  );
+  // Execute instructions to create PDF
+  return renderInstructionsToPDF(instructions);
+}
 
-  // Create first page
-  pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+/**
+ * Generates all instructions for the entire fountain script
+ */
+export function generateInstructions(
+  fountainScript: FountainScript,
+): Instruction[] {
+  const instructions: Instruction[] = [];
 
   // Initialize page state
   let currentState: PageState = {
@@ -116,70 +123,73 @@ export async function generatePDF(
     },
     fontSize: FONT_SIZE,
     lineHeight: LINE_HEIGHT,
-    font: courierFont,
-    boldFont: courierBoldFont,
-    italicFont: courierObliqueFont,
-    boldItalicFont: courierBoldObliqueFont,
     lastElementType: null,
     pendingSpacing: 0,
   };
 
-  // Phase 3: Render title page if it exists
+  // Add first page
+  instructions.push({
+    type: "new-page",
+    width: PAGE_WIDTH,
+    height: PAGE_HEIGHT,
+  });
+
+  // Generate title page instructions if it exists
   if (fountainScript.titlePage.length > 0) {
-    currentState = await renderTitlePage(pdfDoc, currentState, fountainScript);
+    currentState = generateTitlePageInstructions(
+      instructions,
+      currentState,
+      fountainScript,
+    );
   } else {
     currentState = { ...currentState, isTitlePage: false, pageNumber: 1 };
   }
 
-  // Phase 2: Render the actual script elements
-  await renderScript(pdfDoc, currentState, fountainScript);
+  // Generate script instructions
+  generateScriptInstructions(instructions, currentState, fountainScript);
 
-  return pdfDoc;
+  return instructions;
 }
 
 /**
- * Phase 2: Core rendering functions for script elements
+ * Generates instructions for the entire script by iterating through all elements
  */
-
-/**
- * Renders the entire script by iterating through all elements
- */
-async function renderScript(
-  doc: PDFDocument,
+function generateScriptInstructions(
+  instructions: Instruction[],
   pageState: PageState,
   fountainScript: FountainScript,
-): Promise<PageState> {
+): PageState {
   let currentState = pageState;
 
   for (const element of fountainScript.script) {
     switch (element.kind) {
       case "scene":
-        currentState = await renderScene(
-          doc,
+        currentState = generateSceneInstructions(
+          instructions,
           currentState,
           element,
           fountainScript,
         );
         break;
       case "action":
-        currentState = await renderAction(
-          doc,
+        currentState = generateActionInstructions(
+          instructions,
           currentState,
           element,
           fountainScript,
         );
         break;
       case "dialogue":
-        currentState = await renderDialogue(
-          doc,
+        currentState = generateDialogueInstructions(
+          instructions,
           currentState,
           element,
           fountainScript,
         );
         break;
       case "transition":
-        currentState = await renderTransition(
-          doc,
+        currentState = generateTransitionInstructions(
+          instructions,
           currentState,
           element,
           fountainScript,
@@ -197,15 +207,13 @@ async function renderScript(
 }
 
 /**
- * Phase 3: Title page generation
- * Renders title page metadata according to Fountain specifications
+ * Generates instructions for title page metadata
  */
-async function renderTitlePage(
-  doc: PDFDocument,
+function generateTitlePageInstructions(
+  instructions: Instruction[],
   pageState: PageState,
   fountainScript: FountainScript,
-): Promise<PageState> {
-  const page = doc.getPages()[doc.getPageCount() - 1];
+): PageState {
   let currentState = { ...pageState };
 
   // Separate title page elements by positioning
@@ -233,33 +241,32 @@ async function renderTitlePage(
     } else if (lowerRightKeys.has(keyLower)) {
       lowerRightElements.push(element);
     }
-    // Ignore all other keys as per specification
   }
 
-  // Render centered elements
+  // Generate centered elements
   if (centeredElements.length > 0) {
-    currentState = await renderCenteredTitleElements(
-      page,
+    currentState = generateCenteredTitleElementInstructions(
+      instructions,
       currentState,
       centeredElements,
       fountainScript,
     );
   }
 
-  // Render lower-left elements
+  // Generate lower-left elements
   if (lowerLeftElements.length > 0) {
-    currentState = await renderLowerLeftTitleElements(
-      page,
+    currentState = generateLowerLeftTitleElementInstructions(
+      instructions,
       currentState,
       lowerLeftElements,
       fountainScript,
     );
   }
 
-  // Render lower-right elements
+  // Generate lower-right elements
   if (lowerRightElements.length > 0) {
-    currentState = await renderLowerRightTitleElements(
-      page,
+    currentState = generateLowerRightTitleElementInstructions(
+      instructions,
       currentState,
       lowerRightElements,
       fountainScript,
@@ -271,7 +278,12 @@ async function renderTitlePage(
   currentState.pageNumber = 2;
 
   // Add new page for the actual script content
-  doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+  instructions.push({
+    type: "new-page",
+    width: PAGE_WIDTH,
+    height: PAGE_HEIGHT,
+  });
+
   currentState.currentY = PAGE_HEIGHT - MARGIN_TOP;
   currentState.remainingHeight = PAGE_HEIGHT - MARGIN_TOP - MARGIN_BOTTOM;
 
@@ -279,18 +291,18 @@ async function renderTitlePage(
 }
 
 /**
- * Renders centered title page elements (title, credit, author, source)
+ * Generates instructions for centered title page elements
  */
-async function renderCenteredTitleElements(
-  page: PDFPage,
+function generateCenteredTitleElementInstructions(
+  instructions: Instruction[],
   pageState: PageState,
   elements: { key: string; values: StyledText[] }[],
   fountainScript: FountainScript,
-): Promise<PageState> {
+): PageState {
   let currentY = TITLE_PAGE_CENTER_START;
 
   for (const element of elements) {
-    // Render the values (no keys on title page)
+    // Generate instructions for the values (no keys on title page)
     for (const styledText of element.values) {
       const segments = extractStyledSegments(
         styledText,
@@ -302,61 +314,50 @@ async function renderCenteredTitleElements(
         // Calculate line width for centering
         let lineWidth = 0;
         for (const segment of line) {
-          const font = selectFont(pageState, segment);
-          lineWidth += font.widthOfTextAtSize(segment.text, pageState.fontSize);
+          // Estimate width using average character width for Courier
+          lineWidth += segment.text.length * (pageState.fontSize * 0.6);
         }
 
         let x = TITLE_PAGE_CENTER_X - lineWidth / 2;
 
-        // Draw each segment with appropriate styling
+        // Generate instruction for each segment with appropriate styling
         for (const segment of line) {
-          const font = selectFont(pageState, segment);
-
-          page.drawText(segment.text, {
-            x,
-            y: currentY,
-            size: pageState.fontSize,
-            font,
-            color: rgb(0, 0, 0),
-          });
-
-          // Handle underline
-          if (segment.underline) {
-            const textWidth = font.widthOfTextAtSize(
-              segment.text,
-              pageState.fontSize,
-            );
-            page.drawLine({
-              start: { x, y: currentY - 2 },
-              end: { x: x + textWidth, y: currentY - 2 },
-              thickness: 1,
-              color: rgb(0, 0, 0),
+          if (segment.text.length > 0) {
+            instructions.push({
+              type: "text",
+              data: segment.text,
+              x,
+              y: PAGE_HEIGHT - currentY, // Convert to PDF coordinate system (bottom-left origin)
+              bold: segment.bold || false,
+              italic: segment.italic || false,
+              underline: segment.underline || false,
             });
-          }
 
-          x += font.widthOfTextAtSize(segment.text, pageState.fontSize);
+            // Estimate segment width for positioning next segment
+            x += segment.text.length * (pageState.fontSize * 0.6);
+          }
         }
 
-        currentY -= pageState.lineHeight;
+        currentY += pageState.lineHeight;
       }
     }
 
     // Add spacing between different keys
-    currentY -= pageState.lineHeight;
+    currentY += pageState.lineHeight;
   }
 
   return { ...pageState, currentY };
 }
 
 /**
- * Renders lower-left title page elements (contact, draft date)
+ * Generates instructions for lower-left title page elements
  */
-async function renderLowerLeftTitleElements(
-  page: PDFPage,
+function generateLowerLeftTitleElementInstructions(
+  instructions: Instruction[],
   pageState: PageState,
   elements: { key: string; values: StyledText[] }[],
   fountainScript: FountainScript,
-): Promise<PageState> {
+): PageState {
   // Calculate total height needed for all elements
   let totalHeight = 0;
   for (const element of elements) {
@@ -375,51 +376,36 @@ async function renderLowerLeftTitleElements(
   let currentY = MARGIN_BOTTOM + totalHeight;
 
   for (const element of elements) {
-    // Render the values (no keys on title page)
     for (const styledText of element.values) {
       const segments = extractStyledSegments(
         styledText,
         fountainScript.document,
       );
-      const wrappedLines = wrapStyledText(segments, 55); // Max ~55 chars for lower-left
+      const wrappedLines = wrapStyledText(segments, 55);
 
       for (const line of wrappedLines) {
         let x = MARGIN_LEFT;
 
-        // Draw each segment with appropriate styling
         for (const segment of line) {
-          const font = selectFont(pageState, segment);
-
-          page.drawText(segment.text, {
-            x,
-            y: currentY,
-            size: pageState.fontSize,
-            font,
-            color: rgb(0, 0, 0),
-          });
-
-          // Handle underline
-          if (segment.underline) {
-            const textWidth = font.widthOfTextAtSize(
-              segment.text,
-              pageState.fontSize,
-            );
-            page.drawLine({
-              start: { x, y: currentY - 2 },
-              end: { x: x + textWidth, y: currentY - 2 },
-              thickness: 1,
-              color: rgb(0, 0, 0),
+          if (segment.text.length > 0) {
+            instructions.push({
+              type: "text",
+              data: segment.text,
+              x,
+              y: currentY, // Already in PDF coordinate system
+              bold: segment.bold || false,
+              italic: segment.italic || false,
+              underline: segment.underline || false,
             });
-          }
 
-          x += font.widthOfTextAtSize(segment.text, pageState.fontSize);
+            x += segment.text.length * (pageState.fontSize * 0.6);
+          }
         }
 
         currentY -= pageState.lineHeight;
       }
     }
 
-    // Add spacing between different keys
     currentY -= pageState.lineHeight;
   }
 
@@ -427,14 +413,14 @@ async function renderLowerLeftTitleElements(
 }
 
 /**
- * Renders lower-right title page elements (draft date)
+ * Generates instructions for lower-right title page elements
  */
-async function renderLowerRightTitleElements(
-  page: PDFPage,
+function generateLowerRightTitleElementInstructions(
+  instructions: Instruction[],
   pageState: PageState,
   elements: { key: string; values: StyledText[] }[],
   fountainScript: FountainScript,
-): Promise<PageState> {
+): PageState {
   // Calculate total height needed for all elements
   let totalHeight = 0;
   for (const element of elements) {
@@ -446,14 +432,12 @@ async function renderLowerRightTitleElements(
       const wrappedLines = wrapStyledText(segments, 55);
       totalHeight += wrappedLines.length * pageState.lineHeight;
     }
-    totalHeight += pageState.lineHeight; // spacing between elements
+    totalHeight += pageState.lineHeight;
   }
 
-  // Start from bottom margin and work upward
   let currentY = MARGIN_BOTTOM + totalHeight;
 
   for (const element of elements) {
-    // Render the values (no keys on title page)
     for (const styledText of element.values) {
       const segments = extractStyledSegments(
         styledText,
@@ -465,46 +449,31 @@ async function renderLowerRightTitleElements(
         // Calculate line width for right alignment
         let lineWidth = 0;
         for (const segment of line) {
-          const font = selectFont(pageState, segment);
-          lineWidth += font.widthOfTextAtSize(segment.text, pageState.fontSize);
+          lineWidth += segment.text.length * (pageState.fontSize * 0.6);
         }
 
         let x = PAGE_WIDTH - MARGIN_RIGHT - lineWidth;
 
-        // Draw each segment with appropriate styling
         for (const segment of line) {
-          const font = selectFont(pageState, segment);
-
-          page.drawText(segment.text, {
-            x,
-            y: currentY,
-            size: pageState.fontSize,
-            font,
-            color: rgb(0, 0, 0),
-          });
-
-          // Handle underline
-          if (segment.underline) {
-            const textWidth = font.widthOfTextAtSize(
-              segment.text,
-              pageState.fontSize,
-            );
-            page.drawLine({
-              start: { x, y: currentY - 2 },
-              end: { x: x + textWidth, y: currentY - 2 },
-              thickness: 1,
-              color: rgb(0, 0, 0),
+          if (segment.text.length > 0) {
+            instructions.push({
+              type: "text",
+              data: segment.text,
+              x,
+              y: currentY,
+              bold: segment.bold || false,
+              italic: segment.italic || false,
+              underline: segment.underline || false,
             });
-          }
 
-          x += font.widthOfTextAtSize(segment.text, pageState.fontSize);
+            x += segment.text.length * (pageState.fontSize * 0.6);
+          }
         }
 
         currentY -= pageState.lineHeight;
       }
     }
 
-    // Add spacing between different keys
     currentY -= pageState.lineHeight;
   }
 
@@ -512,156 +481,436 @@ async function renderLowerRightTitleElements(
 }
 
 /**
- * Renders a scene heading with proper positioning and formatting
+ * Generates instructions for a scene heading
  */
-async function renderScene(
-  doc: PDFDocument,
+function generateSceneInstructions(
+  instructions: Instruction[],
   pageState: PageState,
   scene: Scene,
   fountainScript: FountainScript,
-): Promise<PageState> {
+): PageState {
   // Extract the scene text from the document
   const sceneText = fountainScript.document
     .substring(scene.range.start, scene.range.end)
     .trim()
     .toUpperCase(); // Scene headings are typically uppercase
 
-  // Get the current page
-  const currentPage = doc.getPages()[doc.getPageCount() - 1];
-
   // Add spacing before scene heading if there was a previous element
   let newY = pageState.currentY;
   if (pageState.lastElementType !== null) {
-    newY -= pageState.lineHeight; // Single line spacing before scene
+    newY += pageState.lineHeight; // Single line spacing before scene
   }
 
-  // Check if we need a page break (simplified logic for Phase 2)
-  if (newY - pageState.lineHeight < pageState.margins.bottom) {
+  // Check if we need a page break
+  if (newY + pageState.lineHeight > PAGE_HEIGHT - pageState.margins.bottom) {
     // Create new page
-    doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    instructions.push({
+      type: "new-page",
+      width: PAGE_WIDTH,
+      height: PAGE_HEIGHT,
+    });
     newY = PAGE_HEIGHT - pageState.margins.top;
   }
 
-  // Render the scene heading (always use base font for scene headings)
-  currentPage.drawText(sceneText, {
+  // Generate instruction for scene heading
+  instructions.push({
+    type: "text",
+    data: sceneText,
     x: SCENE_HEADING_INDENT,
-    y: newY,
-    size: pageState.fontSize,
-    font: pageState.boldFont,
-    color: rgb(0, 0, 0),
+    y: PAGE_HEIGHT - newY, // Convert to PDF coordinate system
+    bold: true,
+    italic: false,
+    underline: false,
   });
 
   // Update page state
   return {
     ...pageState,
-    currentY: newY - pageState.lineHeight,
+    currentY: newY + pageState.lineHeight,
     lastElementType: "scene",
     pendingSpacing: 0,
   };
 }
 
 /**
- * Renders an action block with proper text wrapping and positioning
+ * Generates instructions for an action block
  */
-async function renderAction(
-  doc: PDFDocument,
+function generateActionInstructions(
+  instructions: Instruction[],
   pageState: PageState,
   action: Action,
   fountainScript: FountainScript,
-): Promise<PageState> {
+): PageState {
   // Extract styled text from all lines in the action block
   const actionLines: StyledTextSegment[][] = [];
 
   for (const line of action.lines) {
     if (line.elements.length > 0) {
-      // Extract styled text segments from the line elements
       const styledSegments = extractStyledSegments(
         line.elements,
         fountainScript.document,
       );
-      // Wrap styled segments to fit within action block width (max ~55 characters)
       const wrappedLines = wrapStyledText(styledSegments, 55);
       actionLines.push(...wrappedLines);
     } else {
-      // Empty line - preserve spacing
       actionLines.push([]);
     }
   }
 
-  // Get the current page
-  let currentPage = doc.getPages()[doc.getPageCount() - 1];
   let currentY = pageState.currentY;
 
   // Add spacing before action block if there was a previous element
   if (pageState.lastElementType !== null) {
-    currentY -= pageState.lineHeight; // Single line spacing before action
+    currentY += pageState.lineHeight;
   }
 
-  // Render each line of the action block
-  for (let i = 0; i < actionLines.length; i++) {
-    const line = actionLines[i];
-
+  // Generate instructions for each line of the action block
+  for (const line of actionLines) {
     // Check if we need a page break
-    if (currentY - pageState.lineHeight < pageState.margins.bottom) {
-      // Create new page
-      doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-      currentPage = doc.getPages()[doc.getPageCount() - 1];
+    if (
+      currentY + pageState.lineHeight >
+      PAGE_HEIGHT - pageState.margins.bottom
+    ) {
+      instructions.push({
+        type: "new-page",
+        width: PAGE_WIDTH,
+        height: PAGE_HEIGHT,
+      });
       currentY = PAGE_HEIGHT - pageState.margins.top;
     }
 
-    // Render the line with styled segments
+    // Generate instructions for the line with styled segments
     if (line.length > 0) {
       let currentX = ACTION_INDENT;
       for (const segment of line) {
         if (segment.text.length > 0) {
-          // Select appropriate font based on styling
-          const selectedFont = selectFont(pageState, segment);
-
-          // Render the text with appropriate font
-          currentPage.drawText(segment.text, {
+          instructions.push({
+            type: "text",
+            data: segment.text,
             x: currentX,
-            y: currentY,
-            size: pageState.fontSize,
-            font: selectedFont,
-            color: rgb(0, 0, 0),
+            y: PAGE_HEIGHT - currentY,
+            bold: segment.bold || false,
+            italic: segment.italic || false,
+            underline: segment.underline || false,
           });
 
-          // Draw underline if needed
-          if (segment.underline) {
-            const textWidth = selectedFont.widthOfTextAtSize(
-              segment.text,
-              pageState.fontSize,
-            );
-            const underlineY = currentY - 2; // Position underline slightly below baseline
-            currentPage.drawLine({
-              start: { x: currentX, y: underlineY },
-              end: { x: currentX + textWidth, y: underlineY },
-              thickness: 1,
-              color: rgb(0, 0, 0),
-            });
-          }
-
-          // Calculate text width to position next segment
-          const textWidth = selectedFont.widthOfTextAtSize(
-            segment.text,
-            pageState.fontSize,
-          );
-          currentX += textWidth;
+          currentX += segment.text.length * (pageState.fontSize * 0.6);
         }
       }
     }
 
-    // Move to next line
-    currentY -= pageState.lineHeight;
+    currentY += pageState.lineHeight;
   }
 
-  // Update page state
   return {
     ...pageState,
-    currentY: currentY,
+    currentY,
     lastElementType: "action",
     pendingSpacing: 0,
   };
+}
+
+/**
+ * Generates instructions for a dialogue block
+ */
+function generateDialogueInstructions(
+  instructions: Instruction[],
+  pageState: PageState,
+  dialogue: Dialogue,
+  fountainScript: FountainScript,
+): PageState {
+  let currentY = pageState.currentY;
+
+  // Add spacing before dialogue block if there was a previous element
+  if (pageState.lastElementType !== null) {
+    currentY += pageState.lineHeight;
+  }
+
+  // Extract character name
+  const characterName = fountainScript.document
+    .substring(dialogue.characterRange.start, dialogue.characterRange.end)
+    .trim()
+    .toUpperCase();
+
+  // Extract character extensions if they exist
+  let characterExtensions = "";
+  if (
+    dialogue.characterExtensionsRange.start !==
+    dialogue.characterExtensionsRange.end
+  ) {
+    characterExtensions = fountainScript.document
+      .substring(
+        dialogue.characterExtensionsRange.start,
+        dialogue.characterExtensionsRange.end,
+      )
+      .trim();
+  }
+
+  const fullCharacterLine = characterName + characterExtensions;
+
+  // Check if we need a page break for character name
+  if (
+    currentY + pageState.lineHeight >
+    PAGE_HEIGHT - pageState.margins.bottom
+  ) {
+    instructions.push({
+      type: "new-page",
+      width: PAGE_WIDTH,
+      height: PAGE_HEIGHT,
+    });
+    currentY = PAGE_HEIGHT - pageState.margins.top;
+  }
+
+  // Generate instruction for character name
+  instructions.push({
+    type: "text",
+    data: fullCharacterLine,
+    x: CHARACTER_INDENT,
+    y: PAGE_HEIGHT - currentY,
+    bold: false,
+    italic: false,
+    underline: false,
+  });
+  currentY += pageState.lineHeight;
+
+  // Generate instructions for parenthetical if it exists
+  if (dialogue.parenthetical) {
+    if (
+      currentY + pageState.lineHeight >
+      PAGE_HEIGHT - pageState.margins.bottom
+    ) {
+      instructions.push({
+        type: "new-page",
+        width: PAGE_WIDTH,
+        height: PAGE_HEIGHT,
+      });
+      currentY = PAGE_HEIGHT - pageState.margins.top;
+    }
+
+    const parentheticalText = fountainScript.document
+      .substring(dialogue.parenthetical.start, dialogue.parenthetical.end)
+      .trim();
+
+    const wrappedParentheticals = wrapPlainText(parentheticalText, 16);
+
+    for (const parentheticalLine of wrappedParentheticals) {
+      if (
+        currentY + pageState.lineHeight >
+        PAGE_HEIGHT - pageState.margins.bottom
+      ) {
+        instructions.push({
+          type: "new-page",
+          width: PAGE_WIDTH,
+          height: PAGE_HEIGHT,
+        });
+        currentY = PAGE_HEIGHT - pageState.margins.top;
+      }
+
+      instructions.push({
+        type: "text",
+        data: parentheticalLine,
+        x: PARENTHETICAL_INDENT,
+        y: PAGE_HEIGHT - currentY,
+        bold: false,
+        italic: false,
+        underline: false,
+      });
+      currentY += pageState.lineHeight;
+    }
+  }
+
+  // Generate instructions for dialogue lines
+  for (const line of dialogue.lines) {
+    if (line.elements.length > 0) {
+      const styledSegments = extractStyledSegments(
+        line.elements,
+        fountainScript.document,
+      );
+      const wrappedLines = wrapStyledText(styledSegments, 35);
+
+      for (const wrappedLine of wrappedLines) {
+        if (
+          currentY + pageState.lineHeight >
+          PAGE_HEIGHT - pageState.margins.bottom
+        ) {
+          instructions.push({
+            type: "new-page",
+            width: PAGE_WIDTH,
+            height: PAGE_HEIGHT,
+          });
+          currentY = PAGE_HEIGHT - pageState.margins.top;
+        }
+
+        if (wrappedLine.length > 0) {
+          let currentX = DIALOGUE_INDENT;
+          for (const segment of wrappedLine) {
+            if (segment.text.length > 0) {
+              instructions.push({
+                type: "text",
+                data: segment.text,
+                x: currentX,
+                y: PAGE_HEIGHT - currentY,
+                bold: segment.bold || false,
+                italic: segment.italic || false,
+                underline: segment.underline || false,
+              });
+
+              currentX += segment.text.length * (pageState.fontSize * 0.6);
+            }
+          }
+        }
+        currentY += pageState.lineHeight;
+      }
+    } else {
+      if (
+        currentY + pageState.lineHeight >
+        PAGE_HEIGHT - pageState.margins.bottom
+      ) {
+        instructions.push({
+          type: "new-page",
+          width: PAGE_WIDTH,
+          height: PAGE_HEIGHT,
+        });
+        currentY = PAGE_HEIGHT - pageState.margins.top;
+      }
+      currentY += pageState.lineHeight;
+    }
+  }
+
+  return {
+    ...pageState,
+    currentY,
+    lastElementType: "dialogue",
+    pendingSpacing: 0,
+  };
+}
+
+/**
+ * Generates instructions for a transition
+ */
+function generateTransitionInstructions(
+  instructions: Instruction[],
+  pageState: PageState,
+  transition: Transition,
+  fountainScript: FountainScript,
+): PageState {
+  // Extract the transition text from the document
+  const transitionText = fountainScript.document
+    .substring(transition.range.start, transition.range.end)
+    .trim()
+    .toUpperCase();
+
+  let currentY = pageState.currentY;
+
+  // Add spacing before transition if there was a previous element
+  if (pageState.lastElementType !== null) {
+    currentY += pageState.lineHeight;
+  }
+
+  // Check if we need a page break
+  if (
+    currentY + pageState.lineHeight >
+    PAGE_HEIGHT - pageState.margins.bottom
+  ) {
+    instructions.push({
+      type: "new-page",
+      width: PAGE_WIDTH,
+      height: PAGE_HEIGHT,
+    });
+    currentY = PAGE_HEIGHT - pageState.margins.top;
+  }
+
+  // Calculate right-aligned position
+  const textWidth = transitionText.length * (pageState.fontSize * 0.6);
+  const rightAlignedX = TRANSITION_INDENT - textWidth;
+
+  // Generate instruction for transition
+  instructions.push({
+    type: "text",
+    data: transitionText,
+    x: rightAlignedX,
+    y: PAGE_HEIGHT - currentY,
+    bold: false,
+    italic: false,
+    underline: false,
+  });
+
+  return {
+    ...pageState,
+    currentY: currentY + pageState.lineHeight,
+    lastElementType: "transition",
+    pendingSpacing: 0,
+  };
+}
+
+/**
+ * Executes instructions to create the final PDF document
+ */
+export async function renderInstructionsToPDF(
+  instructions: Instruction[],
+): Promise<PDFDocument> {
+  const pdfDoc = await PDFDocument.create();
+
+  // Embed Courier font variants
+  const courierFont = await pdfDoc.embedFont(StandardFonts.Courier);
+  const courierBoldFont = await pdfDoc.embedFont(StandardFonts.CourierBold);
+  const courierObliqueFont = await pdfDoc.embedFont(
+    StandardFonts.CourierOblique,
+  );
+  const courierBoldObliqueFont = await pdfDoc.embedFont(
+    StandardFonts.CourierBoldOblique,
+  );
+
+  let currentPage: PDFPage | null = null;
+
+  for (const instruction of instructions) {
+    switch (instruction.type) {
+      case "new-page":
+        currentPage = pdfDoc.addPage([instruction.width, instruction.height]);
+        break;
+
+      case "text": {
+        if (!currentPage) {
+          throw new Error(
+            "Text instruction encountered without a current page",
+          );
+        }
+
+        // Select appropriate font
+        let font = courierFont;
+        if (instruction.bold && instruction.italic) {
+          font = courierBoldObliqueFont;
+        } else if (instruction.bold) {
+          font = courierBoldFont;
+        } else if (instruction.italic) {
+          font = courierObliqueFont;
+        }
+
+        // Render text
+        currentPage.drawText(instruction.data, {
+          x: instruction.x,
+          y: instruction.y,
+          size: FONT_SIZE,
+          font,
+          color: rgb(0, 0, 0),
+        });
+
+        // Handle underline if needed
+        if (instruction.underline) {
+          const textWidth = font.widthOfTextAtSize(instruction.data, FONT_SIZE);
+          currentPage.drawLine({
+            start: { x: instruction.x, y: instruction.y - 2 },
+            end: { x: instruction.x + textWidth, y: instruction.y - 2 },
+            thickness: 1,
+            color: rgb(0, 0, 0),
+          });
+        }
+        break;
+      }
+    }
+  }
+
+  return pdfDoc;
 }
 
 /**
@@ -782,213 +1031,6 @@ function wrapStyledText(
 }
 
 /**
- * Selects the appropriate font based on styling flags
- */
-function selectFont(pageState: PageState, segment: StyledTextSegment): PDFFont {
-  if (segment.bold && segment.italic) {
-    return pageState.boldItalicFont;
-  }
-  if (segment.bold) {
-    return pageState.boldFont;
-  }
-  if (segment.italic) {
-    return pageState.italicFont;
-  }
-  return pageState.font;
-}
-
-// Utility functions for page management - TODO: Use these when implementing advanced page break logic
-// function createNewPage(doc: PDFDocument, pageState: PageState): PageState {
-//   const newPage = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-//   return {
-//     ...pageState,
-//     currentY: PAGE_HEIGHT - pageState.margins.top,
-//     remainingHeight:
-//       PAGE_HEIGHT - pageState.margins.top - pageState.margins.bottom,
-//     pageNumber: pageState.pageNumber + 1,
-//     isTitlePage: false,
-//     lastElementType: null,
-//     pendingSpacing: 0,
-//   };
-// }
-
-// function checkPageBreak(elementHeight: number, pageState: PageState): boolean {
-//   return pageState.currentY - elementHeight < pageState.margins.bottom;
-// }
-
-/**
- * Renders a dialogue block with character name, parenthetical, and speech lines
- */
-async function renderDialogue(
-  doc: PDFDocument,
-  pageState: PageState,
-  dialogue: Dialogue,
-  fountainScript: FountainScript,
-): Promise<PageState> {
-  let currentPage = doc.getPages()[doc.getPageCount() - 1];
-  let currentY = pageState.currentY;
-
-  // Add spacing before dialogue block if there was a previous element
-  if (pageState.lastElementType !== null) {
-    currentY -= pageState.lineHeight; // Single line spacing before dialogue
-  }
-
-  // Extract character name (always uppercase for character names)
-  const characterName = fountainScript.document
-    .substring(dialogue.characterRange.start, dialogue.characterRange.end)
-    .trim()
-    .toUpperCase();
-
-  // Extract character extensions if they exist
-  let characterExtensions = "";
-  if (
-    dialogue.characterExtensionsRange.start !==
-    dialogue.characterExtensionsRange.end
-  ) {
-    characterExtensions = fountainScript.document
-      .substring(
-        dialogue.characterExtensionsRange.start,
-        dialogue.characterExtensionsRange.end,
-      )
-      .trim();
-  }
-
-  const fullCharacterLine = characterName + characterExtensions;
-
-  // Check if we need a page break for character name
-  if (currentY - pageState.lineHeight < pageState.margins.bottom) {
-    doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-    currentPage = doc.getPages()[doc.getPageCount() - 1];
-    currentY = PAGE_HEIGHT - pageState.margins.top;
-  }
-
-  // Render character name (centered)
-  currentPage.drawText(fullCharacterLine, {
-    x: CHARACTER_INDENT,
-    y: currentY,
-    size: pageState.fontSize,
-    font: pageState.font,
-    color: rgb(0, 0, 0),
-  });
-  currentY -= pageState.lineHeight;
-
-  // Render parenthetical if it exists
-  if (dialogue.parenthetical) {
-    // Check if we need a page break for parenthetical
-    if (currentY - pageState.lineHeight < pageState.margins.bottom) {
-      doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-      currentPage = doc.getPages()[doc.getPageCount() - 1];
-      currentY = PAGE_HEIGHT - pageState.margins.top;
-    }
-
-    const parentheticalText = fountainScript.document
-      .substring(dialogue.parenthetical.start, dialogue.parenthetical.end)
-      .trim();
-
-    // Wrap parenthetical text to fit within limits (max ~16 characters)
-    const wrappedParentheticals = wrapPlainText(parentheticalText, 16);
-
-    for (const parentheticalLine of wrappedParentheticals) {
-      if (currentY - pageState.lineHeight < pageState.margins.bottom) {
-        doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-        currentPage = doc.getPages()[doc.getPageCount() - 1];
-        currentY = PAGE_HEIGHT - pageState.margins.top;
-      }
-
-      currentPage.drawText(parentheticalLine, {
-        x: PARENTHETICAL_INDENT,
-        y: currentY,
-        size: pageState.fontSize,
-        font: pageState.font,
-        color: rgb(0, 0, 0),
-      });
-      currentY -= pageState.lineHeight;
-    }
-  }
-
-  // Render dialogue lines
-  for (const line of dialogue.lines) {
-    if (line.elements.length > 0) {
-      // Extract styled text segments from the line elements
-      const styledSegments = extractStyledSegments(
-        line.elements,
-        fountainScript.document,
-      );
-      // Wrap styled segments to fit within dialogue width (max ~35 characters)
-      const wrappedLines = wrapStyledText(styledSegments, 35);
-
-      for (const wrappedLine of wrappedLines) {
-        // Check if we need a page break
-        if (currentY - pageState.lineHeight < pageState.margins.bottom) {
-          doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-          currentPage = doc.getPages()[doc.getPageCount() - 1];
-          currentY = PAGE_HEIGHT - pageState.margins.top;
-        }
-
-        // Render the line with styled segments
-        if (wrappedLine.length > 0) {
-          let currentX = DIALOGUE_INDENT;
-          for (const segment of wrappedLine) {
-            if (segment.text.length > 0) {
-              // Select appropriate font based on styling
-              const selectedFont = selectFont(pageState, segment);
-
-              // Render the text with appropriate font
-              currentPage.drawText(segment.text, {
-                x: currentX,
-                y: currentY,
-                size: pageState.fontSize,
-                font: selectedFont,
-                color: rgb(0, 0, 0),
-              });
-
-              // Draw underline if needed
-              if (segment.underline) {
-                const textWidth = selectedFont.widthOfTextAtSize(
-                  segment.text,
-                  pageState.fontSize,
-                );
-                const underlineY = currentY - 2; // Position underline slightly below baseline
-                currentPage.drawLine({
-                  start: { x: currentX, y: underlineY },
-                  end: { x: currentX + textWidth, y: underlineY },
-                  thickness: 1,
-                  color: rgb(0, 0, 0),
-                });
-              }
-
-              // Calculate text width to position next segment
-              const textWidth = selectedFont.widthOfTextAtSize(
-                segment.text,
-                pageState.fontSize,
-              );
-              currentX += textWidth;
-            }
-          }
-        }
-        currentY -= pageState.lineHeight;
-      }
-    } else {
-      // Empty line - preserve spacing
-      if (currentY - pageState.lineHeight < pageState.margins.bottom) {
-        doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-        currentPage = doc.getPages()[doc.getPageCount() - 1];
-        currentY = PAGE_HEIGHT - pageState.margins.top;
-      }
-      currentY -= pageState.lineHeight;
-    }
-  }
-
-  // Update page state
-  return {
-    ...pageState,
-    currentY: currentY,
-    lastElementType: "dialogue",
-    pendingSpacing: 0,
-  };
-}
-
-/**
  * Simple text wrapping for plain text (used for parentheticals)
  */
 function wrapPlainText(text: string, maxChars: number): string[] {
@@ -1039,100 +1081,4 @@ function wrapPlainText(text: string, maxChars: number): string[] {
   }
 
   return lines.length > 0 ? lines : [""];
-}
-
-/**
- * Renders a transition with proper right-alignment
- */
-async function renderTransition(
-  doc: PDFDocument,
-  pageState: PageState,
-  transition: Transition,
-  fountainScript: FountainScript,
-): Promise<PageState> {
-  // Extract the transition text from the document
-  const transitionText = fountainScript.document
-    .substring(transition.range.start, transition.range.end)
-    .trim()
-    .toUpperCase(); // Transitions are typically uppercase
-
-  // Get the current page
-  let currentPage = doc.getPages()[doc.getPageCount() - 1];
-  let currentY = pageState.currentY;
-
-  // Add spacing before transition if there was a previous element
-  if (pageState.lastElementType !== null) {
-    currentY -= pageState.lineHeight; // Single line spacing before transition
-  }
-
-  // Check if we need a page break
-  if (currentY - pageState.lineHeight < pageState.margins.bottom) {
-    // Create new page
-    doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-    currentPage = doc.getPages()[doc.getPageCount() - 1];
-    currentY = PAGE_HEIGHT - pageState.margins.top;
-  }
-
-  // Calculate the width of the text to position it right-aligned
-  const textWidth = pageState.font.widthOfTextAtSize(
-    transitionText,
-    pageState.fontSize,
-  );
-  const rightAlignedX = TRANSITION_INDENT - textWidth;
-
-  // Render the transition (right-aligned)
-  currentPage.drawText(transitionText, {
-    x: rightAlignedX,
-    y: currentY,
-    size: pageState.fontSize,
-    font: pageState.font,
-    color: rgb(0, 0, 0),
-  });
-
-  // Update page state
-  return {
-    ...pageState,
-    currentY: currentY - pageState.lineHeight,
-    lastElementType: "transition",
-    pendingSpacing: 0,
-  };
-}
-
-/**
- * Utility function to extract plain text from StyledText
- * Recursively walks through styled elements and extracts raw text from the document
- */
-function extractPlainText(styledText: StyledText[], document: string): string {
-  const textParts: string[] = [];
-
-  for (const styledTextArray of styledText) {
-    for (const element of styledTextArray) {
-      textParts.push(extractTextFromElement(element, document));
-    }
-  }
-
-  return textParts.join("");
-}
-
-/**
- * Helper function to extract text from a single text element
- */
-function extractTextFromElement(
-  element: TextElementWithNotesAndBoneyard,
-  document: string,
-): string {
-  switch (element.kind) {
-    case "text":
-      // Extract raw text from the document using the range
-      return document.substring(element.range.start, element.range.end);
-    case "bold":
-    case "italics":
-    case "underline":
-      // Recursively extract text from styled elements
-      return extractPlainText([element.elements], document);
-    case "note":
-    case "boneyard":
-      // Skip notes and boneyard content for PDF output
-      return "";
-  }
 }
