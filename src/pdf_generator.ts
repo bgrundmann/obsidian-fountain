@@ -6,6 +6,7 @@ import type {
   Scene,
   StyledText,
   TextElementWithNotesAndBoneyard,
+  Transition,
 } from "./fountain";
 
 // Type for tracking styled text segments during rendering
@@ -35,6 +36,7 @@ const ACTION_INDENT = 126; // 1.75"
 const CHARACTER_INDENT = 306; // ~4.25" (centered)
 const DIALOGUE_INDENT = 198; // 2.75"
 const PARENTHETICAL_INDENT = 252; // 3.5"
+const TRANSITION_INDENT = 522; // Right-aligned to 7.25" (PAGE_WIDTH - 90)
 
 // Page state type for tracking position and layout
 type PageState = {
@@ -159,7 +161,12 @@ async function renderScript(
         );
         break;
       case "transition":
-        // TODO: Phase 2 - implement transition rendering
+        currentState = await renderTransition(
+          doc,
+          currentState,
+          element,
+          fountainScript,
+        );
         break;
       case "synopsis":
       case "section":
@@ -700,6 +707,63 @@ function wrapPlainText(text: string, maxChars: number): string[] {
   }
 
   return lines.length > 0 ? lines : [""];
+}
+
+/**
+ * Renders a transition with proper right-alignment
+ */
+async function renderTransition(
+  doc: PDFDocument,
+  pageState: PageState,
+  transition: Transition,
+  fountainScript: FountainScript,
+): Promise<PageState> {
+  // Extract the transition text from the document
+  const transitionText = fountainScript.document
+    .substring(transition.range.start, transition.range.end)
+    .trim()
+    .toUpperCase(); // Transitions are typically uppercase
+
+  // Get the current page
+  let currentPage = doc.getPages()[doc.getPageCount() - 1];
+  let currentY = pageState.currentY;
+
+  // Add spacing before transition if there was a previous element
+  if (pageState.lastElementType !== null) {
+    currentY -= pageState.lineHeight; // Single line spacing before transition
+  }
+
+  // Check if we need a page break
+  if (currentY - pageState.lineHeight < pageState.margins.bottom) {
+    // Create new page
+    doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    currentPage = doc.getPages()[doc.getPageCount() - 1];
+    currentY = PAGE_HEIGHT - pageState.margins.top;
+  }
+
+  // Calculate the width of the text to position it right-aligned
+  const textWidth = pageState.font.widthOfTextAtSize(
+    transitionText,
+    pageState.fontSize,
+  );
+  const rightAlignedX = TRANSITION_INDENT - textWidth;
+
+  // Render the transition (right-aligned)
+  currentPage.drawText(transitionText, {
+    x: rightAlignedX,
+    y: currentY,
+    size: pageState.fontSize,
+    font: pageState.font,
+    color: rgb(0, 0, 0),
+  });
+
+  // Update page state
+  return {
+    ...pageState,
+    currentY: currentY - pageState.lineHeight,
+    lastElementType: "transition",
+    pendingSpacing: 0,
+  };
 }
 
 /**

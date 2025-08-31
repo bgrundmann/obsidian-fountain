@@ -84,7 +84,7 @@ FountainToPDF
 - [X] Implement action blocks with proper wrapping
 - [X] Visual formatting for action blocks (bold, italic, underline)
 - [X] Implement dialogue (character, parentheticals, speech)
-- [ ] Implement transitions
+- [X] Implement transitions
 
 #### Phase 3: Advanced Features
 - [ ] Handle page breaks intelligently
