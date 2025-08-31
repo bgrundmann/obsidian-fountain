@@ -547,7 +547,7 @@ async function renderScene(
     x: SCENE_HEADING_INDENT,
     y: newY,
     size: pageState.fontSize,
-    font: pageState.font,
+    font: pageState.boldFont,
     color: rgb(0, 0, 0),
   });
 
