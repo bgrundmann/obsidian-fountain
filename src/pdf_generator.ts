@@ -46,7 +46,6 @@ const TRANSITION_INDENT = 522; // Right-aligned to 7.25" (PAGE_WIDTH - 90)
 
 // Title page positioning
 const TITLE_PAGE_CENTER_START = 475.2; // ~40% down from top (PAGE_HEIGHT - PAGE_HEIGHT * 0.4)
-const TITLE_PAGE_LOWER_LEFT_START = 200; // ~75% down from top, leaving room above bottom margin
 const TITLE_PAGE_CENTER_X = 306; // Page center (PAGE_WIDTH / 2)
 
 // Page state type for tracking position and layout
@@ -217,10 +216,12 @@ async function renderTitlePage(
     "authors",
     "source",
   ]);
-  const lowerLeftKeys = new Set(["contact", "draft date"]);
+  const lowerLeftKeys = new Set(["contact"]);
+  const lowerRightKeys = new Set(["draft date"]);
 
   const centeredElements: { key: string; values: StyledText[] }[] = [];
   const lowerLeftElements: { key: string; values: StyledText[] }[] = [];
+  const lowerRightElements: { key: string; values: StyledText[] }[] = [];
 
   // Categorize title page elements
   for (const element of fountainScript.titlePage) {
@@ -229,6 +230,8 @@ async function renderTitlePage(
       centeredElements.push(element);
     } else if (lowerLeftKeys.has(keyLower)) {
       lowerLeftElements.push(element);
+    } else if (lowerRightKeys.has(keyLower)) {
+      lowerRightElements.push(element);
     }
     // Ignore all other keys as per specification
   }
@@ -249,6 +252,16 @@ async function renderTitlePage(
       page,
       currentState,
       lowerLeftElements,
+      fountainScript,
+    );
+  }
+
+  // Render lower-right elements
+  if (lowerRightElements.length > 0) {
+    currentState = await renderLowerRightTitleElements(
+      page,
+      currentState,
+      lowerRightElements,
       fountainScript,
     );
   }
@@ -277,27 +290,7 @@ async function renderCenteredTitleElements(
   let currentY = TITLE_PAGE_CENTER_START;
 
   for (const element of elements) {
-    // Render the key (e.g., "Title:", "Written by:")
-    const keyText = element.key.endsWith(":") ? element.key : `${element.key}:`;
-
-    // Calculate text width for centering
-    const keyWidth = pageState.font.widthOfTextAtSize(
-      keyText,
-      pageState.fontSize,
-    );
-    const keyX = TITLE_PAGE_CENTER_X - keyWidth / 2;
-
-    page.drawText(keyText, {
-      x: keyX,
-      y: currentY,
-      size: pageState.fontSize,
-      font: pageState.font,
-      color: rgb(0, 0, 0),
-    });
-
-    currentY -= pageState.lineHeight;
-
-    // Render the values
+    // Render the values (no keys on title page)
     for (const styledText of element.values) {
       const segments = extractStyledSegments(
         styledText,
@@ -364,23 +357,25 @@ async function renderLowerLeftTitleElements(
   elements: { key: string; values: StyledText[] }[],
   fountainScript: FountainScript,
 ): Promise<PageState> {
-  let currentY = TITLE_PAGE_LOWER_LEFT_START;
+  // Calculate total height needed for all elements
+  let totalHeight = 0;
+  for (const element of elements) {
+    for (const styledText of element.values) {
+      const segments = extractStyledSegments(
+        styledText,
+        fountainScript.document,
+      );
+      const wrappedLines = wrapStyledText(segments, 55);
+      totalHeight += wrappedLines.length * pageState.lineHeight;
+    }
+    totalHeight += pageState.lineHeight; // spacing between elements
+  }
+
+  // Start from bottom margin and work upward
+  let currentY = MARGIN_BOTTOM + totalHeight;
 
   for (const element of elements) {
-    // Render the key
-    const keyText = element.key.endsWith(":") ? element.key : `${element.key}:`;
-
-    page.drawText(keyText, {
-      x: MARGIN_LEFT,
-      y: currentY,
-      size: pageState.fontSize,
-      font: pageState.font,
-      color: rgb(0, 0, 0),
-    });
-
-    currentY -= pageState.lineHeight;
-
-    // Render the values
+    // Render the values (no keys on title page)
     for (const styledText of element.values) {
       const segments = extractStyledSegments(
         styledText,
@@ -390,6 +385,91 @@ async function renderLowerLeftTitleElements(
 
       for (const line of wrappedLines) {
         let x = MARGIN_LEFT;
+
+        // Draw each segment with appropriate styling
+        for (const segment of line) {
+          const font = selectFont(pageState, segment);
+
+          page.drawText(segment.text, {
+            x,
+            y: currentY,
+            size: pageState.fontSize,
+            font,
+            color: rgb(0, 0, 0),
+          });
+
+          // Handle underline
+          if (segment.underline) {
+            const textWidth = font.widthOfTextAtSize(
+              segment.text,
+              pageState.fontSize,
+            );
+            page.drawLine({
+              start: { x, y: currentY - 2 },
+              end: { x: x + textWidth, y: currentY - 2 },
+              thickness: 1,
+              color: rgb(0, 0, 0),
+            });
+          }
+
+          x += font.widthOfTextAtSize(segment.text, pageState.fontSize);
+        }
+
+        currentY -= pageState.lineHeight;
+      }
+    }
+
+    // Add spacing between different keys
+    currentY -= pageState.lineHeight;
+  }
+
+  return { ...pageState, currentY };
+}
+
+/**
+ * Renders lower-right title page elements (draft date)
+ */
+async function renderLowerRightTitleElements(
+  page: PDFPage,
+  pageState: PageState,
+  elements: { key: string; values: StyledText[] }[],
+  fountainScript: FountainScript,
+): Promise<PageState> {
+  // Calculate total height needed for all elements
+  let totalHeight = 0;
+  for (const element of elements) {
+    for (const styledText of element.values) {
+      const segments = extractStyledSegments(
+        styledText,
+        fountainScript.document,
+      );
+      const wrappedLines = wrapStyledText(segments, 55);
+      totalHeight += wrappedLines.length * pageState.lineHeight;
+    }
+    totalHeight += pageState.lineHeight; // spacing between elements
+  }
+
+  // Start from bottom margin and work upward
+  let currentY = MARGIN_BOTTOM + totalHeight;
+
+  for (const element of elements) {
+    // Render the values (no keys on title page)
+    for (const styledText of element.values) {
+      const segments = extractStyledSegments(
+        styledText,
+        fountainScript.document,
+      );
+      const wrappedLines = wrapStyledText(segments, 55);
+
+      for (const line of wrappedLines) {
+        // Calculate line width for right alignment
+        let lineWidth = 0;
+        for (const segment of line) {
+          const font = selectFont(pageState, segment);
+          lineWidth += font.widthOfTextAtSize(segment.text, pageState.fontSize);
+        }
+
+        let x = PAGE_WIDTH - MARGIN_RIGHT - lineWidth;
 
         // Draw each segment with appropriate styling
         for (const segment of line) {
