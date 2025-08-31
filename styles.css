@@ -400,3 +400,25 @@
 		rgba(243, 245, 39, 0.4) 70%
 	);
 }
+
+/* PDF Options Dialog */
+.pdf-warning {
+	background-color: var(--background-modifier-error);
+	border-radius: 4px;
+	padding: 0.5rem;
+	margin-bottom: 1rem;
+}
+
+.pdf-warning-text {
+	color: var(--text-error);
+	font-weight: 500;
+	margin: 0 0 0.25rem 0;
+}
+
+.pdf-warning-path {
+	font-family: var(--font-monospace);
+	font-size: 0.9em;
+	color: var(--text-muted);
+	margin: 0;
+	word-break: break-all;
+}

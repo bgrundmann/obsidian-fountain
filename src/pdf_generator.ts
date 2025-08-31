@@ -8,6 +8,7 @@ import type {
   TextElementWithNotesAndBoneyard,
   Transition,
 } from "./fountain";
+import type { PDFOptions } from "./pdf_options_dialog";
 
 // Instruction types for PDF generation
 export type Instruction = NewPageInstruction | TextInstruction;
@@ -39,8 +40,12 @@ type StyledTextSegment = {
 // Page layout constants (all measurements in PDF points - 1/72 inch)
 const FONT_SIZE = 12;
 const LINE_HEIGHT = 12; // Single spacing
-const PAGE_WIDTH = 612; // 8.5" in points
-const PAGE_HEIGHT = 792; // 11" in points
+
+// Page dimensions based on paper size
+const PAPER_SIZES = {
+  letter: { width: 612, height: 792 }, // 8.5" × 11" in points
+  a4: { width: 595.28, height: 841.89 }, // 210 × 297 mm in points
+};
 
 // Margins in points
 const MARGIN_TOP = 72; // 1"
@@ -56,9 +61,14 @@ const DIALOGUE_INDENT = 198; // 2.75"
 const PARENTHETICAL_INDENT = 252; // 3.5"
 const TRANSITION_INDENT = 522; // Right-aligned to 7.25" (PAGE_WIDTH - 90)
 
-// Title page positioning
-const TITLE_PAGE_CENTER_START = 316.8; // ~40% up from bottom (PAGE_HEIGHT * 0.4)
-const TITLE_PAGE_CENTER_X = 306; // Page center (PAGE_WIDTH / 2)
+// Title page positioning (calculated dynamically based on page height)
+function getTitlePageCenterStart(pageHeight: number): number {
+  return pageHeight * 0.4;
+}
+
+function getTitlePageCenterX(pageWidth: number): number {
+  return pageWidth / 2;
+}
 
 // Page state type for tracking position and layout
 type PageState = {
@@ -68,6 +78,8 @@ type PageState = {
 
   // Page information
   pageNumber: number; // Current page number (1-based)
+  pageWidth: number; // Current page width
+  pageHeight: number; // Current page height
   isTitlePage: boolean; // Whether this is the title page
 
   // Layout constraints
@@ -129,13 +141,13 @@ function needLines(
     // Need a new page
     instructions.push({
       type: "new-page",
-      width: PAGE_WIDTH,
-      height: PAGE_HEIGHT,
+      width: pageState.pageWidth,
+      height: pageState.pageHeight,
     });
 
     return {
       ...pageState,
-      currentY: PAGE_HEIGHT - pageState.margins.top,
+      currentY: pageState.pageHeight - pageState.margins.top,
       pageNumber: pageState.pageNumber + 1,
     };
   }
@@ -169,12 +181,13 @@ function addElementSpacing(pageState: PageState): PageState {
  */
 export async function generatePDF(
   fountainScript: FountainScript,
+  options: PDFOptions = { sceneHeadingBold: false, paperSize: "letter" },
 ): Promise<PDFDocument> {
   // Generate instructions
-  const instructions = generateInstructions(fountainScript);
+  const instructions = generateInstructions(fountainScript, options);
 
   // Execute instructions to create PDF
-  return renderInstructionsToPDF(instructions);
+  return renderInstructionsToPDF(instructions, options);
 }
 
 /**
@@ -182,14 +195,18 @@ export async function generatePDF(
  */
 export function generateInstructions(
   fountainScript: FountainScript,
+  options: PDFOptions = { sceneHeadingBold: false, paperSize: "letter" },
 ): Instruction[] {
   const instructions: Instruction[] = [];
+  const paperSize = PAPER_SIZES[options.paperSize];
 
   // Initialize page state (using PDF coordinates - bottom-left origin)
   let currentState: PageState = {
-    currentY: PAGE_HEIGHT - MARGIN_TOP, // Start at top margin in PDF coords
-    remainingHeight: PAGE_HEIGHT - MARGIN_TOP - MARGIN_BOTTOM,
+    currentY: paperSize.height - MARGIN_TOP, // Start at top margin in PDF coords
+    remainingHeight: paperSize.height - MARGIN_TOP - MARGIN_BOTTOM,
     pageNumber: 1,
+    pageWidth: paperSize.width,
+    pageHeight: paperSize.height,
     isTitlePage: true,
     margins: {
       top: MARGIN_TOP,
@@ -206,8 +223,8 @@ export function generateInstructions(
   // Add first page
   instructions.push({
     type: "new-page",
-    width: PAGE_WIDTH,
-    height: PAGE_HEIGHT,
+    width: currentState.pageWidth,
+    height: currentState.pageHeight,
   });
 
   // Generate title page instructions if it exists
@@ -216,13 +233,19 @@ export function generateInstructions(
       instructions,
       currentState,
       fountainScript,
+      options,
     );
   } else {
     currentState = { ...currentState, isTitlePage: false, pageNumber: 1 };
   }
 
   // Generate script instructions
-  generateScriptInstructions(instructions, currentState, fountainScript);
+  generateScriptInstructions(
+    instructions,
+    currentState,
+    fountainScript,
+    options,
+  );
 
   return instructions;
 }
@@ -234,6 +257,7 @@ function generateScriptInstructions(
   instructions: Instruction[],
   pageState: PageState,
   fountainScript: FountainScript,
+  options: PDFOptions,
 ): PageState {
   let currentState = pageState;
 
@@ -245,6 +269,7 @@ function generateScriptInstructions(
           currentState,
           element,
           fountainScript,
+          options,
         );
         break;
       case "action":
@@ -289,6 +314,7 @@ function generateTitlePageInstructions(
   instructions: Instruction[],
   pageState: PageState,
   fountainScript: FountainScript,
+  options: PDFOptions,
 ): PageState {
   let currentState = { ...pageState };
 
@@ -356,12 +382,13 @@ function generateTitlePageInstructions(
   // Add new page for the actual script content
   instructions.push({
     type: "new-page",
-    width: PAGE_WIDTH,
-    height: PAGE_HEIGHT,
+    width: pageState.pageWidth,
+    height: pageState.pageHeight,
   });
 
-  currentState.currentY = PAGE_HEIGHT - MARGIN_TOP;
-  currentState.remainingHeight = PAGE_HEIGHT - MARGIN_TOP - MARGIN_BOTTOM;
+  currentState.currentY = pageState.pageHeight - MARGIN_TOP;
+  currentState.remainingHeight =
+    pageState.pageHeight - MARGIN_TOP - MARGIN_BOTTOM;
 
   return currentState;
 }
@@ -375,7 +402,7 @@ function generateCenteredTitleElementInstructions(
   elements: { key: string; values: StyledText[] }[],
   fountainScript: FountainScript,
 ): PageState {
-  let currentY = TITLE_PAGE_CENTER_START;
+  let currentY = getTitlePageCenterStart(pageState.pageHeight);
 
   for (const element of elements) {
     // Generate instructions for the values (no keys on title page)
@@ -394,7 +421,7 @@ function generateCenteredTitleElementInstructions(
           lineWidth += segment.text.length * (pageState.fontSize * 0.6);
         }
 
-        let x = TITLE_PAGE_CENTER_X - lineWidth / 2;
+        let x = getTitlePageCenterX(pageState.pageWidth) - lineWidth / 2;
 
         // Generate instruction for each segment with appropriate styling
         for (const segment of line) {
@@ -500,7 +527,7 @@ function generateLowerRightTitleElementInstructions(
           lineWidth += segment.text.length * (pageState.fontSize * 0.6);
         }
 
-        let x = PAGE_WIDTH - MARGIN_RIGHT - lineWidth;
+        let x = pageState.pageWidth - MARGIN_RIGHT - lineWidth;
 
         for (const segment of line) {
           if (segment.text.length > 0) {
@@ -536,6 +563,7 @@ function generateSceneInstructions(
   pageState: PageState,
   scene: Scene,
   fountainScript: FountainScript,
+  options: PDFOptions,
 ): PageState {
   // Extract the scene text from the document
   const sceneText = fountainScript.document
@@ -551,7 +579,7 @@ function generateSceneInstructions(
   emitText(instructions, currentState, {
     data: sceneText,
     x: SCENE_HEADING_INDENT,
-    bold: true,
+    bold: options.sceneHeadingBold,
     italic: false,
     underline: false,
   });
@@ -776,6 +804,7 @@ function generateTransitionInstructions(
  */
 export async function renderInstructionsToPDF(
   instructions: Instruction[],
+  options: PDFOptions = { sceneHeadingBold: false, paperSize: "letter" },
 ): Promise<PDFDocument> {
   const pdfDoc = await PDFDocument.create();
 

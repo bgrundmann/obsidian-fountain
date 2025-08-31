@@ -149,6 +149,10 @@ FountainToPDF
 
 #### Phase 3: Advanced Features
 - [x] Add title page generation (see Title Page Generation section above)
+- [ ] Show a dialog with options before the PDF is generated
+  - checkbox: Scene heading bold?
+  - dropdown / radio buttons: Paper size (A4, Letter)
+  - A warning if target file already exist in the vault.
 - [ ] Handle page breaks intelligently
 - [ ] Implement proper spacing rules
 - [ ] Handle notes/synopsis (if visible in settings)

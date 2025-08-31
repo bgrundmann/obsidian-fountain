@@ -1,6 +1,7 @@
 import { Notice, Plugin, type TFile, type WorkspaceLeaf } from "obsidian";
 import { parse } from "./fountain_parser";
 import { generatePDF } from "./pdf_generator";
+import { type PDFOptions, PDFOptionsDialog } from "./pdf_options_dialog";
 import { TocView, VIEW_TYPE_TOC } from "./toc_view";
 import { FountainView, VIEW_TYPE_FOUNTAIN } from "./view";
 
@@ -101,23 +102,36 @@ export default class FountainPlugin extends Plugin {
         return;
       }
 
-      // Generate the PDF
-      new Notice("Generating PDF...");
-      const pdfDoc = await generatePDF(fountainScript);
+      // Show PDF options dialog
+      const dialog = new PDFOptionsDialog(
+        this.app,
+        activeFile,
+        async (options: PDFOptions) => {
+          try {
+            // Generate the PDF with options
+            new Notice("Generating PDF...");
+            const pdfDoc = await generatePDF(fountainScript, options);
 
-      // Get PDF bytes
-      const pdfBytes = await pdfDoc.save();
+            // Get PDF bytes
+            const pdfBytes = await pdfDoc.save();
 
-      // Create output file path (same directory, .pdf extension)
-      const outputPath = activeFile.path.replace(/\.fountain$/, ".pdf");
+            // Create output file path (same directory, .pdf extension)
+            const outputPath = activeFile.path.replace(/\.fountain$/, ".pdf");
 
-      // Save the PDF to the vault
-      await this.app.vault.createBinary(outputPath, pdfBytes);
+            // Save the PDF to the vault
+            await this.app.vault.createBinary(outputPath, pdfBytes);
 
-      new Notice(`PDF generated: ${outputPath}`);
+            new Notice(`PDF generated: ${outputPath}`);
+          } catch (error) {
+            new Notice("Failed to generate PDF");
+            console.error("Error generating PDF:", error);
+          }
+        },
+      );
+      dialog.open();
     } catch (error) {
-      new Notice("Failed to generate PDF");
-      console.error("Error generating PDF:", error);
+      new Notice("Failed to parse fountain file");
+      console.error("Error in PDF generation:", error);
     }
   }
 
