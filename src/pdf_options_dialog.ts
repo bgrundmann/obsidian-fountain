@@ -13,7 +13,8 @@ export class PDFOptionsDialog extends Modal {
 
   constructor(
     app: App,
-    private targetFile: TFile,
+    private fileExists: boolean,
+    private outputPath: string,
     private onSubmit: (options: PDFOptions) => void,
   ) {
     super(app);
@@ -24,18 +25,15 @@ export class PDFOptionsDialog extends Modal {
     const { contentEl } = this;
     contentEl.empty();
 
-    // Check if target file exists and show warning
-    const outputPath = this.targetFile.path.replace(/\.fountain$/, ".pdf");
-    const existingFile = this.app.vault.getAbstractFileByPath(outputPath);
-
-    if (existingFile) {
+    // Show warning if target file exists
+    if (this.fileExists) {
       const warningEl = contentEl.createDiv("pdf-warning");
       warningEl.createEl("p", {
         text: "⚠️ Warning: This will overwrite the existing PDF file:",
         cls: "pdf-warning-text",
       });
       warningEl.createEl("p", {
-        text: outputPath,
+        text: this.outputPath,
         cls: "pdf-warning-path",
       });
       warningEl.style.marginBottom = "1rem";

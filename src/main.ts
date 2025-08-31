@@ -102,10 +102,18 @@ export default class FountainPlugin extends Plugin {
         return;
       }
 
+      // Create output file path (same directory, .pdf extension)
+      const outputPath = activeFile.path.replace(/\.fountain$/, ".pdf");
+
+      // Check if target file already exists
+      const existingFile = this.app.vault.getAbstractFileByPath(outputPath);
+      const fileExists = existingFile !== null;
+
       // Show PDF options dialog
       const dialog = new PDFOptionsDialog(
         this.app,
-        activeFile,
+        fileExists,
+        outputPath,
         async (options: PDFOptions) => {
           try {
             // Generate the PDF with options
@@ -114,9 +122,6 @@ export default class FountainPlugin extends Plugin {
 
             // Get PDF bytes
             const pdfBytes = await pdfDoc.save();
-
-            // Create output file path (same directory, .pdf extension)
-            const outputPath = activeFile.path.replace(/\.fountain$/, ".pdf");
 
             // Save the PDF to the vault
             await this.app.vault.createBinary(outputPath, pdfBytes);
