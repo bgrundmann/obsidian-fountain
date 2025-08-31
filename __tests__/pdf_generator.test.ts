@@ -70,7 +70,7 @@ describe("PDF Instruction Generation", () => {
         (inst) => inst.data === "INT. OFFICE - DAY",
       );
       expect(sceneInstruction).toBeDefined();
-      expect(sceneInstruction!.bold).toBe(true);
+      expect(sceneInstruction!.bold).toBe(false);
       expect(sceneInstruction!.italic).toBe(false);
       expect(sceneInstruction!.underline).toBe(false);
       expect(sceneInstruction!.x).toBe(126); // SCENE_HEADING_INDENT

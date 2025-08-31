@@ -126,6 +126,27 @@ function emitText(
 }
 
 /**
+ * Helper function to emit a new page instruction and update page state
+ */
+function emitNewPage(
+  instructions: Instruction[],
+  pageState: PageState,
+): PageState {
+  instructions.push({
+    type: "new-page",
+    width: pageState.pageWidth,
+    height: pageState.pageHeight,
+  });
+
+  return {
+    ...pageState,
+    currentY: pageState.pageHeight - pageState.margins.top,
+    pageNumber: pageState.pageNumber + 1,
+    lastElementType: null, // Reset spacing for new page
+  };
+}
+
+/**
  * Helper function to ensure enough lines are available on the current page
  * If not enough space, adds a new page instruction and updates page state
  */
@@ -137,18 +158,7 @@ function needLines(
   const requiredSpace = numLines * pageState.lineHeight;
 
   if (pageState.currentY - requiredSpace < pageState.margins.bottom) {
-    // Need a new page
-    instructions.push({
-      type: "new-page",
-      width: pageState.pageWidth,
-      height: pageState.pageHeight,
-    });
-
-    return {
-      ...pageState,
-      currentY: pageState.pageHeight - pageState.margins.top,
-      pageNumber: pageState.pageNumber + 1,
-    };
+    return emitNewPage(instructions, pageState);
   }
 
   return pageState;
@@ -219,11 +229,7 @@ export function generateInstructions(
   };
 
   // Add first page
-  instructions.push({
-    type: "new-page",
-    width: currentState.pageWidth,
-    height: currentState.pageHeight,
-  });
+  currentState = emitNewPage(instructions, currentState);
 
   // Generate title page instructions if it exists
   if (fountainScript.titlePage.length > 0) {
@@ -375,16 +381,9 @@ function generateTitlePageInstructions(
 
   // Mark that we're no longer on title page and create new page for script
   currentState.isTitlePage = false;
-  currentState.pageNumber = 2;
 
   // Add new page for the actual script content
-  instructions.push({
-    type: "new-page",
-    width: pageState.pageWidth,
-    height: pageState.pageHeight,
-  });
-
-  currentState.currentY = pageState.pageHeight - MARGIN_TOP;
+  currentState = emitNewPage(instructions, currentState);
   currentState.remainingHeight =
     pageState.pageHeight - MARGIN_TOP - MARGIN_BOTTOM;
 
