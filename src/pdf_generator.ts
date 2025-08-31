@@ -558,7 +558,7 @@ function generateActionInstructions(
         line.elements,
         fountainScript.document,
       );
-      const wrappedLines = wrapStyledText(styledSegments, 55);
+      const wrappedLines = wrapStyledText(styledSegments, 62);
       actionLines.push(...wrappedLines);
     } else {
       actionLines.push([]);
