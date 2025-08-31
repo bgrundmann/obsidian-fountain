@@ -82,6 +82,7 @@ FountainToPDF
 #### Phase 2: Core Elements
 - [X] Implement scene headings
 - [X] Implement action blocks with proper wrapping
+- [X] Visual formatting for action blocks (bold, italic, underline)
 - [ ] Implement dialogue (character, parentheticals, speech)
 - [ ] Implement transitions
 
@@ -100,8 +101,16 @@ FountainToPDF
 ## Technical Decisions & Rationales
 
 ### Font Handling
-**Decision**: Embed Courier font directly in fontManager module
-**Rationale**: Ensures consistent rendering across all platforms. Courier is essential for proper character counting.
+**Decision**: Embed Courier font family (regular, bold, oblique, bold-oblique) directly
+**Rationale**: Ensures consistent rendering across all platforms. Courier is essential for proper character counting. Font variants enable proper visual formatting for styled text.
+
+### Visual Formatting Implementation
+**Decision**: Use PDF font variants for bold/italic, drawn lines for underlines
+**Rationale**: 
+- PDF-lib's StandardFonts provides CourierBold and CourierOblique variants
+- Underlines drawn as lines positioned below text baseline
+- Font selection function chooses appropriate variant based on styling flags
+- Maintains proper character spacing and line positioning
 
 ### Text Layout Strategy
 **Decision**: Implement custom text wrapping functions in textFormatter module

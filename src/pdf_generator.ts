@@ -56,7 +56,10 @@ type PageState = {
   // Text formatting state
   fontSize: number; // Current font size
   lineHeight: number; // Current line height
-  font: PDFFont; // Embedded Courier font
+  font: PDFFont; // Base Courier font
+  boldFont: PDFFont; // Bold Courier font
+  italicFont: PDFFont; // Italic Courier font
+  boldItalicFont: PDFFont; // Bold italic Courier font
 
   // Element spacing
   lastElementType: string | null; // Type of previous element for spacing rules
@@ -73,8 +76,15 @@ export async function generatePDF(
   // Create new PDF document
   const pdfDoc = await PDFDocument.create();
 
-  // Embed Courier font (essential for proper screenplay formatting)
+  // Embed Courier font variants (essential for proper screenplay formatting)
   const courierFont = await pdfDoc.embedFont(StandardFonts.Courier);
+  const courierBoldFont = await pdfDoc.embedFont(StandardFonts.CourierBold);
+  const courierObliqueFont = await pdfDoc.embedFont(
+    StandardFonts.CourierOblique,
+  );
+  const courierBoldObliqueFont = await pdfDoc.embedFont(
+    StandardFonts.CourierBoldOblique,
+  );
 
   // Create first page
   pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
@@ -94,6 +104,9 @@ export async function generatePDF(
     fontSize: FONT_SIZE,
     lineHeight: LINE_HEIGHT,
     font: courierFont,
+    boldFont: courierBoldFont,
+    italicFont: courierObliqueFont,
+    boldItalicFont: courierBoldObliqueFont,
     lastElementType: null,
     pendingSpacing: 0,
   };
@@ -184,7 +197,7 @@ async function renderScene(
     newY = PAGE_HEIGHT - pageState.margins.top;
   }
 
-  // Render the scene heading
+  // Render the scene heading (always use base font for scene headings)
   currentPage.drawText(sceneText, {
     x: SCENE_HEADING_INDENT,
     y: newY,
@@ -256,22 +269,35 @@ async function renderAction(
       let currentX = ACTION_INDENT;
       for (const segment of line) {
         if (segment.text.length > 0) {
-          // NOTE: Currently rendering all text with base Courier font
-          // The styled segments preserve formatting information (bold, italic, underline)
-          // but visual formatting will be implemented in Phase 3 when we add:
-          // - Bold/italic font variants or text decoration
-          // - Proper font metrics calculation for mixed styles
-          // - Advanced text positioning for styled segments
+          // Select appropriate font based on styling
+          const selectedFont = selectFont(pageState, segment);
+
+          // Render the text with appropriate font
           currentPage.drawText(segment.text, {
             x: currentX,
             y: currentY,
             size: pageState.fontSize,
-            font: pageState.font,
+            font: selectedFont,
             color: rgb(0, 0, 0),
           });
 
+          // Draw underline if needed
+          if (segment.underline) {
+            const textWidth = selectedFont.widthOfTextAtSize(
+              segment.text,
+              pageState.fontSize,
+            );
+            const underlineY = currentY - 2; // Position underline slightly below baseline
+            currentPage.drawLine({
+              start: { x: currentX, y: underlineY },
+              end: { x: currentX + textWidth, y: underlineY },
+              thickness: 1,
+              color: rgb(0, 0, 0),
+            });
+          }
+
           // Calculate text width to position next segment
-          const textWidth = pageState.font.widthOfTextAtSize(
+          const textWidth = selectedFont.widthOfTextAtSize(
             segment.text,
             pageState.fontSize,
           );
@@ -408,6 +434,22 @@ function wrapStyledText(
   }
 
   return lines.length > 0 ? lines : [[]];
+}
+
+/**
+ * Selects the appropriate font based on styling flags
+ */
+function selectFont(pageState: PageState, segment: StyledTextSegment): PDFFont {
+  if (segment.bold && segment.italic) {
+    return pageState.boldItalicFont;
+  }
+  if (segment.bold) {
+    return pageState.boldFont;
+  }
+  if (segment.italic) {
+    return pageState.italicFont;
+  }
+  return pageState.font;
 }
 
 // Utility functions for page management - TODO: Use these when implementing advanced page break logic
