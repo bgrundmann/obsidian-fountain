@@ -1,4 +1,10 @@
-import { PDFDocument, type PDFFont, StandardFonts, rgb } from "pdf-lib";
+import {
+  PDFDocument,
+  type PDFFont,
+  type PDFPage,
+  StandardFonts,
+  rgb,
+} from "pdf-lib";
 import type {
   Action,
   Dialogue,
@@ -37,6 +43,11 @@ const CHARACTER_INDENT = 306; // ~4.25" (centered)
 const DIALOGUE_INDENT = 198; // 2.75"
 const PARENTHETICAL_INDENT = 252; // 3.5"
 const TRANSITION_INDENT = 522; // Right-aligned to 7.25" (PAGE_WIDTH - 90)
+
+// Title page positioning
+const TITLE_PAGE_CENTER_START = 475.2; // ~40% down from top (PAGE_HEIGHT - PAGE_HEIGHT * 0.4)
+const TITLE_PAGE_LOWER_LEFT_START = 200; // ~75% down from top, leaving room above bottom margin
+const TITLE_PAGE_CENTER_X = 306; // Page center (PAGE_WIDTH / 2)
 
 // Page state type for tracking position and layout
 type PageState = {
@@ -93,7 +104,7 @@ export async function generatePDF(
   pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
 
   // Initialize page state
-  const pageState: PageState = {
+  let currentState: PageState = {
     currentY: PAGE_HEIGHT - MARGIN_TOP,
     remainingHeight: PAGE_HEIGHT - MARGIN_TOP - MARGIN_BOTTOM,
     pageNumber: 1,
@@ -114,8 +125,15 @@ export async function generatePDF(
     pendingSpacing: 0,
   };
 
+  // Phase 3: Render title page if it exists
+  if (fountainScript.titlePage.length > 0) {
+    currentState = await renderTitlePage(pdfDoc, currentState, fountainScript);
+  } else {
+    currentState = { ...currentState, isTitlePage: false, pageNumber: 1 };
+  }
+
   // Phase 2: Render the actual script elements
-  await renderScript(pdfDoc, pageState, fountainScript);
+  await renderScript(pdfDoc, currentState, fountainScript);
 
   return pdfDoc;
 }
@@ -177,6 +195,240 @@ async function renderScript(
   }
 
   return currentState;
+}
+
+/**
+ * Phase 3: Title page generation
+ * Renders title page metadata according to Fountain specifications
+ */
+async function renderTitlePage(
+  doc: PDFDocument,
+  pageState: PageState,
+  fountainScript: FountainScript,
+): Promise<PageState> {
+  const page = doc.getPages()[doc.getPageCount() - 1];
+  let currentState = { ...pageState };
+
+  // Separate title page elements by positioning
+  const centeredKeys = new Set([
+    "title",
+    "credit",
+    "author",
+    "authors",
+    "source",
+  ]);
+  const lowerLeftKeys = new Set(["contact", "draft date"]);
+
+  const centeredElements: { key: string; values: StyledText[] }[] = [];
+  const lowerLeftElements: { key: string; values: StyledText[] }[] = [];
+
+  // Categorize title page elements
+  for (const element of fountainScript.titlePage) {
+    const keyLower = element.key.toLowerCase();
+    if (centeredKeys.has(keyLower)) {
+      centeredElements.push(element);
+    } else if (lowerLeftKeys.has(keyLower)) {
+      lowerLeftElements.push(element);
+    }
+    // Ignore all other keys as per specification
+  }
+
+  // Render centered elements
+  if (centeredElements.length > 0) {
+    currentState = await renderCenteredTitleElements(
+      page,
+      currentState,
+      centeredElements,
+      fountainScript,
+    );
+  }
+
+  // Render lower-left elements
+  if (lowerLeftElements.length > 0) {
+    currentState = await renderLowerLeftTitleElements(
+      page,
+      currentState,
+      lowerLeftElements,
+      fountainScript,
+    );
+  }
+
+  // Mark that we're no longer on title page and create new page for script
+  currentState.isTitlePage = false;
+  currentState.pageNumber = 2;
+
+  // Add new page for the actual script content
+  doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+  currentState.currentY = PAGE_HEIGHT - MARGIN_TOP;
+  currentState.remainingHeight = PAGE_HEIGHT - MARGIN_TOP - MARGIN_BOTTOM;
+
+  return currentState;
+}
+
+/**
+ * Renders centered title page elements (title, credit, author, source)
+ */
+async function renderCenteredTitleElements(
+  page: PDFPage,
+  pageState: PageState,
+  elements: { key: string; values: StyledText[] }[],
+  fountainScript: FountainScript,
+): Promise<PageState> {
+  let currentY = TITLE_PAGE_CENTER_START;
+
+  for (const element of elements) {
+    // Render the key (e.g., "Title:", "Written by:")
+    const keyText = element.key.endsWith(":") ? element.key : `${element.key}:`;
+
+    // Calculate text width for centering
+    const keyWidth = pageState.font.widthOfTextAtSize(
+      keyText,
+      pageState.fontSize,
+    );
+    const keyX = TITLE_PAGE_CENTER_X - keyWidth / 2;
+
+    page.drawText(keyText, {
+      x: keyX,
+      y: currentY,
+      size: pageState.fontSize,
+      font: pageState.font,
+      color: rgb(0, 0, 0),
+    });
+
+    currentY -= pageState.lineHeight;
+
+    // Render the values
+    for (const styledText of element.values) {
+      const segments = extractStyledSegments(
+        styledText,
+        fountainScript.document,
+      );
+      const wrappedLines = wrapStyledText(segments, 60); // Max 60 chars for title page
+
+      for (const line of wrappedLines) {
+        // Calculate line width for centering
+        let lineWidth = 0;
+        for (const segment of line) {
+          const font = selectFont(pageState, segment);
+          lineWidth += font.widthOfTextAtSize(segment.text, pageState.fontSize);
+        }
+
+        let x = TITLE_PAGE_CENTER_X - lineWidth / 2;
+
+        // Draw each segment with appropriate styling
+        for (const segment of line) {
+          const font = selectFont(pageState, segment);
+
+          page.drawText(segment.text, {
+            x,
+            y: currentY,
+            size: pageState.fontSize,
+            font,
+            color: rgb(0, 0, 0),
+          });
+
+          // Handle underline
+          if (segment.underline) {
+            const textWidth = font.widthOfTextAtSize(
+              segment.text,
+              pageState.fontSize,
+            );
+            page.drawLine({
+              start: { x, y: currentY - 2 },
+              end: { x: x + textWidth, y: currentY - 2 },
+              thickness: 1,
+              color: rgb(0, 0, 0),
+            });
+          }
+
+          x += font.widthOfTextAtSize(segment.text, pageState.fontSize);
+        }
+
+        currentY -= pageState.lineHeight;
+      }
+    }
+
+    // Add spacing between different keys
+    currentY -= pageState.lineHeight;
+  }
+
+  return { ...pageState, currentY };
+}
+
+/**
+ * Renders lower-left title page elements (contact, draft date)
+ */
+async function renderLowerLeftTitleElements(
+  page: PDFPage,
+  pageState: PageState,
+  elements: { key: string; values: StyledText[] }[],
+  fountainScript: FountainScript,
+): Promise<PageState> {
+  let currentY = TITLE_PAGE_LOWER_LEFT_START;
+
+  for (const element of elements) {
+    // Render the key
+    const keyText = element.key.endsWith(":") ? element.key : `${element.key}:`;
+
+    page.drawText(keyText, {
+      x: MARGIN_LEFT,
+      y: currentY,
+      size: pageState.fontSize,
+      font: pageState.font,
+      color: rgb(0, 0, 0),
+    });
+
+    currentY -= pageState.lineHeight;
+
+    // Render the values
+    for (const styledText of element.values) {
+      const segments = extractStyledSegments(
+        styledText,
+        fountainScript.document,
+      );
+      const wrappedLines = wrapStyledText(segments, 55); // Max ~55 chars for lower-left
+
+      for (const line of wrappedLines) {
+        let x = MARGIN_LEFT;
+
+        // Draw each segment with appropriate styling
+        for (const segment of line) {
+          const font = selectFont(pageState, segment);
+
+          page.drawText(segment.text, {
+            x,
+            y: currentY,
+            size: pageState.fontSize,
+            font,
+            color: rgb(0, 0, 0),
+          });
+
+          // Handle underline
+          if (segment.underline) {
+            const textWidth = font.widthOfTextAtSize(
+              segment.text,
+              pageState.fontSize,
+            );
+            page.drawLine({
+              start: { x, y: currentY - 2 },
+              end: { x: x + textWidth, y: currentY - 2 },
+              thickness: 1,
+              color: rgb(0, 0, 0),
+            });
+          }
+
+          x += font.widthOfTextAtSize(segment.text, pageState.fontSize);
+        }
+
+        currentY -= pageState.lineHeight;
+      }
+    }
+
+    // Add spacing between different keys
+    currentY -= pageState.lineHeight;
+  }
+
+  return { ...pageState, currentY };
 }
 
 /**

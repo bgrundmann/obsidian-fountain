@@ -148,9 +148,9 @@ FountainToPDF
 - [X] Implement transitions
 
 #### Phase 3: Advanced Features
+- [ ] Add title page generation (see Title Page Generation section above)
 - [ ] Handle page breaks intelligently
 - [ ] Implement proper spacing rules
-- [ ] Add title page generation (see Title Page Generation section above)
 - [ ] Handle notes/synopsis (if visible in settings)
 
 #### Phase 4: Polish
