@@ -96,7 +96,6 @@ type PageState = {
 
   // Element spacing
   lastElementType: string | null; // Type of previous element for spacing rules
-  pendingSpacing: number; // Additional spacing needed before next element
 };
 
 /**
@@ -217,7 +216,6 @@ export function generateInstructions(
     fontSize: FONT_SIZE,
     lineHeight: LINE_HEIGHT,
     lastElementType: null,
-    pendingSpacing: 0,
   };
 
   // Add first page
@@ -588,7 +586,6 @@ function generateSceneInstructions(
   return {
     ...advanceLine(currentState),
     lastElementType: "scene",
-    pendingSpacing: 0,
   };
 }
 
@@ -648,7 +645,6 @@ function generateActionInstructions(
   return {
     ...currentState,
     lastElementType: "action",
-    pendingSpacing: 0,
   };
 }
 
@@ -756,7 +752,6 @@ function generateDialogueInstructions(
   return {
     ...currentState,
     lastElementType: "dialogue",
-    pendingSpacing: 0,
   };
 }
 
@@ -795,7 +790,6 @@ function generateTransitionInstructions(
   return {
     ...advanceLine(currentState),
     lastElementType: "transition",
-    pendingSpacing: 0,
   };
 }
 
