@@ -29,6 +29,67 @@ Screenplay formatting follows established industry standards dating back to type
 - **Header**: Title (left), page number (right) - skip on first page
 - **Footer**: Optional contact info on title page only
 
+## Title Page Generation
+
+The title page is the first page of a screenplay and contains metadata about the script. It follows a specific layout format that differs from the main script pages.
+
+### Title Page Format Standards
+
+Based on fountain.io specifications, the title page uses a key-value format where:
+- Keys can contain spaces but must end with a colon
+- Values can be inline or indented on newlines below the key
+- Indentation is 3+ spaces or a tab for multi-line values
+- An implicit page break follows the title page
+
+### Key Positioning Rules
+
+**Centered Elements** (horizontally centered on page):
+- `Title:` - Main title of the screenplay
+- `Credit:` - Credit line (e.g., "Written by")
+- `Author:` or `Authors:` - Writer name(s)
+- `Source:` - Source attribution (e.g., "Story by...")
+
+**Lower Left Elements** (positioned at bottom left):
+- `Contact:` - Contact information (address, phone, email)
+- `Draft date:` - Date of the current draft
+
+**Ignored Keys**:
+- Any key not listed above should be completely ignored
+
+### Title Page Layout Specifications
+
+**Page Layout**:
+- Same page size and margins as script pages
+- Font: Courier 12pt
+- Line spacing: Single-spaced within blocks, double between blocks
+
+**Vertical Positioning**:
+- Centered elements: Start at ~40% down from top of page
+- Lower left elements: Start at ~80% down from top of page
+- Adequate spacing between different key groups
+
+**Text Formatting**:
+- Key names: Regular font weight
+- Values: Support styled text (bold, italic, underline)
+
+### Implementation Strategy
+
+**Metadata Extraction**:
+1. The existing parser handles the metadata extraction including multi-line values. We only need to identify which keys belong to centered vs. lower-left positioning. And which keys we should completely ignore.
+
+**Rendering Process**:
+1. Check if title page data exists in fountain script
+2. Create dedicated title page as first page
+3. Render centered elements first (title, credit, author, source)
+4. Render lower-left elements (contact, draft date, custom keys)
+5. Apply proper vertical spacing between element groups
+
+**Positioning Algorithm**:
+- Calculate total height needed for centered elements
+- Start centered elements at (PAGE_HEIGHT * 0.4) - (totalHeight / 2)
+- Position lower-left elements starting at PAGE_HEIGHT * 0.8
+- Use proper line spacing between different key groups
+
 ## Technical Implementation Plan
 
 ### Core Architecture
@@ -89,7 +150,7 @@ FountainToPDF
 #### Phase 3: Advanced Features
 - [ ] Handle page breaks intelligently
 - [ ] Implement proper spacing rules
-- [ ] Add title page generation
+- [ ] Add title page generation (see Title Page Generation section above)
 - [ ] Handle notes/synopsis (if visible in settings)
 
 #### Phase 4: Polish
@@ -106,7 +167,7 @@ FountainToPDF
 
 ### Visual Formatting Implementation
 **Decision**: Use PDF font variants for bold/italic, drawn lines for underlines
-**Rationale**: 
+**Rationale**:
 - PDF-lib's StandardFonts provides CourierBold and CourierOblique variants
 - Underlines drawn as lines positioned below text baseline
 - Font selection function chooses appropriate variant based on styling flags
@@ -128,7 +189,7 @@ FountainToPDF
 **Decision**: Use functions and modules instead of classes
 **Rationale**: Most operations are stateless transformations. Page state can be passed as parameters. Simpler testing and composition.
 
-## Key Constants
+### Key Constants
 ```typescript
 const FONT_SIZE = 12;
 const LINE_HEIGHT = 12; // Single spacing
@@ -149,6 +210,12 @@ const ACTION_INDENT = 126;        // 1.75"
 const CHARACTER_INDENT = 306;     // ~4.25" (centered)
 const DIALOGUE_INDENT = 198;      // 2.75"
 const PARENTHETICAL_INDENT = 252; // 3.5"
+const TRANSITION_RIGHT_MARGIN = 522; // 7.25" (right-aligned)
+
+// Title page positioning
+const TITLE_PAGE_CENTER_START = 316.8; // ~40% down from top (PAGE_HEIGHT * 0.4)
+const TITLE_PAGE_LOWER_LEFT_START = 633.6; // ~80% down from top (PAGE_HEIGHT * 0.8)
+const TITLE_PAGE_CENTER_X = 306; // Page center (PAGE_WIDTH / 2)
 ```
 
 ## Core Types
