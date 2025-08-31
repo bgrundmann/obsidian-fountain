@@ -448,5 +448,84 @@ describe("PDF Instruction Generation", () => {
       // Should have multiple text instructions
       expect(textInstructions.length).toBeGreaterThan(3);
     });
+
+    it("should generate reasonable page count for typical script", () => {
+      // Create a script that simulates a typical short screenplay
+      const typicalScript = createMockScript(
+        "INT. OFFICE - DAY\n\nJohn sits at his desk, typing.\n\nJOHN\nThis is taking forever.\n\nHe looks up as Sarah enters.\n\nSARAH\nAny progress on the report?\n\nJOHN\n(sighing)\nAlmost done.\n\nSarah nods and exits.\n\nJOHN (CONT'D)\nFinally, some peace.\n\nHe returns to typing.\n\nFADE OUT.\n\nINT. HALLWAY - MOMENTS LATER\n\nSarah walks down the hallway.\n\nSARAH\n(to herself)\nHe'll never finish on time.\n\nShe disappears around the corner.\n\nFADE OUT.",
+        [
+          { kind: "scene", range: { start: 0, end: 17 } } as Scene,
+          {
+            kind: "action",
+            lines: [
+              {
+                elements: [{ kind: "text", range: { start: 19, end: 49 } }],
+              },
+            ],
+          } as Action,
+          {
+            kind: "dialogue",
+            characterRange: { start: 51, end: 55 },
+            characterExtensionsRange: { start: 55, end: 55 },
+            parenthetical: null,
+            lines: [
+              {
+                elements: [{ kind: "text", range: { start: 56, end: 77 } }],
+              },
+            ],
+          } as Dialogue,
+          {
+            kind: "action",
+            lines: [
+              {
+                elements: [{ kind: "text", range: { start: 79, end: 110 } }],
+              },
+            ],
+          } as Action,
+          {
+            kind: "dialogue",
+            characterRange: { start: 112, end: 117 },
+            characterExtensionsRange: { start: 117, end: 117 },
+            parenthetical: null,
+            lines: [
+              {
+                elements: [{ kind: "text", range: { start: 118, end: 150 } }],
+              },
+            ],
+          } as Dialogue,
+          {
+            kind: "dialogue",
+            characterRange: { start: 152, end: 156 },
+            characterExtensionsRange: { start: 156, end: 156 },
+            parenthetical: { start: 157, end: 166 },
+            lines: [
+              {
+                elements: [{ kind: "text", range: { start: 167, end: 178 } }],
+              },
+            ],
+          } as Dialogue,
+        ],
+      );
+
+      const instructions = generateInstructions(typicalScript);
+
+      // Count new-page instructions to determine page count
+      const pageCount = instructions.filter(
+        (inst) => inst.type === "new-page",
+      ).length;
+
+      // Should be reasonable - definitely not 127 pages!
+      expect(pageCount).toBeLessThan(10);
+      expect(pageCount).toBeGreaterThan(0);
+
+      // Verify text instructions have reasonable Y coordinates
+      const textInstructions = instructions.filter(
+        (inst) => inst.type === "text",
+      ) as TextInstruction[];
+      textInstructions.forEach((instruction) => {
+        expect(instruction.y).toBeGreaterThan(0);
+        expect(instruction.y).toBeLessThan(792); // Page height
+      });
+    });
   });
 });

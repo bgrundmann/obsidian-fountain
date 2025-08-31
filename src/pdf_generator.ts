@@ -57,7 +57,7 @@ const PARENTHETICAL_INDENT = 252; // 3.5"
 const TRANSITION_INDENT = 522; // Right-aligned to 7.25" (PAGE_WIDTH - 90)
 
 // Title page positioning
-const TITLE_PAGE_CENTER_START = 475.2; // ~40% down from top (PAGE_HEIGHT - PAGE_HEIGHT * 0.4)
+const TITLE_PAGE_CENTER_START = 316.8; // ~40% up from bottom (PAGE_HEIGHT * 0.4)
 const TITLE_PAGE_CENTER_X = 306; // Page center (PAGE_WIDTH / 2)
 
 // Page state type for tracking position and layout
@@ -109,9 +109,9 @@ export function generateInstructions(
 ): Instruction[] {
   const instructions: Instruction[] = [];
 
-  // Initialize page state
+  // Initialize page state (using PDF coordinates - bottom-left origin)
   let currentState: PageState = {
-    currentY: PAGE_HEIGHT - MARGIN_TOP,
+    currentY: PAGE_HEIGHT - MARGIN_TOP, // Start at top margin in PDF coords
     remainingHeight: PAGE_HEIGHT - MARGIN_TOP - MARGIN_BOTTOM,
     pageNumber: 1,
     isTitlePage: true,
@@ -327,7 +327,7 @@ function generateCenteredTitleElementInstructions(
               type: "text",
               data: segment.text,
               x,
-              y: PAGE_HEIGHT - currentY, // Convert to PDF coordinate system (bottom-left origin)
+              y: currentY, // currentY is in PDF coordinate system
               bold: segment.bold || false,
               italic: segment.italic || false,
               underline: segment.underline || false,
@@ -338,12 +338,12 @@ function generateCenteredTitleElementInstructions(
           }
         }
 
-        currentY += pageState.lineHeight;
+        currentY -= pageState.lineHeight; // Move down for next line
       }
     }
 
     // Add spacing between different keys
-    currentY += pageState.lineHeight;
+    currentY -= pageState.lineHeight; // Move down for spacing
   }
 
   return { ...pageState, currentY };
@@ -358,22 +358,8 @@ function generateLowerLeftTitleElementInstructions(
   elements: { key: string; values: StyledText[] }[],
   fountainScript: FountainScript,
 ): PageState {
-  // Calculate total height needed for all elements
-  let totalHeight = 0;
-  for (const element of elements) {
-    for (const styledText of element.values) {
-      const segments = extractStyledSegments(
-        styledText,
-        fountainScript.document,
-      );
-      const wrappedLines = wrapStyledText(segments, 55);
-      totalHeight += wrappedLines.length * pageState.lineHeight;
-    }
-    totalHeight += pageState.lineHeight; // spacing between elements
-  }
-
-  // Start from bottom margin and work upward
-  let currentY = MARGIN_BOTTOM + totalHeight;
+  // Start from bottom left area
+  let currentY = MARGIN_BOTTOM;
 
   for (const element of elements) {
     for (const styledText of element.values) {
@@ -392,7 +378,7 @@ function generateLowerLeftTitleElementInstructions(
               type: "text",
               data: segment.text,
               x,
-              y: currentY, // Already in PDF coordinate system
+              y: currentY,
               bold: segment.bold || false,
               italic: segment.italic || false,
               underline: segment.underline || false,
@@ -402,11 +388,11 @@ function generateLowerLeftTitleElementInstructions(
           }
         }
 
-        currentY -= pageState.lineHeight;
+        currentY += pageState.lineHeight; // Move up from bottom
       }
     }
 
-    currentY -= pageState.lineHeight;
+    currentY += pageState.lineHeight; // Add spacing between elements
   }
 
   return { ...pageState, currentY };
@@ -421,21 +407,8 @@ function generateLowerRightTitleElementInstructions(
   elements: { key: string; values: StyledText[] }[],
   fountainScript: FountainScript,
 ): PageState {
-  // Calculate total height needed for all elements
-  let totalHeight = 0;
-  for (const element of elements) {
-    for (const styledText of element.values) {
-      const segments = extractStyledSegments(
-        styledText,
-        fountainScript.document,
-      );
-      const wrappedLines = wrapStyledText(segments, 55);
-      totalHeight += wrappedLines.length * pageState.lineHeight;
-    }
-    totalHeight += pageState.lineHeight;
-  }
-
-  let currentY = MARGIN_BOTTOM + totalHeight;
+  // Start from bottom right area
+  let currentY = MARGIN_BOTTOM;
 
   for (const element of elements) {
     for (const styledText of element.values) {
@@ -470,11 +443,11 @@ function generateLowerRightTitleElementInstructions(
           }
         }
 
-        currentY -= pageState.lineHeight;
+        currentY += pageState.lineHeight; // Move up from bottom
       }
     }
 
-    currentY -= pageState.lineHeight;
+    currentY += pageState.lineHeight; // Add spacing between elements
   }
 
   return { ...pageState, currentY };
@@ -496,20 +469,20 @@ function generateSceneInstructions(
     .toUpperCase(); // Scene headings are typically uppercase
 
   // Add spacing before scene heading if there was a previous element
-  let newY = pageState.currentY;
+  let currentY = pageState.currentY;
   if (pageState.lastElementType !== null) {
-    newY += pageState.lineHeight; // Single line spacing before scene
+    currentY -= pageState.lineHeight; // Single line spacing before scene
   }
 
   // Check if we need a page break
-  if (newY + pageState.lineHeight > PAGE_HEIGHT - pageState.margins.bottom) {
+  if (currentY - pageState.lineHeight < pageState.margins.bottom) {
     // Create new page
     instructions.push({
       type: "new-page",
       width: PAGE_WIDTH,
       height: PAGE_HEIGHT,
     });
-    newY = PAGE_HEIGHT - pageState.margins.top;
+    currentY = PAGE_HEIGHT - pageState.margins.top;
   }
 
   // Generate instruction for scene heading
@@ -517,7 +490,7 @@ function generateSceneInstructions(
     type: "text",
     data: sceneText,
     x: SCENE_HEADING_INDENT,
-    y: PAGE_HEIGHT - newY, // Convert to PDF coordinate system
+    y: currentY, // currentY is already in PDF coordinate system
     bold: true,
     italic: false,
     underline: false,
@@ -526,7 +499,7 @@ function generateSceneInstructions(
   // Update page state
   return {
     ...pageState,
-    currentY: newY + pageState.lineHeight,
+    currentY: currentY - pageState.lineHeight,
     lastElementType: "scene",
     pendingSpacing: 0,
   };
@@ -561,16 +534,13 @@ function generateActionInstructions(
 
   // Add spacing before action block if there was a previous element
   if (pageState.lastElementType !== null) {
-    currentY += pageState.lineHeight;
+    currentY -= pageState.lineHeight;
   }
 
   // Generate instructions for each line of the action block
   for (const line of actionLines) {
     // Check if we need a page break
-    if (
-      currentY + pageState.lineHeight >
-      PAGE_HEIGHT - pageState.margins.bottom
-    ) {
+    if (currentY - pageState.lineHeight < pageState.margins.bottom) {
       instructions.push({
         type: "new-page",
         width: PAGE_WIDTH,
@@ -588,7 +558,7 @@ function generateActionInstructions(
             type: "text",
             data: segment.text,
             x: currentX,
-            y: PAGE_HEIGHT - currentY,
+            y: currentY,
             bold: segment.bold || false,
             italic: segment.italic || false,
             underline: segment.underline || false,
@@ -599,7 +569,7 @@ function generateActionInstructions(
       }
     }
 
-    currentY += pageState.lineHeight;
+    currentY -= pageState.lineHeight;
   }
 
   return {
@@ -623,7 +593,7 @@ function generateDialogueInstructions(
 
   // Add spacing before dialogue block if there was a previous element
   if (pageState.lastElementType !== null) {
-    currentY += pageState.lineHeight;
+    currentY -= pageState.lineHeight;
   }
 
   // Extract character name
@@ -649,10 +619,7 @@ function generateDialogueInstructions(
   const fullCharacterLine = characterName + characterExtensions;
 
   // Check if we need a page break for character name
-  if (
-    currentY + pageState.lineHeight >
-    PAGE_HEIGHT - pageState.margins.bottom
-  ) {
+  if (currentY - pageState.lineHeight < pageState.margins.bottom) {
     instructions.push({
       type: "new-page",
       width: PAGE_WIDTH,
@@ -666,7 +633,7 @@ function generateDialogueInstructions(
     type: "text",
     data: fullCharacterLine,
     x: CHARACTER_INDENT,
-    y: PAGE_HEIGHT - currentY,
+    y: currentY,
     bold: false,
     italic: false,
     underline: false,
@@ -694,10 +661,7 @@ function generateDialogueInstructions(
     const wrappedParentheticals = wrapPlainText(parentheticalText, 16);
 
     for (const parentheticalLine of wrappedParentheticals) {
-      if (
-        currentY + pageState.lineHeight >
-        PAGE_HEIGHT - pageState.margins.bottom
-      ) {
+      if (currentY - pageState.lineHeight < pageState.margins.bottom) {
         instructions.push({
           type: "new-page",
           width: PAGE_WIDTH,
@@ -710,12 +674,12 @@ function generateDialogueInstructions(
         type: "text",
         data: parentheticalLine,
         x: PARENTHETICAL_INDENT,
-        y: PAGE_HEIGHT - currentY,
+        y: currentY,
         bold: false,
         italic: false,
         underline: false,
       });
-      currentY += pageState.lineHeight;
+      currentY -= pageState.lineHeight;
     }
   }
 
@@ -729,10 +693,7 @@ function generateDialogueInstructions(
       const wrappedLines = wrapStyledText(styledSegments, 35);
 
       for (const wrappedLine of wrappedLines) {
-        if (
-          currentY + pageState.lineHeight >
-          PAGE_HEIGHT - pageState.margins.bottom
-        ) {
+        if (currentY - pageState.lineHeight < pageState.margins.bottom) {
           instructions.push({
             type: "new-page",
             width: PAGE_WIDTH,
@@ -749,7 +710,7 @@ function generateDialogueInstructions(
                 type: "text",
                 data: segment.text,
                 x: currentX,
-                y: PAGE_HEIGHT - currentY,
+                y: currentY,
                 bold: segment.bold || false,
                 italic: segment.italic || false,
                 underline: segment.underline || false,
@@ -759,13 +720,10 @@ function generateDialogueInstructions(
             }
           }
         }
-        currentY += pageState.lineHeight;
+        currentY -= pageState.lineHeight;
       }
     } else {
-      if (
-        currentY + pageState.lineHeight >
-        PAGE_HEIGHT - pageState.margins.bottom
-      ) {
+      if (currentY - pageState.lineHeight < pageState.margins.bottom) {
         instructions.push({
           type: "new-page",
           width: PAGE_WIDTH,
@@ -773,7 +731,7 @@ function generateDialogueInstructions(
         });
         currentY = PAGE_HEIGHT - pageState.margins.top;
       }
-      currentY += pageState.lineHeight;
+      currentY -= pageState.lineHeight;
     }
   }
 
@@ -804,14 +762,11 @@ function generateTransitionInstructions(
 
   // Add spacing before transition if there was a previous element
   if (pageState.lastElementType !== null) {
-    currentY += pageState.lineHeight;
+    currentY -= pageState.lineHeight;
   }
 
   // Check if we need a page break
-  if (
-    currentY + pageState.lineHeight >
-    PAGE_HEIGHT - pageState.margins.bottom
-  ) {
+  if (currentY - pageState.lineHeight < pageState.margins.bottom) {
     instructions.push({
       type: "new-page",
       width: PAGE_WIDTH,
@@ -829,7 +784,7 @@ function generateTransitionInstructions(
     type: "text",
     data: transitionText,
     x: rightAlignedX,
-    y: PAGE_HEIGHT - currentY,
+    y: currentY,
     bold: false,
     italic: false,
     underline: false,
@@ -837,7 +792,7 @@ function generateTransitionInstructions(
 
   return {
     ...pageState,
-    currentY: currentY + pageState.lineHeight,
+    currentY: currentY - pageState.lineHeight,
     lastElementType: "transition",
     pendingSpacing: 0,
   };

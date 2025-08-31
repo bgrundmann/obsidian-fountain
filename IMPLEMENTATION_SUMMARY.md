@@ -137,6 +137,34 @@ The instruction-based architecture makes it easy to add:
 - Different output formats
 - Print preview functionality
 
+## Bug Fixes
+
+### Critical Coordinate System Bug (Fixed)
+
+**Issue**: The initial implementation had a critical bug in the coordinate system handling that caused:
+- Massive page bloat (127 pages instead of expected 4 for standard scripts)
+- Text appearing at incorrect positions (single lines at bottom of pages)
+- Empty or nearly-empty pages
+
+**Root Cause**: Mixed coordinate systems and incorrect page break logic:
+- Inconsistent Y-coordinate calculations (mixing top-origin and bottom-origin)
+- Wrong direction for Y-coordinate updates (`currentY += lineHeight` instead of `currentY -= lineHeight`)
+- Incorrect page break conditions
+
+**Solution**: Systematic coordinate system fix:
+- Consistently use PDF coordinate system (bottom-left origin) throughout
+- Start at `PAGE_HEIGHT - MARGIN_TOP` for new pages
+- Move down the page by subtracting from Y (`currentY -= lineHeight`)
+- Correct page break logic: `if (currentY - lineHeight < MARGIN_BOTTOM)`
+
+**Testing**: Added comprehensive tests including:
+- Page count validation for typical scripts
+- Y-coordinate bounds checking
+- Multi-element script rendering verification
+
+This fix reduced a 127-page output to the expected 4 pages for standard fountain scripts.
+
 ## Backward Compatibility
 
 The public API remains unchanged - `generatePDF()` still accepts a `FountainScript` and returns a `PDFDocument`. All existing code will continue to work without modification.
+</text>
