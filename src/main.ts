@@ -123,6 +123,11 @@ export default class FountainPlugin extends Plugin {
             // Get PDF bytes
             const pdfBytes = await pdfDoc.save();
 
+            // Delete existing file if it exists
+            if (existingFile) {
+              await this.app.vault.delete(existingFile);
+            }
+
             // Save the PDF to the vault
             await this.app.vault.createBinary(outputPath, pdfBytes);
 
