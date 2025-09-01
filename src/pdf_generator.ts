@@ -59,11 +59,10 @@ const ACTION_INDENT = 126; // 1.75"
 const CHARACTER_INDENT = 306; // ~4.25" (centered)
 const DIALOGUE_INDENT = 198; // 2.75"
 const PARENTHETICAL_INDENT = 252; // 3.5"
-const TRANSITION_INDENT = 522; // Right-aligned to 7.25" (PAGE_WIDTH - 90)
 
 // Title page positioning (calculated dynamically based on page height)
 function getTitlePageCenterStart(pageHeight: number): number {
-  return pageHeight * 0.4;
+  return pageHeight * 0.6;
 }
 
 function getTitlePageCenterX(pageWidth: number): number {
@@ -122,7 +121,7 @@ function emitText(
     underline: options.underline,
   });
 
-  // Note: this is the exact width of a courier font character (validated externally)
+  // Note: this is the exact width of a courier font character (validated extern)
   return options.x + options.data.length * (pageState.fontSize * 0.6);
 }
 
@@ -776,7 +775,7 @@ function generateTransitionInstructions(
 
   // Calculate right-aligned position
   const textWidth = transitionText.length * (pageState.fontSize * 0.6);
-  const rightAlignedX = TRANSITION_INDENT - textWidth;
+  const rightAlignedX = pageState.pageWidth - MARGIN_RIGHT - textWidth;
 
   // Generate instruction for transition
   emitText(instructions, currentState, {
