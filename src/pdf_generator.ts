@@ -122,6 +122,7 @@ function emitText(
     underline: options.underline,
   });
 
+  // Note: this is the exact width of a courier font character (validated externally)
   return options.x + options.data.length * (pageState.fontSize * 0.6);
 }
 
