@@ -76,6 +76,12 @@ Done in two steps:
 	- Positions are specified in points from lower-left corner of the page (as typical per PDF specification)
 2. Render instructions to a PDF
 
+### Note on layout
+
+Standard screenplay layout has a left margin of 1.5 inches for binding purposes. To deal with slightly different paper sizes (A4, letter) but maintain the same number of characters per line, and same number of lines per page (so that page per minute is consistent), we compute the remaining margins.
+
+That means we will sometimes not get the standard margin sizes, but we will always have the lines wrapped at the same place.
+
 ## Source File Overview
 
 ### Core Files
