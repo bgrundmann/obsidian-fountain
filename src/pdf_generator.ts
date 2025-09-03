@@ -56,18 +56,21 @@ const PAPER_SIZES = {
   a4: { width: 595.28, height: 841.89 }, // 210 × 297 mm in points
 };
 
-// Margins in points
-const MARGIN_TOP = 72; // 1"
-const MARGIN_BOTTOM = 72; // 1"
-const MARGIN_LEFT = 90; // 1.25"
-const MARGIN_RIGHT = 72; // 1"
+// Industry standard layout constants
+const LINES_PER_PAGE = 61; // Industry standard for page-a-minute timing
 
-// Element positions (from left edge)
-const SCENE_HEADING_INDENT = 126; // 1.75"
-const ACTION_INDENT = 126; // 1.75"
-const CHARACTER_INDENT = 306; // ~4.25" (centered)
-const DIALOGUE_INDENT = 198; // 2.75"
-const PARENTHETICAL_INDENT = 252; // 3.5"
+// Fixed margins (industry standards)
+const MARGIN_LEFT = 108; // 1.5" for binding (updated from 1.25")
+
+// Estimated character width in points (12pt Courier)
+const ESTIMATED_CHAR_WIDTH = 7.2; // Approximate width for 12pt Courier font
+
+// Element positions (from left edge) - updated for 1.5" left margin
+const SCENE_HEADING_INDENT = 108; // 1.5" (matches left margin)
+const ACTION_INDENT = 108; // 1.5" (matches left margin)
+const CHARACTER_INDENT = 288; // ~4" (adjusted for new left margin)
+const DIALOGUE_INDENT = 180; // 2.5" (adjusted for new left margin)
+const PARENTHETICAL_INDENT = 234; // 3.25" (adjusted for new left margin)
 
 // Title page positioning (calculated dynamically based on page height)
 function getTitlePageCenterStart(pageHeight: number): number {
@@ -76,6 +79,30 @@ function getTitlePageCenterStart(pageHeight: number): number {
 
 function getTitlePageCenterX(pageWidth: number): number {
   return pageWidth / 2;
+}
+
+// Dynamic margin calculation functions (Phase 2)
+function calculateRightMargin(
+  pageWidth: number,
+  maxCharactersPerLine: number,
+): number {
+  // Formula: right_margin = page_width - left_margin - (characters_per_line * character_width)
+  return pageWidth - MARGIN_LEFT - maxCharactersPerLine * ESTIMATED_CHAR_WIDTH;
+}
+
+function calculateVerticalMargins(pageHeight: number): {
+  top: number;
+  bottom: number;
+} {
+  // Center 61 lines on the page
+  const totalTextHeight = LINES_PER_PAGE * LINE_HEIGHT;
+  const availableHeight = pageHeight - totalTextHeight;
+  const verticalMargin = availableHeight / 2;
+
+  return {
+    top: verticalMargin,
+    bottom: verticalMargin,
+  };
 }
 
 // Page state type for tracking position and layout
@@ -227,19 +254,27 @@ export function generateInstructions(
   const instructions: Instruction[] = [];
   const paperSize = PAPER_SIZES[options.paperSize];
 
+  // Calculate dynamic margins based on paper size and industry standards (Phase 2)
+  const verticalMargins = calculateVerticalMargins(paperSize.height);
+  const rightMargin = calculateRightMargin(
+    paperSize.width,
+    DEFAULT_CHARACTERS_PER_LINE.action,
+  );
+
   // Initialize page state (using PDF coordinates - bottom-left origin)
   let currentState: PageState = {
-    currentY: paperSize.height - MARGIN_TOP, // Start at top margin in PDF coords
-    remainingHeight: paperSize.height - MARGIN_TOP - MARGIN_BOTTOM,
+    currentY: paperSize.height - verticalMargins.top, // Start at calculated top margin
+    remainingHeight:
+      paperSize.height - verticalMargins.top - verticalMargins.bottom,
     pageNumber: 1,
     pageWidth: paperSize.width,
     pageHeight: paperSize.height,
     isTitlePage: true,
     margins: {
-      top: MARGIN_TOP,
-      bottom: MARGIN_BOTTOM,
-      left: MARGIN_LEFT,
-      right: MARGIN_RIGHT,
+      top: verticalMargins.top,
+      bottom: verticalMargins.bottom,
+      left: MARGIN_LEFT, // Fixed 1.5" for binding
+      right: rightMargin, // Calculated based on character limits
     },
     fontSize: FONT_SIZE,
     lineHeight: LINE_HEIGHT,
@@ -404,7 +439,7 @@ function generateTitlePageInstructions(
   // Add new page for the actual script content
   currentState = emitNewPage(instructions, currentState);
   currentState.remainingHeight =
-    pageState.pageHeight - MARGIN_TOP - MARGIN_BOTTOM;
+    pageState.pageHeight - pageState.margins.top - pageState.margins.bottom;
 
   return currentState;
 }
@@ -480,7 +515,7 @@ function generateLowerLeftTitleElementInstructions(
   fountainScript: FountainScript,
 ): PageState {
   // Start from bottom left area
-  let currentY = MARGIN_BOTTOM;
+  let currentY = pageState.margins.bottom;
 
   for (const element of elements) {
     for (const styledText of element.values) {
@@ -494,7 +529,7 @@ function generateLowerLeftTitleElementInstructions(
       );
 
       for (const line of wrappedLines) {
-        let x = MARGIN_LEFT;
+        let x = pageState.margins.left;
 
         for (const segment of line) {
           if (segment.text.length > 0) {
@@ -532,7 +567,7 @@ function generateLowerRightTitleElementInstructions(
   fountainScript: FountainScript,
 ): PageState {
   // Start from bottom right area
-  let currentY = MARGIN_BOTTOM;
+  let currentY = pageState.margins.bottom;
 
   for (const element of elements) {
     for (const styledText of element.values) {
@@ -552,7 +587,7 @@ function generateLowerRightTitleElementInstructions(
           lineWidth += segment.text.length * (pageState.fontSize * 0.6);
         }
 
-        let x = pageState.pageWidth - MARGIN_RIGHT - lineWidth;
+        let x = pageState.pageWidth - pageState.margins.right - lineWidth;
 
         for (const segment of line) {
           if (segment.text.length > 0) {
@@ -812,7 +847,8 @@ function generateTransitionInstructions(
 
   // Calculate right-aligned position
   const textWidth = transitionText.length * (pageState.fontSize * 0.6);
-  const rightAlignedX = pageState.pageWidth - MARGIN_RIGHT - textWidth;
+  const rightAlignedX =
+    pageState.pageWidth - pageState.margins.right - textWidth;
 
   // Generate instruction for transition
   emitText(instructions, currentState, {

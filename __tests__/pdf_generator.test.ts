@@ -73,7 +73,7 @@ describe("PDF Instruction Generation", () => {
       expect(sceneInstruction!.bold).toBe(false);
       expect(sceneInstruction!.italic).toBe(false);
       expect(sceneInstruction!.underline).toBe(false);
-      expect(sceneInstruction!.x).toBe(126); // SCENE_HEADING_INDENT
+      expect(sceneInstruction!.x).toBe(108); // SCENE_HEADING_INDENT
     });
 
     it("should generate text instructions for action blocks", () => {
@@ -106,7 +106,7 @@ describe("PDF Instruction Generation", () => {
           inst.data.includes("room"),
       );
       expect(actionText).toBeDefined();
-      expect(actionText!.x).toBe(126); // ACTION_INDENT
+      expect(actionText!.x).toBe(108); // ACTION_INDENT
     });
 
     it("should generate instructions for dialogue", () => {
@@ -135,13 +135,13 @@ describe("PDF Instruction Generation", () => {
         (inst) => inst.data === "JOHN",
       );
       expect(characterInstruction).toBeDefined();
-      expect(characterInstruction!.x).toBe(306); // CHARACTER_INDENT
+      expect(characterInstruction!.x).toBe(288); // CHARACTER_INDENT
 
       const dialogueText = textInstructions.find(
         (inst) => inst.data.includes("Hello") || inst.data.includes("world"),
       );
       expect(dialogueText).toBeDefined();
-      expect(dialogueText!.x).toBe(198); // DIALOGUE_INDENT
+      expect(dialogueText!.x).toBe(180); // DIALOGUE_INDENT
     });
 
     it("should generate instructions for dialogue with parenthetical", () => {
@@ -168,7 +168,7 @@ describe("PDF Instruction Generation", () => {
         (inst) => inst.data === "(softly)",
       );
       expect(parentheticalInstruction).toBeDefined();
-      expect(parentheticalInstruction!.x).toBe(252); // PARENTHETICAL_INDENT
+      expect(parentheticalInstruction!.x).toBe(234); // PARENTHETICAL_INDENT
     });
 
     it("should generate instructions for transitions", () => {
@@ -311,6 +311,92 @@ describe("PDF Instruction Generation", () => {
       // Each line should respect the action character limit (62 characters)
       // Since we're using 100 A's, it should wrap into at least 2 lines
       expect(textInstructions.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("should calculate dynamic margins based on paper size while preserving character limits", () => {
+      const script = createMockScript(
+        "INT. OFFICE - DAY\n\nJohn enters the room.",
+        [
+          { kind: "scene", range: { start: 0, end: 17 } } as Scene,
+          {
+            kind: "action",
+            range: { start: 19, end: 40 },
+            lines: [
+              {
+                range: { start: 19, end: 40 },
+                elements: [
+                  {
+                    range: { start: 19, end: 40 },
+                    kind: "text",
+                  },
+                ],
+                centered: false,
+              },
+            ],
+          } as Action,
+        ],
+      );
+
+      // Generate instructions for Letter paper
+      const letterInstructions = generateInstructions(script, {
+        sceneHeadingBold: false,
+        paperSize: "letter",
+      });
+
+      // Generate instructions for A4 paper
+      const a4Instructions = generateInstructions(script, {
+        sceneHeadingBold: false,
+        paperSize: "a4",
+      });
+
+      // Both should have the same number of instructions (same character limits)
+      expect(letterInstructions.length).toBe(a4Instructions.length);
+
+      // Get new-page instructions to verify different page sizes
+      const letterNewPage = letterInstructions.find(
+        (inst): inst is NewPageInstruction => inst.type === "new-page",
+      );
+      const a4NewPage = a4Instructions.find(
+        (inst): inst is NewPageInstruction => inst.type === "new-page",
+      );
+
+      expect(letterNewPage).toBeDefined();
+      expect(a4NewPage).toBeDefined();
+
+      // Letter and A4 should have different page dimensions
+      expect(letterNewPage!.width).toBe(612); // Letter width
+      expect(letterNewPage!.height).toBe(792); // Letter height
+      expect(a4NewPage!.width).toBe(595.28); // A4 width
+      expect(a4NewPage!.height).toBe(841.89); // A4 height
+
+      // Text positioning should remain consistent (same left margin and indentations)
+      const letterTextInstructions = letterInstructions.filter(
+        (inst): inst is TextInstruction => inst.type === "text",
+      );
+      const a4TextInstructions = a4Instructions.filter(
+        (inst): inst is TextInstruction => inst.type === "text",
+      );
+
+      // All text should use the same left margin (108pt = 1.5")
+      letterTextInstructions.forEach((inst) => {
+        expect(inst.x).toBeGreaterThanOrEqual(108); // At or beyond left margin
+      });
+      a4TextInstructions.forEach((inst) => {
+        expect(inst.x).toBeGreaterThanOrEqual(108); // At or beyond left margin
+      });
+
+      // Verify that margins are calculated to center content vertically
+      // Both should have similar vertical positioning relative to their page heights
+      const letterMaxY = Math.max(
+        ...letterTextInstructions.map((inst) => inst.y),
+      );
+      const a4MaxY = Math.max(...a4TextInstructions.map((inst) => inst.y));
+
+      // Y positions should be proportionally similar (both centering 61 lines)
+      const letterRatio = letterMaxY / 792; // ratio to Letter height
+      const a4Ratio = a4MaxY / 841.89; // ratio to A4 height
+
+      expect(Math.abs(letterRatio - a4Ratio)).toBeLessThan(0.05); // Should be very similar ratios
     });
   });
 
