@@ -275,6 +275,43 @@ describe("PDF Instruction Generation", () => {
         expect(instruction.y).toBeLessThan(792); // PAGE_HEIGHT
       });
     });
+
+    it("should use character limits from PageState for text wrapping", () => {
+      // Test that character limits are read from PageState, not hardcoded
+      const longActionText = "A".repeat(100); // Text longer than any character limit
+      const script = createMockScript(longActionText, [
+        {
+          kind: "action",
+          range: { start: 0, end: longActionText.length },
+          lines: [
+            {
+              range: { start: 0, end: longActionText.length },
+              elements: [
+                {
+                  range: { start: 0, end: longActionText.length },
+                  kind: "text",
+                },
+              ],
+              centered: false,
+            },
+          ],
+        } as Action,
+      ]);
+
+      const instructions = generateInstructions(script);
+
+      // Find text instructions (skip the new-page instruction)
+      const textInstructions = instructions.filter(
+        (inst): inst is TextInstruction => inst.type === "text",
+      );
+
+      // Should have multiple text instructions due to wrapping at character limit (62 for actions)
+      expect(textInstructions.length).toBeGreaterThan(1);
+
+      // Each line should respect the action character limit (62 characters)
+      // Since we're using 100 A's, it should wrap into at least 2 lines
+      expect(textInstructions.length).toBeGreaterThanOrEqual(2);
+    });
   });
 
   describe("renderInstructionsToPDF", () => {

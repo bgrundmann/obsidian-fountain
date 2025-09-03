@@ -1,4 +1,4 @@
-import { type App, Modal, Setting, type TFile } from "obsidian";
+import { type App, Modal, Setting } from "obsidian";
 
 export interface PDFOptions {
   sceneHeadingBold: boolean;

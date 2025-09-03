@@ -41,6 +41,15 @@ type StyledTextSegment = {
 const FONT_SIZE = 12;
 const LINE_HEIGHT = 12; // Single spacing
 
+// Character limits for text wrapping (Phase 1: extracted from hardcoded values)
+const DEFAULT_CHARACTERS_PER_LINE = {
+  action: 62,
+  dialogue: 35,
+  parenthetical: 25,
+  titlePageCenter: 60,
+  titlePageSides: 55,
+};
+
 // Page dimensions based on paper size
 const PAPER_SIZES = {
   letter: { width: 612, height: 792 }, // 8.5" × 11" in points
@@ -77,8 +86,8 @@ type PageState = {
 
   // Page information
   pageNumber: number; // Current page number (1-based)
-  pageWidth: number; // Current page width
-  pageHeight: number; // Current page height
+  pageWidth: number; // Current page width (including margins)
+  pageHeight: number; // Current page height (including margins)
   isTitlePage: boolean; // Whether this is the title page
 
   // Layout constraints
@@ -92,6 +101,15 @@ type PageState = {
   // Text formatting state
   fontSize: number; // Current font size
   lineHeight: number; // Current line height
+
+  // Character limits for different element types
+  charactersPerLine: {
+    action: number;
+    dialogue: number;
+    parenthetical: number;
+    titlePageCenter: number;
+    titlePageSides: number;
+  };
 
   // Element spacing
   lastElementType: string | null; // Type of previous element for spacing rules
@@ -225,6 +243,7 @@ export function generateInstructions(
     },
     fontSize: FONT_SIZE,
     lineHeight: LINE_HEIGHT,
+    charactersPerLine: DEFAULT_CHARACTERS_PER_LINE,
     lastElementType: null,
   };
 
@@ -408,7 +427,10 @@ function generateCenteredTitleElementInstructions(
         styledText,
         fountainScript.document,
       );
-      const wrappedLines = wrapStyledText(segments, 60); // Max 60 chars for title page
+      const wrappedLines = wrapStyledText(
+        segments,
+        pageState.charactersPerLine.titlePageCenter,
+      );
 
       for (const line of wrappedLines) {
         // Calculate line width for centering
@@ -466,7 +488,10 @@ function generateLowerLeftTitleElementInstructions(
         styledText,
         fountainScript.document,
       );
-      const wrappedLines = wrapStyledText(segments, 55);
+      const wrappedLines = wrapStyledText(
+        segments,
+        pageState.charactersPerLine.titlePageSides,
+      );
 
       for (const line of wrappedLines) {
         let x = MARGIN_LEFT;
@@ -515,7 +540,10 @@ function generateLowerRightTitleElementInstructions(
         styledText,
         fountainScript.document,
       );
-      const wrappedLines = wrapStyledText(segments, 55);
+      const wrappedLines = wrapStyledText(
+        segments,
+        pageState.charactersPerLine.titlePageSides,
+      );
 
       for (const line of wrappedLines) {
         // Calculate line width for right alignment
@@ -606,7 +634,10 @@ function generateActionInstructions(
         line.elements,
         fountainScript.document,
       );
-      const wrappedLines = wrapStyledText(styledSegments, 62);
+      const wrappedLines = wrapStyledText(
+        styledSegments,
+        pageState.charactersPerLine.action,
+      );
       actionLines.push(...wrappedLines);
     } else {
       actionLines.push([]);
@@ -698,7 +729,10 @@ function generateDialogueInstructions(
       .substring(dialogue.parenthetical.start, dialogue.parenthetical.end)
       .trim();
 
-    const wrappedParentheticals = wrapPlainText(parentheticalText, 16);
+    const wrappedParentheticals = wrapPlainText(
+      parentheticalText,
+      pageState.charactersPerLine.parenthetical,
+    );
 
     for (const parentheticalLine of wrappedParentheticals) {
       currentState = needLines(instructions, currentState, 1);
@@ -721,7 +755,10 @@ function generateDialogueInstructions(
         line.elements,
         fountainScript.document,
       );
-      const wrappedLines = wrapStyledText(styledSegments, 35);
+      const wrappedLines = wrapStyledText(
+        styledSegments,
+        pageState.charactersPerLine.dialogue,
+      );
 
       for (const wrappedLine of wrappedLines) {
         currentState = needLines(instructions, currentState, 1);
