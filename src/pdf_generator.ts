@@ -57,7 +57,7 @@ const PAPER_SIZES = {
 };
 
 // Industry standard layout constants
-const LINES_PER_PAGE = 61; // Industry standard for page-a-minute timing
+const LINES_PER_PAGE = 60; // Industry standard for page-a-minute timing
 
 // Fixed margins (industry standards)
 const MARGIN_LEFT = 108; // 1.5" for binding (updated from 1.25")
