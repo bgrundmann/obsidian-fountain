@@ -62,8 +62,10 @@ const LINES_PER_PAGE = 60; // Industry standard for page-a-minute timing
 // Fixed margins (industry standards)
 const MARGIN_LEFT = 108; // 1.5" for binding (updated from 1.25")
 
-// Estimated character width in points (12pt Courier)
-const ESTIMATED_CHAR_WIDTH = 7.2; // Approximate width for 12pt Courier font
+// Character width calculation for Courier font
+function getCharacterWidth(fontSize: number): number {
+  return fontSize * 0.6; // Exact width of a courier font character
+}
 
 // Element positions (from left edge) - updated for 1.5" left margin
 const SCENE_HEADING_INDENT = 108; // 1.5" (matches left margin)
@@ -85,16 +87,19 @@ function getTitlePageCenterX(pageWidth: number): number {
 function calculateRightMargin(
   pageWidth: number,
   maxCharactersPerLine: number,
+  fontSize: number,
 ): number {
   // Formula: right_margin = page_width - left_margin - (characters_per_line * character_width)
-  return pageWidth - MARGIN_LEFT - maxCharactersPerLine * ESTIMATED_CHAR_WIDTH;
+  return (
+    pageWidth - MARGIN_LEFT - maxCharactersPerLine * getCharacterWidth(fontSize)
+  );
 }
 
 function calculateVerticalMargins(pageHeight: number): {
   top: number;
   bottom: number;
 } {
-  // Center 61 lines on the page
+  // Center the desired number of lines on the page
   const totalTextHeight = LINES_PER_PAGE * LINE_HEIGHT;
   const availableHeight = pageHeight - totalTextHeight;
   const verticalMargin = availableHeight / 2;
@@ -166,8 +171,9 @@ function emitText(
     underline: options.underline,
   });
 
-  // Note: this is the exact width of a courier font character (validated extern)
-  return options.x + options.data.length * (pageState.fontSize * 0.6);
+  return (
+    options.x + options.data.length * getCharacterWidth(pageState.fontSize)
+  );
 }
 
 /**
@@ -259,6 +265,7 @@ export function generateInstructions(
   const rightMargin = calculateRightMargin(
     paperSize.width,
     DEFAULT_CHARACTERS_PER_LINE.action,
+    FONT_SIZE,
   );
 
   // Initialize page state (using PDF coordinates - bottom-left origin)
@@ -472,7 +479,8 @@ function generateCenteredTitleElementInstructions(
         let lineWidth = 0;
         for (const segment of line) {
           // Estimate width using average character width for Courier
-          lineWidth += segment.text.length * (pageState.fontSize * 0.6);
+          lineWidth +=
+            segment.text.length * getCharacterWidth(pageState.fontSize);
         }
 
         let x = getTitlePageCenterX(pageState.pageWidth) - lineWidth / 2;
@@ -584,7 +592,8 @@ function generateLowerRightTitleElementInstructions(
         // Calculate line width for right alignment
         let lineWidth = 0;
         for (const segment of line) {
-          lineWidth += segment.text.length * (pageState.fontSize * 0.6);
+          lineWidth +=
+            segment.text.length * getCharacterWidth(pageState.fontSize);
         }
 
         let x = pageState.pageWidth - pageState.margins.right - lineWidth;
@@ -846,7 +855,8 @@ function generateTransitionInstructions(
   currentState = needLines(instructions, currentState, 1);
 
   // Calculate right-aligned position
-  const textWidth = transitionText.length * (pageState.fontSize * 0.6);
+  const textWidth =
+    transitionText.length * getCharacterWidth(pageState.fontSize);
   const rightAlignedX =
     pageState.pageWidth - pageState.margins.right - textWidth;
 
