@@ -361,6 +361,9 @@ function generateScriptInstructions(
           fountainScript,
         );
         break;
+      case "page-break":
+        currentState = emitNewPage(instructions, currentState);
+        break;
       case "synopsis":
       case "section":
       case "page-break":
