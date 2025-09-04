@@ -121,7 +121,3 @@ That means we will sometimes not get the standard margin sizes, but we will alwa
 - **`render_tools.ts`** - Shared HTML rendering utilities, including range-based element creation and blank line handling.
 
 - **`fuzzy_select_string.ts`** - Fuzzy search modal for string selection, used primarily for character selection in rehearsal mode.
-
-### Documentation
-
-- **`PRINT.md`** - Comprehensive implementation plan and technical documentation for PDF generation, including formatting standards and development phases.

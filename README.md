@@ -3,12 +3,14 @@
 ## Features
 
 - obsidian syntax highlighting when editing
-- close to print readonly view / preview (with ability to hide notes, synopsis)
-- editable index card view to plan your script
+- close to print readonly view / preview (with ability to hide notes, synopsis, boneyard)
+- PDF export with configurable options (paper size, scene heading formatting)
+- editable index card view to plan your script with drag & drop scene reordering
 - Rehearsal mode (blackout of a characters dialogue)
 - mark notes as todo
 - table of contents in right hand pane (with todos and synopsis included)
 - button in ribbon to create a new script (as scripts have .fountain extension)
+- boneyard support (content after "# boneyard" header can be hidden)
 
 ## Notably missing
 
@@ -16,10 +18,6 @@ On the todo list with low priority:
 
 - support for lyrics
 - support for dual dialogue
-
-On the maybe one day list:
-
-- a way to actually create a print/pdf version of the script
 
 ## Screenshots
 
