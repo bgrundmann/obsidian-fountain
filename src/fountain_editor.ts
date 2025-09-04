@@ -31,6 +31,7 @@ class FountainEditorPlugin implements PluginValue {
   private noteSymbolMinus: Decoration;
   private noteTodo: Decoration;
   private note: Decoration;
+  private centered: Decoration;
 
   constructor(
     view: EditorView,
@@ -45,6 +46,7 @@ class FountainEditorPlugin implements PluginValue {
     this.noteSymbolMinus = Decoration.mark({ class: "note-symbol-minus" });
     this.noteTodo = Decoration.mark({ class: "note-todo" });
     this.note = Decoration.mark({ class: "note" });
+    this.centered = Decoration.mark({ class: "centered" });
     this.decorations = this.buildDecorations(view);
   }
 
@@ -81,6 +83,11 @@ class FountainEditorPlugin implements PluginValue {
 
   private decorateLines(builder: RangeSetBuilder<Decoration>, lines: Line[]) {
     for (const line of lines) {
+      // Apply centered decoration to the entire line if it's centered
+      if (line.centered) {
+        builder.add(line.range.start, line.range.end, this.centered);
+      }
+
       for (const tel of line.elements) {
         switch (tel.kind) {
           case "text":
