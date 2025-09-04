@@ -721,6 +721,12 @@ class FountainScript {
       this.shouldKeepElement(element, settings),
     );
 
+    // If line was originally empty, preserve it
+    if (line.elements.length === 0) {
+      return line;
+    }
+
+    // If line became empty after filtering, remove it
     if (filteredElements.length === 0) {
       return null;
     }

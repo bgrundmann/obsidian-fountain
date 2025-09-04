@@ -807,5 +807,107 @@ describe("PDF Instruction Generation", () => {
         expect(filtered.script[0].kind).toBe("action");
       });
     });
+
+    test("should preserve empty lines in action blocks", () => {
+      const script = new FountainScript(
+        "Test\n\n\n\nthree empty lines",
+        [],
+        [
+          {
+            kind: "action",
+            range: { start: 0, end: 22 },
+            lines: [
+              {
+                range: { start: 0, end: 4 },
+                elements: [{ kind: "text", range: { start: 0, end: 4 } }],
+                centered: false,
+              },
+              {
+                range: { start: 5, end: 5 },
+                elements: [],
+                centered: false,
+              },
+              {
+                range: { start: 6, end: 6 },
+                elements: [],
+                centered: false,
+              },
+              {
+                range: { start: 7, end: 7 },
+                elements: [],
+                centered: false,
+              },
+              {
+                range: { start: 8, end: 22 },
+                elements: [{ kind: "text", range: { start: 8, end: 22 } }],
+                centered: false,
+              },
+            ],
+          } as Action,
+        ],
+      );
+
+      const filtered = script.withHiddenElementsRemoved({
+        hideNotes: true,
+        hideSynopsis: true,
+        hideBoneyard: true,
+      });
+
+      expect(filtered.script).toHaveLength(1);
+      expect(filtered.script[0].kind).toBe("action");
+      const actionBlock = filtered.script[0] as Action;
+      expect(actionBlock.lines).toHaveLength(5); // Should preserve all lines including empty ones
+      expect(actionBlock.lines[0].elements).toHaveLength(1); // "Test"
+      expect(actionBlock.lines[1].elements).toHaveLength(0); // Empty line
+      expect(actionBlock.lines[2].elements).toHaveLength(0); // Empty line
+      expect(actionBlock.lines[3].elements).toHaveLength(0); // Empty line
+      expect(actionBlock.lines[4].elements).toHaveLength(1); // "three empty lines"
+    });
+
+    test("should remove lines that become empty after filtering", () => {
+      const script = new FountainScript(
+        "This is visible text.\n[[This line only has a note]]\nAnother visible line.",
+        [],
+        [
+          {
+            kind: "action",
+            range: { start: 0, end: 68 },
+            lines: [
+              {
+                range: { start: 0, end: 21 },
+                elements: [{ kind: "text", range: { start: 0, end: 21 } }],
+                centered: false,
+              },
+              {
+                range: { start: 22, end: 49 },
+                elements: [
+                  {
+                    kind: "note",
+                    noteKind: "note",
+                    range: { start: 22, end: 49 },
+                    textRange: { start: 24, end: 47 },
+                  },
+                ],
+                centered: false,
+              },
+              {
+                range: { start: 50, end: 68 },
+                elements: [{ kind: "text", range: { start: 50, end: 68 } }],
+                centered: false,
+              },
+            ],
+          } as Action,
+        ],
+      );
+
+      const filtered = script.withHiddenElementsRemoved({ hideNotes: true });
+
+      expect(filtered.script).toHaveLength(1);
+      expect(filtered.script[0].kind).toBe("action");
+      const actionBlock = filtered.script[0] as Action;
+      expect(actionBlock.lines).toHaveLength(2); // Line with only note should be removed
+      expect(actionBlock.lines[0].elements).toHaveLength(1); // "This is visible text."
+      expect(actionBlock.lines[1].elements).toHaveLength(1); // "Another visible line."
+    });
   });
 });
