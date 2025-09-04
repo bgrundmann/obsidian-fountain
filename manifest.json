@@ -1,7 +1,7 @@
 {
 	"id": "fountain",
 	"name": "Fountain",
-	"version": "0.8.2",
+	"version": "0.9.0",
 	"minAppVersion": "0.15.0",
 	"description": "Write and view screenplays in Fountain format with index cards and lots of other features.",
 	"author": "Benedikt Grundmann",
