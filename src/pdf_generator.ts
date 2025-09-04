@@ -366,8 +366,7 @@ function generateScriptInstructions(
         break;
       case "synopsis":
       case "section":
-      case "page-break":
-        // TODO: Phase 3 - implement advanced elements
+        // TODO
         break;
     }
   }
