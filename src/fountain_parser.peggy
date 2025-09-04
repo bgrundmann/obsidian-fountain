@@ -83,7 +83,9 @@ ActionLines
 
 Transition
  = OptionalBlanks (!("TO:\n"/"TO:" !.) [^\n] )* "TO:" BlankLineOrEndOfInput &{ const t = text(); return t.toUpperCase() === t; }
- { return { kind: 'transition', range: range() }; }
+ { return { kind: 'transition', range: range(), forced: false }; }
+ / ">" transition:([^\n]*) !{ return transition.join("").endsWith("<") } BlankLineOrEndOfInput
+ { return { kind: 'transition', range: range(), forced: true }; }
 
 Action
  = lines:ActionLines

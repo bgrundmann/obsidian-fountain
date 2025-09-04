@@ -190,6 +190,9 @@ describe("Parser tests", () => {
     "Bar\nTO:\n\n",
     [{ kind: "action", source: "Bar\nTO:\n\n" }],
   );
+  test_script("a forced transition", "> this is a transition", [
+    { kind: "transition", source: "> this is a transition", forced: true },
+  ]);
 
   // Sections are just the line the section is on.
   test_script("section at end of input", "# A section", [

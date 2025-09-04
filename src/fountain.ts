@@ -126,6 +126,7 @@ type Scene = {
 type Transition = {
   kind: "transition";
   range: Range;
+  forced: boolean;
 };
 
 type Dialogue = {
