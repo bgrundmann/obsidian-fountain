@@ -633,4 +633,120 @@ class FountainScript {
     }
     return res;
   }
+
+  /**
+   * Returns a copy of this FountainScript with hidden elements removed.
+   * Lines that become empty after removing hidden elements are also removed.
+   * Action blocks that contained only lines that are now completely removed are fully removed.
+   */
+  withHiddenElementsRemoved(settings: {
+    hideBoneyard?: boolean;
+    hideNotes?: boolean;
+    hideSynopsis?: boolean;
+  }): FountainScript {
+    const filteredScript: FountainElement[] = [];
+
+    for (const element of this.script) {
+      // Check for boneyard section - if found and hideBoneyard is true, stop processing
+      if (element.kind === "section" && settings.hideBoneyard) {
+        const title = this.unsafeExtractRaw(element.range);
+        if (
+          title
+            .toLowerCase()
+            .replace(/^ *#+ */, "")
+            .trimEnd() === "boneyard"
+        ) {
+          // Stop processing here - everything after boneyard is hidden
+          break;
+        }
+      }
+
+      const filteredElement = this.filterFountainElement(element, settings);
+      if (filteredElement !== null) {
+        filteredScript.push(filteredElement);
+      }
+    }
+
+    return new FountainScript(this.document, this.titlePage, filteredScript);
+  }
+
+  private filterFountainElement(
+    element: FountainElement,
+    settings: {
+      hideBoneyard?: boolean;
+      hideNotes?: boolean;
+      hideSynopsis?: boolean;
+    },
+  ): FountainElement | null {
+    switch (element.kind) {
+      case "synopsis":
+        return settings.hideSynopsis ? null : element;
+
+      case "action": {
+        const filteredLines = element.lines
+          .map((line) => this.filterLine(line, settings))
+          .filter((line): line is Line => line !== null);
+
+        if (filteredLines.length === 0) {
+          return null;
+        }
+
+        return {
+          ...element,
+          lines: filteredLines,
+        };
+      }
+
+      case "dialogue": {
+        const filteredLines = element.lines
+          .map((line) => this.filterLine(line, settings))
+          .filter((line): line is Line => line !== null);
+
+        return {
+          ...element,
+          lines: filteredLines,
+        };
+      }
+
+      default:
+        return element;
+    }
+  }
+
+  private filterLine(
+    line: Line,
+    settings: { hideBoneyard?: boolean; hideNotes?: boolean },
+  ): Line | null {
+    const filteredElements = line.elements.filter((element) =>
+      this.shouldKeepElement(element, settings),
+    );
+
+    if (filteredElements.length === 0) {
+      return null;
+    }
+
+    return {
+      ...line,
+      elements: filteredElements,
+    };
+  }
+
+  private shouldKeepElement(
+    element: TextElementWithNotesAndBoneyard,
+    settings: { hideBoneyard?: boolean; hideNotes?: boolean },
+  ): boolean {
+    switch (element.kind) {
+      case "note":
+        return !settings.hideNotes;
+      case "boneyard":
+        return !settings.hideBoneyard;
+      case "text":
+      case "bold":
+      case "italics":
+      case "underline":
+        return true;
+      default:
+        return true;
+    }
+  }
 }

@@ -242,7 +242,13 @@ function addElementSpacing(pageState: PageState): PageState {
  */
 export async function generatePDF(
   fountainScript: FountainScript,
-  options: PDFOptions = { sceneHeadingBold: false, paperSize: "letter" },
+  options: PDFOptions = {
+    sceneHeadingBold: false,
+    paperSize: "letter",
+    hideNotes: true,
+    hideBoneyard: true,
+    hideSynopsis: false,
+  },
 ): Promise<PDFDocument> {
   // Generate instructions
   const instructions = generateInstructions(fountainScript, options);
@@ -256,7 +262,13 @@ export async function generatePDF(
  */
 export function generateInstructions(
   fountainScript: FountainScript,
-  options: PDFOptions = { sceneHeadingBold: false, paperSize: "letter" },
+  options: PDFOptions = {
+    sceneHeadingBold: false,
+    paperSize: "letter",
+    hideNotes: true,
+    hideBoneyard: true,
+    hideSynopsis: false,
+  },
 ): Instruction[] {
   const instructions: Instruction[] = [];
   const paperSize = PAPER_SIZES[options.paperSize];
@@ -305,11 +317,18 @@ export function generateInstructions(
     currentState = { ...currentState, isTitlePage: false, pageNumber: 1 };
   }
 
+  // Filter out hidden elements for consistent behavior
+  const filteredScript = fountainScript.withHiddenElementsRemoved({
+    hideBoneyard: options.hideBoneyard,
+    hideNotes: options.hideNotes,
+    hideSynopsis: options.hideSynopsis,
+  });
+
   // Generate script instructions
   generateScriptInstructions(
     instructions,
     currentState,
-    fountainScript,
+    filteredScript,
     options,
   );
 
@@ -914,7 +933,13 @@ function generateTransitionInstructions(
  */
 export async function renderInstructionsToPDF(
   instructions: Instruction[],
-  options: PDFOptions = { sceneHeadingBold: false, paperSize: "letter" },
+  options: PDFOptions = {
+    sceneHeadingBold: false,
+    paperSize: "letter",
+    hideNotes: true,
+    hideBoneyard: true,
+    hideSynopsis: false,
+  },
 ): Promise<PDFDocument> {
   const pdfDoc = await PDFDocument.create();
 

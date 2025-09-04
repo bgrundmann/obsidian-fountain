@@ -1,10 +1,5 @@
-import type {
-  Action,
-  Dialogue,
-  FountainScript,
-  Scene,
-  Transition,
-} from "../src/fountain";
+import { FountainScript } from "../src/fountain";
+import type { Action, Dialogue, Scene, Transition } from "../src/fountain";
 import {
   type Instruction,
   type NewPageInstruction,
@@ -34,6 +29,8 @@ describe("PDF Instruction Generation", () => {
           .trim(),
       ],
       styledTextToHtml: () => true,
+      withHiddenElementsRemoved: () =>
+        createMockScript(document, script, titlePage),
     } as any as FountainScript;
   };
 
@@ -341,12 +338,18 @@ describe("PDF Instruction Generation", () => {
       const letterInstructions = generateInstructions(script, {
         sceneHeadingBold: false,
         paperSize: "letter",
+        hideNotes: true,
+        hideBoneyard: true,
+        hideSynopsis: false,
       });
 
       // Generate instructions for A4 paper
       const a4Instructions = generateInstructions(script, {
         sceneHeadingBold: false,
         paperSize: "a4",
+        hideNotes: true,
+        hideBoneyard: true,
+        hideSynopsis: false,
       });
 
       // Both should have the same number of instructions (same character limits)
@@ -648,6 +651,160 @@ describe("PDF Instruction Generation", () => {
       textInstructions.forEach((instruction) => {
         expect(instruction.y).toBeGreaterThan(0);
         expect(instruction.y).toBeLessThan(792); // Page height
+      });
+    });
+
+    describe("withHiddenElementsRemoved", () => {
+      test("should remove notes when hideNotes is true", () => {
+        const script = new FountainScript(
+          "This is action text.\n[[This is a note]]\n\nMore action text.",
+          [],
+          [
+            {
+              kind: "action",
+              range: { start: 0, end: 65 },
+              lines: [
+                {
+                  range: { start: 0, end: 19 },
+                  elements: [{ kind: "text", range: { start: 0, end: 19 } }],
+                  centered: false,
+                },
+                {
+                  range: { start: 20, end: 38 },
+                  elements: [
+                    {
+                      kind: "note",
+                      noteKind: "note",
+                      range: { start: 20, end: 38 },
+                      textRange: { start: 22, end: 36 },
+                    },
+                  ],
+                  centered: false,
+                },
+                {
+                  range: { start: 40, end: 57 },
+                  elements: [{ kind: "text", range: { start: 40, end: 57 } }],
+                  centered: false,
+                },
+              ],
+            } as Action,
+          ],
+        );
+
+        const filtered = script.withHiddenElementsRemoved({ hideNotes: true });
+
+        expect(filtered.script).toHaveLength(1);
+        expect(filtered.script[0].kind).toBe("action");
+        const actionBlock = filtered.script[0] as Action;
+        expect(actionBlock.lines).toHaveLength(2); // Note line should be removed
+        expect(actionBlock.lines[0].elements).toHaveLength(1);
+        expect(actionBlock.lines[0].elements[0].kind).toBe("text");
+      });
+
+      test("should remove synopsis when hideSynopsis is true", () => {
+        const script = new FountainScript(
+          "= This is a synopsis\n\nThis is action text.",
+          [],
+          [
+            {
+              kind: "synopsis",
+              range: { start: 0, end: 20 },
+              linesOfText: [{ start: 2, end: 20 }],
+            },
+            {
+              kind: "action",
+              range: { start: 22, end: 44 },
+              lines: [
+                {
+                  range: { start: 22, end: 44 },
+                  elements: [{ kind: "text", range: { start: 22, end: 44 } }],
+                  centered: false,
+                },
+              ],
+            } as Action,
+          ],
+        );
+
+        const filtered = script.withHiddenElementsRemoved({
+          hideSynopsis: true,
+        });
+
+        expect(filtered.script).toHaveLength(1);
+        expect(filtered.script[0].kind).toBe("action");
+      });
+
+      test("should remove action blocks that become empty after filtering", () => {
+        const script = new FountainScript(
+          "[[This is a note]]",
+          [],
+          [
+            {
+              kind: "action",
+              range: { start: 0, end: 18 },
+              lines: [
+                {
+                  range: { start: 0, end: 18 },
+                  elements: [
+                    {
+                      kind: "note",
+                      noteKind: "note",
+                      range: { start: 0, end: 18 },
+                      textRange: { start: 2, end: 16 },
+                    },
+                  ],
+                  centered: false,
+                },
+              ],
+            } as Action,
+          ],
+        );
+
+        const filtered = script.withHiddenElementsRemoved({ hideNotes: true });
+
+        expect(filtered.script).toHaveLength(0); // Action block should be completely removed
+      });
+
+      test("should stop processing at boneyard section when hideBoneyard is true", () => {
+        const script = new FountainScript(
+          "This is action text.\n\n# BONEYARD\n\nThis should be hidden.",
+          [],
+          [
+            {
+              kind: "action",
+              range: { start: 0, end: 19 },
+              lines: [
+                {
+                  range: { start: 0, end: 19 },
+                  elements: [{ kind: "text", range: { start: 0, end: 19 } }],
+                  centered: false,
+                },
+              ],
+            } as Action,
+            {
+              kind: "section",
+              range: { start: 22, end: 33 },
+              depth: 1,
+            },
+            {
+              kind: "action",
+              range: { start: 35, end: 58 },
+              lines: [
+                {
+                  range: { start: 35, end: 58 },
+                  elements: [{ kind: "text", range: { start: 35, end: 58 } }],
+                  centered: false,
+                },
+              ],
+            } as Action,
+          ],
+        );
+
+        const filtered = script.withHiddenElementsRemoved({
+          hideBoneyard: true,
+        });
+
+        expect(filtered.script).toHaveLength(1); // Only first action should remain
+        expect(filtered.script[0].kind).toBe("action");
       });
     });
   });

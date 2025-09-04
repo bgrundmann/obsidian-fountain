@@ -121,9 +121,6 @@ function renderSynopsis(
   synopsis: Synopsis,
   settings: ShowHideSettings,
 ): void {
-  if (settings.hideSynopsis) {
-    return;
-  }
   for (const l of synopsis.linesOfText) {
     parent.createDiv({
       cls: "synopsis",
@@ -143,11 +140,7 @@ function renderContent(
   settings: ShowHideSettings,
   blackoutCharacter?: string,
 ): void {
-  let skippingRest = false;
   const convertElement = (el: FountainElement): void => {
-    if (skippingRest) {
-      return;
-    }
     switch (el.kind) {
       case "action":
         renderAction(parent, el, script, settings);
@@ -176,10 +169,6 @@ function renderContent(
               .replace(/^ *#+ */, "")
               .trimEnd() === "boneyard"
           ) {
-            if (settings.hideBoneyard) {
-              skippingRest = true;
-              return;
-            }
             parent.createEl("hr");
           }
           const tag = `h${el.depth ?? 1}` as keyof HTMLElementTagNameMap;
@@ -258,8 +247,15 @@ function renderFountain(
   settings: ShowHideSettings,
   blackoutCharacter?: string,
 ): void {
-  renderTitlePage(parent, script);
-  renderContent(parent, script, settings, blackoutCharacter);
+  // Use filtered script to ensure consistent behavior and eliminate unwanted newlines
+  const filteredScript = script.withHiddenElementsRemoved({
+    hideBoneyard: settings.hideBoneyard,
+    hideNotes: settings.hideNotes,
+    hideSynopsis: settings.hideSynopsis,
+  });
+
+  renderTitlePage(parent, script); // Title page uses original script
+  renderContent(parent, filteredScript, settings, blackoutCharacter);
 }
 
 /// Return the range of the first visible line on the screen. Or something close.
