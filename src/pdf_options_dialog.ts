@@ -27,15 +27,22 @@ export class PDFOptionsDialog extends Modal {
 
     // Show warning if target file exists
     if (this.fileExists) {
-      const warningEl = contentEl.createDiv("pdf-warning");
-      warningEl.createEl("p", {
+      const warningEl = contentEl.createDiv();
+      const warningTextEl = warningEl.createEl("p", {
         text: "⚠️ Warning: This will overwrite the existing PDF file:",
-        cls: "pdf-warning-text",
       });
-      warningEl.createEl("p", {
+      warningTextEl.style.color = "var(--text-warning)";
+      warningTextEl.style.fontWeight = "500";
+      warningTextEl.style.margin = "0 0 0.25rem 0";
+
+      const pathEl = warningEl.createEl("p", {
         text: this.outputPath,
-        cls: "pdf-warning-path",
       });
+      pathEl.style.color = "var(--text-muted)";
+      pathEl.style.fontFamily = "var(--font-monospace)";
+      pathEl.style.fontSize = "0.9em";
+      pathEl.style.margin = "0";
+      pathEl.style.wordBreak = "break-all";
       warningEl.style.marginBottom = "1rem";
       warningEl.style.padding = "0.5rem";
       warningEl.style.backgroundColor = "var(--background-modifier-error)";
