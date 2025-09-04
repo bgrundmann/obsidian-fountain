@@ -190,6 +190,17 @@ describe("Parser tests", () => {
     "Bar\nTO:\n\n",
     [{ kind: "action", source: "Bar\nTO:\n\n" }],
   );
+  test_script(
+    "a forced transition that looks like a transition",
+    "> THIS IS A FORCED TRANSITION TO:",
+    [
+      {
+        kind: "transition",
+        source: "> THIS IS A FORCED TRANSITION TO:",
+        forced: true,
+      },
+    ],
+  );
   test_script("a forced transition", "> this is a transition", [
     { kind: "transition", source: "> this is a transition", forced: true },
   ]);
