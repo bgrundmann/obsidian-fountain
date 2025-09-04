@@ -1,12 +1,13 @@
 import { PDFDocument, type PDFPage, StandardFonts, rgb } from "pdf-lib";
-import type {
-  Action,
-  Dialogue,
-  FountainScript,
-  Scene,
-  StyledText,
-  TextElementWithNotesAndBoneyard,
-  Transition,
+import {
+  type Action,
+  type Dialogue,
+  type FountainScript,
+  type Scene,
+  type StyledText,
+  type TextElementWithNotesAndBoneyard,
+  type Transition,
+  extractTransitionText,
 } from "./fountain";
 import type { PDFOptions } from "./pdf_options_dialog";
 
@@ -878,10 +879,10 @@ function generateTransitionInstructions(
   fountainScript: FountainScript,
 ): PageState {
   // Extract the transition text from the document
-  const transitionText = fountainScript.document
-    .substring(transition.range.start, transition.range.end)
-    .trim()
-    .toUpperCase();
+  const transitionText = extractTransitionText(
+    transition,
+    fountainScript,
+  ).toUpperCase();
 
   // Add spacing before transition and ensure we have space
   let currentState = addElementSpacing(pageState);

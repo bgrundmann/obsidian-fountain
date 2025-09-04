@@ -1,4 +1,11 @@
-export { FountainScript, mergeText, escapeHtml, intersect, extractNotes };
+export {
+  FountainScript,
+  mergeText,
+  escapeHtml,
+  intersect,
+  extractNotes,
+  extractTransitionText,
+};
 export type {
   Range,
   Synopsis,
@@ -231,6 +238,22 @@ function maybeEscapeLeadingSpaces(cond: boolean, s: string): string {
   return cond
     ? s.replace(/^( +)/gm, (_, spaces) => NBSP.repeat(spaces.length))
     : s;
+}
+
+/**
+ * Extracts the display text for a transition, removing the ">" character for forced transitions.
+ */
+function extractTransitionText(
+  transition: Transition,
+  script: FountainScript,
+): string {
+  const rawText = script.unsafeExtractRaw(transition.range).trim();
+
+  if (transition.forced && rawText.startsWith(">")) {
+    return rawText.substring(1).trim();
+  }
+
+  return rawText;
 }
 
 /** The way the parser works, blank lines can cause separate action elements

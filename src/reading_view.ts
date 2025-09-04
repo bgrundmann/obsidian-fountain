@@ -8,7 +8,7 @@ import type {
   ShowHideSettings,
   Synopsis,
 } from "./fountain";
-import { NBSP, dataRange } from "./fountain";
+import { NBSP, dataRange, extractTransitionText } from "./fountain";
 import { renderBlankLine } from "./render_tools";
 export { renderFountain, getDataRange, rangeOfFirstVisibleLine };
 
@@ -195,7 +195,7 @@ function renderContent(
         break;
       case "transition":
         {
-          const transitionText = script.unsafeExtractRaw(el.range);
+          const transitionText = extractTransitionText(el, script);
           parent.createDiv({
             cls: "transition",
             attr: dataRange(el.range),

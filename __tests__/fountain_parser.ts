@@ -1,5 +1,6 @@
 import { describe, expect, test } from "@jest/globals";
 import type { FountainScript } from "../src/fountain";
+import { extractTransitionText } from "../src/fountain";
 import { parse } from "../src/fountain_parser";
 
 function test_script(
@@ -617,4 +618,39 @@ She blinks slowly, just waking up.  Will is watching her.  He's been up for a wh
       { kind: "dialogue", source: "WILL\nDid you?\n" },
     ],
   );
+});
+
+describe("extractTransitionText utility function", () => {
+  test("removes > character for forced transitions", () => {
+    const script: FountainScript = parse("> FADE TO BLACK:\n\n", {});
+    const transition = script.script[0];
+
+    expect(transition.kind).toBe("transition");
+    if (transition.kind === "transition") {
+      const result = extractTransitionText(transition, script);
+      expect(result).toBe("FADE TO BLACK:");
+    }
+  });
+
+  test("preserves text for normal transitions", () => {
+    const script: FountainScript = parse("FADE TO:\n\n", {});
+    const transition = script.script[0];
+
+    expect(transition.kind).toBe("transition");
+    if (transition.kind === "transition") {
+      const result = extractTransitionText(transition, script);
+      expect(result).toBe("FADE TO:");
+    }
+  });
+
+  test("handles forced transition with extra spaces", () => {
+    const script: FountainScript = parse(">   CUT TO:\n\n", {});
+    const transition = script.script[0];
+
+    expect(transition.kind).toBe("transition");
+    if (transition.kind === "transition") {
+      const result = extractTransitionText(transition, script);
+      expect(result).toBe("CUT TO:");
+    }
+  });
 });
