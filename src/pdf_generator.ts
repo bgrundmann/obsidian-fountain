@@ -671,8 +671,13 @@ function generateActionInstructions(
   action: Action,
   fountainScript: FountainScript,
 ): PageState {
-  // Extract styled text from all lines in the action block
-  const actionLines: StyledTextSegment[][] = [];
+  // Extract styled text from all lines in the action block, preserving centering info
+  type ActionLineInfo = {
+    segments: StyledTextSegment[];
+    centered: boolean;
+  };
+
+  const actionLines: ActionLineInfo[] = [];
 
   for (const line of action.lines) {
     if (line.elements.length > 0) {
@@ -684,9 +689,19 @@ function generateActionInstructions(
         styledSegments,
         pageState.charactersPerLine.action,
       );
-      actionLines.push(...wrappedLines);
+
+      // Add each wrapped line with the original centering information
+      for (const wrappedLine of wrappedLines) {
+        actionLines.push({
+          segments: wrappedLine,
+          centered: line.centered,
+        });
+      }
     } else {
-      actionLines.push([]);
+      actionLines.push({
+        segments: [],
+        centered: line.centered,
+      });
     }
   }
 
@@ -695,14 +710,30 @@ function generateActionInstructions(
   currentState = needLines(instructions, currentState, actionLines.length);
 
   // Generate instructions for each line of the action block
-  for (const line of actionLines) {
+  for (const lineInfo of actionLines) {
     // Ensure we have space for this line
     currentState = needLines(instructions, currentState, 1);
 
     // Generate instructions for the line with styled segments
-    if (line.length > 0) {
-      let currentX = ACTION_INDENT;
-      for (const segment of line) {
+    if (lineInfo.segments.length > 0) {
+      let currentX: number;
+
+      if (lineInfo.centered) {
+        // Calculate line width for centering
+        let lineWidth = 0;
+        for (const segment of lineInfo.segments) {
+          lineWidth +=
+            segment.text.length * getCharacterWidth(pageState.fontSize);
+        }
+
+        // Center the line
+        currentX = (pageState.pageWidth - lineWidth) / 2;
+      } else {
+        // Use standard action indent
+        currentX = ACTION_INDENT;
+      }
+
+      for (const segment of lineInfo.segments) {
         if (segment.text.length > 0) {
           currentX = emitText(instructions, currentState, {
             data: segment.text,
