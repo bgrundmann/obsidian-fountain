@@ -11,7 +11,7 @@
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
 		"parser": "peggy -c peggy_config.js",
-		"test": "jest --watch",
+		"test": "jest",
 		"local-deploy": "mkdir -p test-vault/.obsidian/plugins/obsidian-fountain && cp manifest.json main.js styles.css test-vault/.obsidian/plugins/obsidian-fountain"
 	},
 	"keywords": [],

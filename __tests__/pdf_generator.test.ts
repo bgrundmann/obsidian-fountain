@@ -1,5 +1,11 @@
 import { FountainScript } from "../src/fountain";
-import type { Action, Dialogue, Scene, Transition } from "../src/fountain";
+import type {
+  Action,
+  Dialogue,
+  Scene,
+  Synopsis,
+  Transition,
+} from "../src/fountain";
 import {
   type Instruction,
   type NewPageInstruction,
@@ -339,7 +345,7 @@ describe("PDF Instruction Generation", () => {
         sceneHeadingBold: false,
         paperSize: "letter",
         hideNotes: true,
-        hideBoneyard: true,
+
         hideSynopsis: false,
       });
 
@@ -348,7 +354,7 @@ describe("PDF Instruction Generation", () => {
         sceneHeadingBold: false,
         paperSize: "a4",
         hideNotes: true,
-        hideBoneyard: true,
+
         hideSynopsis: false,
       });
 
@@ -419,6 +425,7 @@ describe("PDF Instruction Generation", () => {
           bold: false,
           italic: false,
           underline: false,
+          gray: false,
         },
       ];
 
@@ -442,6 +449,7 @@ describe("PDF Instruction Generation", () => {
           bold: false,
           italic: false,
           underline: false,
+          gray: false,
         },
         {
           type: "new-page",
@@ -456,6 +464,7 @@ describe("PDF Instruction Generation", () => {
           bold: false,
           italic: false,
           underline: false,
+          gray: false,
         },
       ];
 
@@ -473,30 +482,33 @@ describe("PDF Instruction Generation", () => {
         },
         {
           type: "text",
-          data: "Bold text",
-          x: 72,
-          y: 720,
+          data: "Bold Text",
+          x: 100,
+          y: 700,
           bold: true,
           italic: false,
           underline: false,
+          gray: false,
         },
         {
           type: "text",
-          data: "Italic text",
-          x: 72,
+          data: "Italic Text",
+          x: 200,
           y: 700,
           bold: false,
           italic: true,
           underline: false,
+          gray: false,
         },
         {
           type: "text",
-          data: "Underlined text",
+          data: "Underline text",
           x: 72,
           y: 680,
           bold: false,
           italic: false,
           underline: true,
+          gray: false,
         },
       ];
 
@@ -509,12 +521,13 @@ describe("PDF Instruction Generation", () => {
       const instructions: Instruction[] = [
         {
           type: "text",
-          data: "Text without page",
+          data: "Test error",
           x: 72,
           y: 720,
           bold: false,
           italic: false,
           underline: false,
+          gray: false,
         },
       ];
 
@@ -908,6 +921,74 @@ describe("PDF Instruction Generation", () => {
       expect(actionBlock.lines).toHaveLength(2); // Line with only note should be removed
       expect(actionBlock.lines[0].elements).toHaveLength(1); // "This is visible text."
       expect(actionBlock.lines[1].elements).toHaveLength(1); // "Another visible line."
+    });
+
+    test("should render synopsis and notes in gray italic when enabled", () => {
+      const script = new FountainScript(
+        "= This is a synopsis\n\nThis is action [[with a note]] text.",
+        [],
+        [
+          {
+            kind: "synopsis",
+            range: { start: 0, end: 20 },
+            linesOfText: [{ start: 2, end: 20 }],
+          } as Synopsis,
+          {
+            kind: "action",
+            range: { start: 22, end: 63 },
+            lines: [
+              {
+                range: { start: 22, end: 63 },
+                elements: [
+                  { kind: "text", range: { start: 22, end: 37 } },
+                  {
+                    kind: "note",
+                    noteKind: "note",
+                    range: { start: 37, end: 52 },
+                    textRange: { start: 39, end: 50 },
+                  },
+                  { kind: "text", range: { start: 52, end: 58 } },
+                ],
+                centered: false,
+              },
+            ],
+          } as Action,
+        ],
+      );
+
+      const instructions = generateInstructions(script, {
+        sceneHeadingBold: false,
+        paperSize: "letter",
+        hideNotes: false,
+        hideSynopsis: false,
+      });
+
+      // Find synopsis instruction
+      const synopsisInstruction = instructions.find(
+        (inst): inst is TextInstruction =>
+          inst.type === "text" && inst.data === "This is a synopsis",
+      );
+      expect(synopsisInstruction).toBeDefined();
+      expect(synopsisInstruction!.italic).toBe(true);
+      expect(synopsisInstruction!.gray).toBe(true);
+
+      // Find note instruction (notes get broken into individual words)
+      const noteInstruction = instructions.find(
+        (inst): inst is TextInstruction =>
+          inst.type === "text" && inst.data === "note",
+      );
+      expect(noteInstruction).toBeDefined();
+      expect(noteInstruction!.italic).toBe(true);
+      expect(noteInstruction!.gray).toBe(true);
+
+      // Also verify that "with" (first word of note) has correct formatting
+      const noteWordInstruction = instructions.find(
+        (inst): inst is TextInstruction =>
+          inst.type === "text" && inst.data === "with",
+      );
+      expect(noteWordInstruction).toBeDefined();
+      expect(noteWordInstruction!.italic).toBe(true);
+      expect(noteWordInstruction!.gray).toBe(true);
     });
   });
 });

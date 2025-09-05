@@ -9,10 +9,10 @@ export interface PDFOptions {
 
 export class PDFOptionsDialog extends Modal {
   private options: PDFOptions = {
-    sceneHeadingBold: false,
+    sceneHeadingBold: true,
     paperSize: "letter",
     hideNotes: true,
-    hideSynopsis: false,
+    hideSynopsis: true,
   };
 
   constructor(

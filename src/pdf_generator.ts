@@ -5,6 +5,7 @@ import {
   type FountainScript,
   type Scene,
   type StyledText,
+  type Synopsis,
   type TextElementWithNotesAndBoneyard,
   type Transition,
   extractTransitionText,
@@ -28,6 +29,7 @@ export interface TextInstruction {
   bold: boolean;
   italic: boolean;
   underline: boolean;
+  gray: boolean; // Whether to render in gray instead of black
 }
 
 // Type for tracking styled text segments during rendering
@@ -36,6 +38,7 @@ type StyledTextSegment = {
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
+  gray?: boolean;
 };
 
 // Page layout constants (all measurements in PDF points - 1/72 inch)
@@ -160,6 +163,7 @@ function emitText(
     bold: boolean;
     italic: boolean;
     underline: boolean;
+    gray?: boolean;
   },
 ): number {
   instructions.push({
@@ -170,6 +174,7 @@ function emitText(
     bold: options.bold,
     italic: options.italic,
     underline: options.underline,
+    gray: options.gray || false,
   });
 
   return (
@@ -361,6 +366,7 @@ function generateScriptInstructions(
           currentState,
           element,
           fountainScript,
+          options,
         );
         break;
       case "dialogue":
@@ -369,6 +375,7 @@ function generateScriptInstructions(
           currentState,
           element,
           fountainScript,
+          options,
         );
         break;
       case "transition":
@@ -379,10 +386,19 @@ function generateScriptInstructions(
           fountainScript,
         );
         break;
+      case "synopsis":
+        if (!options.hideSynopsis) {
+          currentState = generateSynopsisInstructions(
+            instructions,
+            currentState,
+            element,
+            fountainScript,
+          );
+        }
+        break;
       case "page-break":
         currentState = emitNewPage(instructions, currentState);
         break;
-      case "synopsis":
       case "section":
         // TODO
         break;
@@ -437,6 +453,7 @@ function generateTitlePageInstructions(
       currentState,
       centeredElements,
       fountainScript,
+      options,
     );
   }
 
@@ -447,6 +464,7 @@ function generateTitlePageInstructions(
       currentState,
       lowerLeftElements,
       fountainScript,
+      options,
     );
   }
 
@@ -457,6 +475,7 @@ function generateTitlePageInstructions(
       currentState,
       lowerRightElements,
       fountainScript,
+      options,
     );
   }
 
@@ -479,6 +498,7 @@ function generateCenteredTitleElementInstructions(
   pageState: PageState,
   elements: { key: string; values: StyledText[] }[],
   fountainScript: FountainScript,
+  options: PDFOptions,
 ): PageState {
   let currentY = getTitlePageCenterStart(pageState.pageHeight);
 
@@ -488,6 +508,7 @@ function generateCenteredTitleElementInstructions(
       const segments = extractStyledSegments(
         styledText,
         fountainScript.document,
+        options,
       );
       const wrappedLines = wrapStyledText(
         segments,
@@ -517,6 +538,7 @@ function generateCenteredTitleElementInstructions(
                 bold: segment.bold || false,
                 italic: segment.italic || false,
                 underline: segment.underline || false,
+                gray: segment.gray || false,
               },
             );
           }
@@ -541,6 +563,7 @@ function generateLowerLeftTitleElementInstructions(
   pageState: PageState,
   elements: { key: string; values: StyledText[] }[],
   fountainScript: FountainScript,
+  options: PDFOptions,
 ): PageState {
   // Start from bottom left area
   let currentY = pageState.margins.bottom;
@@ -550,6 +573,7 @@ function generateLowerLeftTitleElementInstructions(
       const segments = extractStyledSegments(
         styledText,
         fountainScript.document,
+        options,
       );
       const wrappedLines = wrapStyledText(
         segments,
@@ -570,6 +594,7 @@ function generateLowerLeftTitleElementInstructions(
                 bold: segment.bold || false,
                 italic: segment.italic || false,
                 underline: segment.underline || false,
+                gray: segment.gray || false,
               },
             );
           }
@@ -593,6 +618,7 @@ function generateLowerRightTitleElementInstructions(
   pageState: PageState,
   elements: { key: string; values: StyledText[] }[],
   fountainScript: FountainScript,
+  options: PDFOptions,
 ): PageState {
   // Start from bottom right area
   let currentY = pageState.margins.bottom;
@@ -602,6 +628,7 @@ function generateLowerRightTitleElementInstructions(
       const segments = extractStyledSegments(
         styledText,
         fountainScript.document,
+        options,
       );
       const wrappedLines = wrapStyledText(
         segments,
@@ -629,6 +656,7 @@ function generateLowerRightTitleElementInstructions(
                 bold: segment.bold || false,
                 italic: segment.italic || false,
                 underline: segment.underline || false,
+                gray: segment.gray || false,
               },
             );
           }
@@ -671,12 +699,65 @@ function generateSceneInstructions(
     bold: options.sceneHeadingBold,
     italic: false,
     underline: false,
+    gray: false,
   });
 
   // Update page state
   return {
     ...advanceLine(currentState),
     lastElementType: "scene",
+  };
+}
+
+/**
+ * Generates instructions for a synopsis
+ */
+function generateSynopsisInstructions(
+  instructions: Instruction[],
+  pageState: PageState,
+  synopsis: Synopsis,
+  fountainScript: FountainScript,
+): PageState {
+  // Add spacing before synopsis and ensure we have space
+  let currentState = addElementSpacing(pageState);
+
+  // Extract and render each line of the synopsis
+  for (const lineRange of synopsis.linesOfText) {
+    const synopsisText = fountainScript.document
+      .substring(lineRange.start, lineRange.end)
+      .trim();
+
+    if (synopsisText.length > 0) {
+      // Wrap synopsis text to fit within action line width
+      const wrappedLines = wrapPlainText(
+        synopsisText,
+        pageState.charactersPerLine.action,
+      );
+
+      for (const line of wrappedLines) {
+        currentState = needLines(instructions, currentState, 1);
+
+        emitText(instructions, currentState, {
+          data: line,
+          x: ACTION_INDENT,
+          bold: false,
+          italic: true, // Synopsis in CourierOblique
+          underline: false,
+          gray: true, // Synopsis in gray
+        });
+
+        currentState = advanceLine(currentState);
+      }
+    } else {
+      // Empty synopsis line
+      currentState = needLines(instructions, currentState, 1);
+      currentState = advanceLine(currentState);
+    }
+  }
+
+  return {
+    ...currentState,
+    lastElementType: "synopsis",
   };
 }
 
@@ -688,6 +769,7 @@ function generateActionInstructions(
   pageState: PageState,
   action: Action,
   fountainScript: FountainScript,
+  options: PDFOptions,
 ): PageState {
   // Extract styled text from all lines in the action block, preserving centering info
   type ActionLineInfo = {
@@ -702,6 +784,7 @@ function generateActionInstructions(
       const styledSegments = extractStyledSegments(
         line.elements,
         fountainScript.document,
+        options,
       );
       const wrappedLines = wrapStyledText(
         styledSegments,
@@ -759,6 +842,7 @@ function generateActionInstructions(
             bold: segment.bold || false,
             italic: segment.italic || false,
             underline: segment.underline || false,
+            gray: segment.gray || false,
           });
         }
       }
@@ -781,6 +865,7 @@ function generateDialogueInstructions(
   pageState: PageState,
   dialogue: Dialogue,
   fountainScript: FountainScript,
+  options: PDFOptions,
 ): PageState {
   // Add spacing before dialogue block and ensure space for character name
   let currentState = addElementSpacing(pageState);
@@ -815,6 +900,7 @@ function generateDialogueInstructions(
     bold: false,
     italic: false,
     underline: false,
+    gray: false,
   });
   currentState = advanceLine(currentState);
 
@@ -838,6 +924,7 @@ function generateDialogueInstructions(
         bold: false,
         italic: false,
         underline: false,
+        gray: false,
       });
       currentState = advanceLine(currentState);
     }
@@ -849,6 +936,7 @@ function generateDialogueInstructions(
       const styledSegments = extractStyledSegments(
         line.elements,
         fountainScript.document,
+        options,
       );
       const wrappedLines = wrapStyledText(
         styledSegments,
@@ -868,6 +956,7 @@ function generateDialogueInstructions(
                 bold: segment.bold || false,
                 italic: segment.italic || false,
                 underline: segment.underline || false,
+                gray: segment.gray || false,
               });
             }
           }
@@ -918,6 +1007,7 @@ function generateTransitionInstructions(
     bold: false,
     italic: false,
     underline: false,
+    gray: false,
   });
 
   return {
@@ -981,7 +1071,7 @@ export async function renderInstructionsToPDF(
           y: instruction.y,
           size: FONT_SIZE,
           font,
-          color: rgb(0, 0, 0),
+          color: instruction.gray ? rgb(0.5, 0.5, 0.5) : rgb(0, 0, 0),
         });
 
         // Handle underline if needed
@@ -991,7 +1081,7 @@ export async function renderInstructionsToPDF(
             start: { x: instruction.x, y: instruction.y - 2 },
             end: { x: instruction.x + textWidth, y: instruction.y - 2 },
             thickness: 1,
-            color: rgb(0, 0, 0),
+            color: instruction.gray ? rgb(0.5, 0.5, 0.5) : rgb(0, 0, 0),
           });
         }
         break;
@@ -1008,6 +1098,7 @@ export async function renderInstructionsToPDF(
 function extractStyledSegments(
   elements: TextElementWithNotesAndBoneyard[],
   document: string,
+  options: PDFOptions,
 ): StyledTextSegment[] {
   const segments: StyledTextSegment[] = [];
 
@@ -1019,7 +1110,11 @@ function extractStyledSegments(
         });
         break;
       case "bold": {
-        const boldSegments = extractStyledSegments(element.elements, document);
+        const boldSegments = extractStyledSegments(
+          element.elements,
+          document,
+          options,
+        );
         segments.push(...boldSegments.map((seg) => ({ ...seg, bold: true })));
         break;
       }
@@ -1027,6 +1122,7 @@ function extractStyledSegments(
         const italicSegments = extractStyledSegments(
           element.elements,
           document,
+          options,
         );
         segments.push(
           ...italicSegments.map((seg) => ({ ...seg, italic: true })),
@@ -1037,6 +1133,7 @@ function extractStyledSegments(
         const underlineSegments = extractStyledSegments(
           element.elements,
           document,
+          options,
         );
         segments.push(
           ...underlineSegments.map((seg) => ({ ...seg, underline: true })),
@@ -1044,8 +1141,21 @@ function extractStyledSegments(
         break;
       }
       case "note":
+        // Include notes if they should be shown
+        if (!options.hideNotes) {
+          const noteText = document.substring(
+            element.textRange.start,
+            element.textRange.end,
+          );
+          segments.push({
+            text: noteText,
+            italic: true, // Notes in CourierOblique
+            gray: true, // Notes in gray
+          });
+        }
+        break;
       case "boneyard":
-        // Skip notes and boneyard content for PDF output
+        // Skip boneyard content for PDF output
         break;
     }
   }
