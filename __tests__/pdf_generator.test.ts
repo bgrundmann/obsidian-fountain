@@ -425,7 +425,8 @@ describe("PDF Instruction Generation", () => {
           bold: false,
           italic: false,
           underline: false,
-          gray: false,
+          color: "black",
+          strikethrough: false,
         },
       ];
 
@@ -449,7 +450,8 @@ describe("PDF Instruction Generation", () => {
           bold: false,
           italic: false,
           underline: false,
-          gray: false,
+          color: "black",
+          strikethrough: false,
         },
         {
           type: "new-page",
@@ -464,7 +466,8 @@ describe("PDF Instruction Generation", () => {
           bold: false,
           italic: false,
           underline: false,
-          gray: false,
+          color: "black",
+          strikethrough: false,
         },
       ];
 
@@ -488,7 +491,8 @@ describe("PDF Instruction Generation", () => {
           bold: true,
           italic: false,
           underline: false,
-          gray: false,
+          color: "black",
+          strikethrough: false,
         },
         {
           type: "text",
@@ -498,7 +502,8 @@ describe("PDF Instruction Generation", () => {
           bold: false,
           italic: true,
           underline: false,
-          gray: false,
+          color: "black",
+          strikethrough: false,
         },
         {
           type: "text",
@@ -508,7 +513,8 @@ describe("PDF Instruction Generation", () => {
           bold: false,
           italic: false,
           underline: true,
-          gray: false,
+          color: "black",
+          strikethrough: false,
         },
       ];
 
@@ -527,7 +533,8 @@ describe("PDF Instruction Generation", () => {
           bold: false,
           italic: false,
           underline: false,
-          gray: false,
+          color: "black",
+          strikethrough: false,
         },
       ];
 
@@ -943,7 +950,7 @@ describe("PDF Instruction Generation", () => {
                   { kind: "text", range: { start: 22, end: 37 } },
                   {
                     kind: "note",
-                    noteKind: "note",
+                    noteKind: "",
                     range: { start: 37, end: 52 },
                     textRange: { start: 39, end: 50 },
                   },
@@ -970,7 +977,7 @@ describe("PDF Instruction Generation", () => {
       );
       expect(synopsisInstruction).toBeDefined();
       expect(synopsisInstruction!.italic).toBe(true);
-      expect(synopsisInstruction!.gray).toBe(true);
+      expect(synopsisInstruction!.color).toBe("gray");
 
       // Find note instruction (notes get broken into individual words)
       const noteInstruction = instructions.find(
@@ -979,7 +986,7 @@ describe("PDF Instruction Generation", () => {
       );
       expect(noteInstruction).toBeDefined();
       expect(noteInstruction!.italic).toBe(true);
-      expect(noteInstruction!.gray).toBe(true);
+      expect(noteInstruction!.color).toBe("gray");
 
       // Also verify that "with" (first word of note) has correct formatting
       const noteWordInstruction = instructions.find(
@@ -988,7 +995,130 @@ describe("PDF Instruction Generation", () => {
       );
       expect(noteWordInstruction).toBeDefined();
       expect(noteWordInstruction!.italic).toBe(true);
-      expect(noteWordInstruction!.gray).toBe(true);
+      expect(noteWordInstruction!.color).toBe("gray");
+    });
+
+    test("should render different note kinds with correct formatting", () => {
+      // Use actual parser instead of manual AST creation
+      const parser = require("../src/fountain_parser");
+      const script = parser.parse(
+        "Test [[+addition]] and [[- removal]] and [[todo: important]] text.",
+      );
+
+      const instructions = generateInstructions(script, {
+        sceneHeadingBold: false,
+        paperSize: "letter",
+        hideNotes: false,
+        hideSynopsis: false,
+      });
+
+      const textInstructions = instructions.filter(
+        (inst): inst is TextInstruction => inst.type === "text",
+      );
+
+      // Find addition note (green)
+      const additionInstructions = textInstructions.filter(
+        (inst) => inst.color === "green" && inst.data.includes("addition"),
+      );
+      expect(additionInstructions.length).toBeGreaterThan(0);
+      expect(additionInstructions[0].italic).toBe(true);
+      expect(additionInstructions[0].color).toBe("green");
+
+      // Find removal note (red with strikethrough)
+      const removalInstructions = textInstructions.filter(
+        (inst) => inst.color === "red" && inst.data.includes("removal"),
+      );
+      expect(removalInstructions.length).toBeGreaterThan(0);
+      expect(removalInstructions[0].italic).toBe(true);
+      expect(removalInstructions[0].color).toBe("red");
+      expect(removalInstructions[0].strikethrough).toBe(true);
+
+      // Find todo note (gray with TODO prefix)
+      const todoInstructions = textInstructions.filter(
+        (inst) => inst.color === "gray" && inst.data.includes("TODO:"),
+      );
+      expect(todoInstructions.length).toBeGreaterThan(0);
+      expect(todoInstructions[0].italic).toBe(true);
+      expect(todoInstructions[0].color).toBe("gray");
+    });
+
+    test("should handle comprehensive fountain document with synopsis and various note types", () => {
+      const fountainText = `= This is a synopsis
+
+EXT. PARK - DAY
+
+Action text [[regular note]] more text.
+
+JOHN
+Hello [[+add emphasis]] there [[- remove uncertainty]]!
+
+MARY
+[[todo: Mary needs motivation]] Hi John.
+
+[[custom: director note]] End scene.`;
+
+      // Use actual parser
+      const parser = require("../src/fountain_parser");
+      const script = parser.parse(fountainText);
+
+      const instructions = generateInstructions(script, {
+        sceneHeadingBold: false,
+        paperSize: "letter",
+        hideNotes: false,
+        hideSynopsis: false,
+      });
+
+      const textInstructions = instructions.filter(
+        (inst): inst is TextInstruction => inst.type === "text",
+      );
+
+      // Test synopsis rendering (gray italic)
+      const synopsisInstructions = textInstructions.filter(
+        (inst) =>
+          inst.color === "gray" &&
+          inst.italic &&
+          inst.data.includes("synopsis"),
+      );
+      expect(synopsisInstructions.length).toBeGreaterThan(0);
+
+      // Test regular notes (gray italic with spaces)
+      const regularNoteInstructions = textInstructions.filter(
+        (inst) =>
+          inst.color === "gray" && inst.italic && inst.data.includes("regular"),
+      );
+      expect(regularNoteInstructions.length).toBeGreaterThan(0);
+
+      // Test addition notes (green italic)
+      const additionInstructions = textInstructions.filter(
+        (inst) => inst.color === "green" && inst.italic,
+      );
+      expect(additionInstructions.length).toBeGreaterThan(0);
+
+      // Test removal notes (red italic with strikethrough)
+      const removalInstructions = textInstructions.filter(
+        (inst) => inst.color === "red" && inst.italic && inst.strikethrough,
+      );
+      expect(removalInstructions.length).toBeGreaterThan(0);
+
+      // Test todo notes (gray with TODO prefix)
+      const todoInstructions = textInstructions.filter(
+        (inst) =>
+          inst.color === "gray" && inst.italic && inst.data.includes("TODO:"),
+      );
+      expect(todoInstructions.length).toBeGreaterThan(0);
+
+      // Test custom notes (gray italic with custom prefix)
+      const customInstructions = textInstructions.filter(
+        (inst) =>
+          inst.color === "gray" && inst.italic && inst.data.includes("custom:"),
+      );
+      expect(customInstructions.length).toBeGreaterThan(0);
+
+      // Verify spacing - should have space instructions around notes
+      const spaceInstructions = textInstructions.filter(
+        (inst) => inst.data === " ",
+      );
+      expect(spaceInstructions.length).toBeGreaterThan(10); // Should have many spaces around notes
     });
   });
 });

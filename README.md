@@ -4,10 +4,10 @@
 
 - obsidian syntax highlighting when editing
 - close to print readonly view / preview (with ability to hide notes, synopsis, boneyard)
-- PDF export with configurable options (paper size, scene heading formatting)
-- editable index card view to plan your script with drag & drop scene reordering
-- Rehearsal mode (blackout of a characters dialogue)
+- PDF export with configurable options (paper size, scene heading formatting, optionally include synopsis & notes)
 - mark notes as todo
+- editable index card view to plan your script with drag & drop scene reordering and todo rendering
+- Rehearsal mode (blackout of a characters dialogue)
 - table of contents in right hand pane (with todos and synopsis included)
 - button in ribbon to create a new script (as scripts have .fountain extension)
 - boneyard support (content after "# boneyard" header can be hidden)

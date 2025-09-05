@@ -12,6 +12,24 @@ import {
 } from "./fountain";
 import type { PDFOptions } from "./pdf_options_dialog";
 
+// Color type for text rendering
+export type Color = "red" | "green" | "black" | "gray";
+
+// Convert Color to RGB values
+export function rgbOfColor(color: Color): { r: number; g: number; b: number } {
+  switch (color) {
+    case "red":
+      return { r: 0.8, g: 0, b: 0 };
+    case "green":
+      return { r: 0, g: 0.6, b: 0 };
+    case "gray":
+      return { r: 0.5, g: 0.5, b: 0.5 };
+    case "black":
+    default:
+      return { r: 0, g: 0, b: 0 };
+  }
+}
+
 // Instruction types for PDF generation
 export type Instruction = NewPageInstruction | TextInstruction;
 
@@ -29,7 +47,8 @@ export interface TextInstruction {
   bold: boolean;
   italic: boolean;
   underline: boolean;
-  gray: boolean; // Whether to render in gray instead of black
+  color: Color; // Text color
+  strikethrough: boolean; // Whether to render with strikethrough
 }
 
 // Type for tracking styled text segments during rendering
@@ -38,7 +57,8 @@ type StyledTextSegment = {
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
-  gray?: boolean;
+  color?: Color;
+  strikethrough?: boolean;
 };
 
 // Page layout constants (all measurements in PDF points - 1/72 inch)
@@ -163,7 +183,8 @@ function emitText(
     bold: boolean;
     italic: boolean;
     underline: boolean;
-    gray?: boolean;
+    color?: Color;
+    strikethrough?: boolean;
   },
 ): number {
   instructions.push({
@@ -174,7 +195,8 @@ function emitText(
     bold: options.bold,
     italic: options.italic,
     underline: options.underline,
-    gray: options.gray || false,
+    color: options.color || "black",
+    strikethrough: options.strikethrough || false,
   });
 
   return (
@@ -538,7 +560,8 @@ function generateCenteredTitleElementInstructions(
                 bold: segment.bold || false,
                 italic: segment.italic || false,
                 underline: segment.underline || false,
-                gray: segment.gray || false,
+                color: segment.color || "black",
+                strikethrough: segment.strikethrough || false,
               },
             );
           }
@@ -594,7 +617,8 @@ function generateLowerLeftTitleElementInstructions(
                 bold: segment.bold || false,
                 italic: segment.italic || false,
                 underline: segment.underline || false,
-                gray: segment.gray || false,
+                color: segment.color || "black",
+                strikethrough: segment.strikethrough || false,
               },
             );
           }
@@ -656,7 +680,8 @@ function generateLowerRightTitleElementInstructions(
                 bold: segment.bold || false,
                 italic: segment.italic || false,
                 underline: segment.underline || false,
-                gray: segment.gray || false,
+                color: segment.color || "black",
+                strikethrough: segment.strikethrough || false,
               },
             );
           }
@@ -699,7 +724,8 @@ function generateSceneInstructions(
     bold: options.sceneHeadingBold,
     italic: false,
     underline: false,
-    gray: false,
+    color: "black",
+    strikethrough: false,
   });
 
   // Update page state
@@ -743,7 +769,8 @@ function generateSynopsisInstructions(
           bold: false,
           italic: true, // Synopsis in CourierOblique
           underline: false,
-          gray: true, // Synopsis in gray
+          color: "gray", // Synopsis in gray
+          strikethrough: false,
         });
 
         currentState = advanceLine(currentState);
@@ -842,7 +869,8 @@ function generateActionInstructions(
             bold: segment.bold || false,
             italic: segment.italic || false,
             underline: segment.underline || false,
-            gray: segment.gray || false,
+            color: segment.color || "black",
+            strikethrough: segment.strikethrough || false,
           });
         }
       }
@@ -900,7 +928,8 @@ function generateDialogueInstructions(
     bold: false,
     italic: false,
     underline: false,
-    gray: false,
+    color: "black",
+    strikethrough: false,
   });
   currentState = advanceLine(currentState);
 
@@ -924,7 +953,8 @@ function generateDialogueInstructions(
         bold: false,
         italic: false,
         underline: false,
-        gray: false,
+        color: "black",
+        strikethrough: false,
       });
       currentState = advanceLine(currentState);
     }
@@ -956,7 +986,8 @@ function generateDialogueInstructions(
                 bold: segment.bold || false,
                 italic: segment.italic || false,
                 underline: segment.underline || false,
-                gray: segment.gray || false,
+                color: segment.color || "black",
+                strikethrough: segment.strikethrough || false,
               });
             }
           }
@@ -1007,7 +1038,8 @@ function generateTransitionInstructions(
     bold: false,
     italic: false,
     underline: false,
-    gray: false,
+    color: "black",
+    strikethrough: false,
   });
 
   return {
@@ -1065,13 +1097,17 @@ export async function renderInstructionsToPDF(
           font = courierObliqueFont;
         }
 
+        // Determine text color
+        const colorRgb = rgbOfColor(instruction.color);
+        const textColor = rgb(colorRgb.r, colorRgb.g, colorRgb.b);
+
         // Render text
         currentPage.drawText(instruction.data, {
           x: instruction.x,
           y: instruction.y,
           size: FONT_SIZE,
           font,
-          color: instruction.gray ? rgb(0.5, 0.5, 0.5) : rgb(0, 0, 0),
+          color: textColor,
         });
 
         // Handle underline if needed
@@ -1081,7 +1117,21 @@ export async function renderInstructionsToPDF(
             start: { x: instruction.x, y: instruction.y - 2 },
             end: { x: instruction.x + textWidth, y: instruction.y - 2 },
             thickness: 1,
-            color: instruction.gray ? rgb(0.5, 0.5, 0.5) : rgb(0, 0, 0),
+            color: textColor,
+          });
+        }
+
+        // Handle strikethrough if needed
+        if (instruction.strikethrough) {
+          const textWidth = font.widthOfTextAtSize(instruction.data, FONT_SIZE);
+          currentPage.drawLine({
+            start: { x: instruction.x, y: instruction.y + FONT_SIZE / 3 },
+            end: {
+              x: instruction.x + textWidth,
+              y: instruction.y + FONT_SIZE / 3,
+            },
+            thickness: 1,
+            color: textColor,
           });
         }
         break;
@@ -1142,15 +1192,66 @@ function extractStyledSegments(
       }
       case "note":
         // Include notes if they should be shown
-        if (!options.hideNotes) {
+        if (
+          !options.hideNotes &&
+          !element.noteKind.startsWith("[[") &&
+          !element.noteKind.startsWith("/*")
+        ) {
+          // Add leading space
+          segments.push({
+            text: " ",
+          });
+
           const noteText = document.substring(
             element.textRange.start,
             element.textRange.end,
           );
+
+          // Handle different note kinds
+          switch (element.noteKind) {
+            case "+":
+              segments.push({
+                text: noteText,
+                italic: false,
+                color: "green",
+              });
+              break;
+            case "-":
+              segments.push({
+                text: noteText,
+                italic: false,
+                color: "red",
+                strikethrough: true,
+              });
+              break;
+            case "todo":
+              segments.push({
+                text: `TODO: ${noteText}`,
+                italic: true,
+                color: "gray",
+              });
+              break;
+            case "":
+              // Empty note kind - just the text
+              segments.push({
+                text: noteText,
+                italic: true,
+                color: "gray",
+              });
+              break;
+            default:
+              // Other note kinds - include the kind as prefix
+              segments.push({
+                text: element.noteKind + ": " + noteText,
+                italic: true,
+                color: "gray",
+              });
+              break;
+          }
+
+          // Add trailing space
           segments.push({
-            text: noteText,
-            italic: true, // Notes in CourierOblique
-            gray: true, // Notes in gray
+            text: " ",
           });
         }
         break;
