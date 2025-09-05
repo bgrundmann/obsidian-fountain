@@ -4,7 +4,6 @@ export interface PDFOptions {
   sceneHeadingBold: boolean;
   paperSize: "letter" | "a4";
   hideNotes: boolean;
-  hideBoneyard: boolean;
   hideSynopsis: boolean;
 }
 
@@ -13,7 +12,6 @@ export class PDFOptionsDialog extends Modal {
     sceneHeadingBold: false,
     paperSize: "letter",
     hideNotes: true,
-    hideBoneyard: true,
     hideSynopsis: false,
   };
 
@@ -96,16 +94,6 @@ export class PDFOptionsDialog extends Modal {
       .addToggle((toggle) => {
         toggle.setValue(this.options.hideNotes).onChange((value) => {
           this.options.hideNotes = value;
-        });
-      });
-
-    // Hide boneyard checkbox (always enabled by default)
-    new Setting(contentEl)
-      .setName("Hide boneyard")
-      .setDesc("Exclude boneyard content from the generated PDF")
-      .addToggle((toggle) => {
-        toggle.setValue(this.options.hideBoneyard).onChange((value) => {
-          this.options.hideBoneyard = value;
         });
       });
 

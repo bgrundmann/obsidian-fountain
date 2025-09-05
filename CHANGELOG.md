@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.1] - Consistent Hidden Element Handling
+
+### Fixed
+- **Hidden Element Filtering**: Fixed inconsistent behavior between reading view and PDF export when hiding notes, boneyard content, or synopsis
+  - Eliminated unwanted newlines left by hidden elements (notes and boneyard comments)
+  - Preserved legitimate empty lines as per Fountain specification
+  - Both reading view and PDF export now use the same filtering logic for consistent results
+- **PDF Export Options**: Added show/hide toggles for notes and synopsis in PDF export dialog
+
 ## [0.9.0] - PDFs!!!!
 
 ### Added

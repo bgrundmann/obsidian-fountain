@@ -246,7 +246,6 @@ export async function generatePDF(
     sceneHeadingBold: false,
     paperSize: "letter",
     hideNotes: true,
-    hideBoneyard: true,
     hideSynopsis: false,
   },
 ): Promise<PDFDocument> {
@@ -266,7 +265,6 @@ export function generateInstructions(
     sceneHeadingBold: false,
     paperSize: "letter",
     hideNotes: true,
-    hideBoneyard: true,
     hideSynopsis: false,
   },
 ): Instruction[] {
@@ -319,7 +317,7 @@ export function generateInstructions(
 
   // Filter out hidden elements for consistent behavior
   const filteredScript = fountainScript.withHiddenElementsRemoved({
-    hideBoneyard: options.hideBoneyard,
+    hideBoneyard: true,
     hideNotes: options.hideNotes,
     hideSynopsis: options.hideSynopsis,
   });
@@ -937,7 +935,6 @@ export async function renderInstructionsToPDF(
     sceneHeadingBold: false,
     paperSize: "letter",
     hideNotes: true,
-    hideBoneyard: true,
     hideSynopsis: false,
   },
 ): Promise<PDFDocument> {
