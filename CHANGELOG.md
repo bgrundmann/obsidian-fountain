@@ -7,6 +7,8 @@
   - Eliminated unwanted newlines left by hidden elements (notes and boneyard comments)
   - Preserved legitimate empty lines as per Fountain specification
   - Both reading view and PDF export now use the same filtering logic for consistent results
+
+## Added & Improved
 - **PDF Export Options**: Added show/hide toggles for notes and synopsis in PDF export dialog
 - **PDF Export optionally includes synopsis & notes**: Optionally include synopsis and notes in PDF export
 
