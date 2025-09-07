@@ -12,6 +12,20 @@
 - button in ribbon to create a new script (as scripts have .fountain extension)
 - boneyard support (content after "# boneyard" header can be hidden)
 
+## Known Issues
+
+### Compatibility with Custom File Extensions Plugin
+
+⚠️ **Important**: This plugin is incompatible with the [Custom File Extensions](https://obsidian.md/plugins?search=Custom%20File%20Extensions) plugin when configured to handle `.fountain` files.
+
+If you have Custom File Extensions plugin installed and configured to open `.fountain` files, the plugin may crash without obvious error messages. To fix this:
+
+1. Open Custom File Extensions plugin settings
+2. Remove `.fountain` from the list of custom file extensions
+3. Restart Obsidian
+
+This plugin handles `.fountain` files natively and doesn't require Custom File Extensions to work properly.
+
 ## Notably missing
 
 On the todo list with low priority:
