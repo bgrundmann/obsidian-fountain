@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.9.2] - No unnecessary scrollbars when editing
+
+- Exactly what it says on the tin, thanks to https://github.com/chuangcaleb
+
 ## [0.9.1] - Consistent Hidden Element Handling
 
 ### Fixed
