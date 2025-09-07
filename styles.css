@@ -66,7 +66,6 @@
 .screenplay:not(.is-phone) {
 	width: var(--max-width);
 	min-width: var(--max-width);
-	overflow: scroll;
 }
 
 .is-phone .screenplay {
