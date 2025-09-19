@@ -13,7 +13,7 @@ import {
 import type { PDFOptions } from "./pdf_options_dialog";
 
 // Color type for text rendering
-export type Color = "red" | "green" | "black" | "gray";
+export type Color = "red" | "green" | "black" | "gray" | "yellow";
 
 // Convert Color to RGB values
 export function rgbOfColor(color: Color): { r: number; g: number; b: number } {
@@ -24,7 +24,8 @@ export function rgbOfColor(color: Color): { r: number; g: number; b: number } {
       return { r: 0, g: 0.6, b: 0 };
     case "gray":
       return { r: 0.5, g: 0.5, b: 0.5 };
-    case "black":
+    case "yellow":
+      return { r: 1, g: 1, b: 0.6 };
     default:
       return { r: 0, g: 0, b: 0 };
   }
@@ -49,6 +50,7 @@ export interface TextInstruction {
   underline: boolean;
   color: Color; // Text color
   strikethrough: boolean; // Whether to render with strikethrough
+  backgroundColor?: Color; // Background highlight color
 }
 
 // Type for tracking styled text segments during rendering
@@ -59,6 +61,7 @@ type StyledTextSegment = {
   underline?: boolean;
   color?: Color;
   strikethrough?: boolean;
+  backgroundColor?: Color;
 };
 
 // Page layout constants (all measurements in PDF points - 1/72 inch)
@@ -185,6 +188,7 @@ function emitText(
     underline: boolean;
     color?: Color;
     strikethrough?: boolean;
+    backgroundColor?: Color;
   },
 ): number {
   instructions.push({
@@ -197,6 +201,7 @@ function emitText(
     underline: options.underline,
     color: options.color || "black",
     strikethrough: options.strikethrough || false,
+    backgroundColor: options.backgroundColor,
   });
 
   return (
@@ -562,6 +567,7 @@ function generateCenteredTitleElementInstructions(
                 underline: segment.underline || false,
                 color: segment.color || "black",
                 strikethrough: segment.strikethrough || false,
+                backgroundColor: segment.backgroundColor,
               },
             );
           }
@@ -619,6 +625,7 @@ function generateLowerLeftTitleElementInstructions(
                 underline: segment.underline || false,
                 color: segment.color || "black",
                 strikethrough: segment.strikethrough || false,
+                backgroundColor: segment.backgroundColor,
               },
             );
           }
@@ -682,6 +689,7 @@ function generateLowerRightTitleElementInstructions(
                 underline: segment.underline || false,
                 color: segment.color || "black",
                 strikethrough: segment.strikethrough || false,
+                backgroundColor: segment.backgroundColor,
               },
             );
           }
@@ -726,6 +734,7 @@ function generateSceneInstructions(
     underline: false,
     color: "black",
     strikethrough: false,
+    backgroundColor: undefined,
   });
 
   // Update page state
@@ -771,6 +780,7 @@ function generateSynopsisInstructions(
           underline: false,
           color: "gray", // Synopsis in gray
           strikethrough: false,
+          backgroundColor: undefined,
         });
 
         currentState = advanceLine(currentState);
@@ -871,6 +881,7 @@ function generateActionInstructions(
             underline: segment.underline || false,
             color: segment.color || "black",
             strikethrough: segment.strikethrough || false,
+            backgroundColor: segment.backgroundColor,
           });
         }
       }
@@ -930,6 +941,7 @@ function generateDialogueInstructions(
     underline: false,
     color: "black",
     strikethrough: false,
+    backgroundColor: undefined,
   });
   currentState = advanceLine(currentState);
 
@@ -955,6 +967,7 @@ function generateDialogueInstructions(
         underline: false,
         color: "black",
         strikethrough: false,
+        backgroundColor: undefined,
       });
       currentState = advanceLine(currentState);
     }
@@ -988,6 +1001,7 @@ function generateDialogueInstructions(
                 underline: segment.underline || false,
                 color: segment.color || "black",
                 strikethrough: segment.strikethrough || false,
+                backgroundColor: segment.backgroundColor,
               });
             }
           }
@@ -1040,6 +1054,7 @@ function generateTransitionInstructions(
     underline: false,
     color: "black",
     strikethrough: false,
+    backgroundColor: undefined,
   });
 
   return {
@@ -1100,6 +1115,21 @@ export async function renderInstructionsToPDF(
         // Determine text color
         const colorRgb = rgbOfColor(instruction.color);
         const textColor = rgb(colorRgb.r, colorRgb.g, colorRgb.b);
+
+        // Draw background highlight if specified
+        if (instruction.backgroundColor) {
+          const bgColorRgb = rgbOfColor(instruction.backgroundColor);
+          const bgColor = rgb(bgColorRgb.r, bgColorRgb.g, bgColorRgb.b);
+          const textWidth = font.widthOfTextAtSize(instruction.data, FONT_SIZE);
+
+          currentPage.drawRectangle({
+            x: instruction.x,
+            y: instruction.y - 1,
+            width: textWidth,
+            height: FONT_SIZE - 2,
+            color: bgColor,
+          });
+        }
 
         // Render text
         currentPage.drawText(instruction.data, {
@@ -1229,6 +1259,7 @@ function extractStyledSegments(
                 text: `TODO: ${noteText}`,
                 italic: true,
                 color: "gray",
+                backgroundColor: "yellow",
               });
               break;
             case "":
@@ -1242,7 +1273,7 @@ function extractStyledSegments(
             default:
               // Other note kinds - include the kind as prefix
               segments.push({
-                text: element.noteKind + ": " + noteText,
+                text: `${element.noteKind}: ${noteText}`,
                 italic: true,
                 color: "gray",
               });
