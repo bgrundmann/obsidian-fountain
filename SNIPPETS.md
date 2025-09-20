@@ -51,8 +51,85 @@ The snippets feature extends the existing table of contents (TOC) view in the ri
 
 ## Technical Considerations
 
-### Parser Integration
+#### Type System Changes
 
-- The existing fountain parser needs to recognize the `# Snippets` section
-- Page break parsing within the snippets section needs special handling
-- Snippets need to be parsed as individual units separated by page breaks
+To cleanly integrate snippets into the existing type system, we should introduce type aliases for clarity:
+
+```typescript
+// Type aliases for snippets
+type Snippet = FountainElement[];
+type Snippets = Snippet[];
+
+// Updated return type for structure()
+interface ScriptStructure {
+    sections: StructureSection[];
+    snippets: Snippets;
+}
+```
+
+#### FountainScript.structure() Changes
+
+The `FountainScript.structure()` method should be modified to return both the main script structure and the parsed snippets:
+
+- Current: `structure(): StructureSection[]`
+- Proposed: `structure(): ScriptStructure`
+
+This change provides:
+- Clean separation between main script structure and snippets
+- Type safety for snippet operations
+- Consistent interface for accessing both types of content
+- Easy migration path (accessing `.sections` gives the original behavior)
+
+Happily the core parser remains unchanged. Only FountainScript.structure needs to
+operate as is for everything up to "# Snippets" and then store everything afterwards
+as separate snippets.
+
+### Snippet Display Design
+
+#### Visual Layout
+
+Each snippet in the SNIPPETS section should be displayed as a scaled-down preview:
+
+- **Line limit**: Show a maximum of 4 lines per snippet to keep the list manageable
+- **Scaling**: Use CSS transforms to scale down the entire snippet preview so full lines can be visible even in the narrow sidebar
+- **Truncation**: If a snippet has more than 4 lines, show the first 4 lines with a visual indicator (e.g., "...") that more content exists
+- **Formatting preservation**: Maintain fountain formatting (character names, dialogue indentation, etc.) in the scaled preview
+
+#### Code Reuse Strategy
+
+To maintain consistency and reduce code duplication, we should reuse the existing rendering logic from `reading_view.ts`:
+
+1. **Extract `convertElement` function**: 
+   - Rename `convertElement` to `renderElement` for clarity
+   - Make it a standalone function that can be imported and reused
+   - Keep the same signature and behavior for rendering individual fountain elements
+
+2. **Scaling Implementation**:
+   - Wrap the rendered snippet content in a container div with CSS scaling
+   - Use CSS `transform: scale()` to shrink the content to fit the sidebar width
+   - Apply `transform-origin: top left` to ensure proper alignment
+   - Set appropriate container dimensions to prevent overflow
+
+3. **Preview Generation**:
+   - Take the first 4 fountain elements from each snippet
+   - Use the extracted `renderElement` function to convert each element to HTML
+   - Apply consistent styling and scaling across all snippet previews
+
+#### CSS Scaling Approach
+
+The scaling can be achieved with CSS transforms:
+
+```css
+.snippet-preview {
+    transform: scale(0.6); /* Adjust scale factor as needed */
+    transform-origin: top left;
+    width: 166.67%; /* Compensate for scaling: 100% / 0.6 */
+    margin-bottom: -40%; /* Adjust vertical spacing */
+}
+```
+
+This approach allows us to:
+- Reuse all existing fountain rendering logic
+- Maintain perfect formatting fidelity in previews  
+- Easily adjust scale factor for different sidebar widths
+- Keep snippet previews visually consistent with the main document
