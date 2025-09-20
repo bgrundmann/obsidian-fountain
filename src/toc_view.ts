@@ -209,7 +209,7 @@ export class TocView extends ItemView {
               text: "synopsis?",
             });
           });
-          for (const section of script.structure()) {
+          for (const section of script.structure().sections) {
             this.renderTocSection(div, script, section);
           }
         }

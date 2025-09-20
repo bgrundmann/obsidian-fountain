@@ -51,6 +51,8 @@ The snippets feature extends the existing table of contents (TOC) view in the ri
 
 ## Technical Considerations
 
+FountainScript.structure has been changed to return a `ScriptStructure` object containing both the main script structure and the parsed snippets.
+
 #### Type System Changes
 
 To cleanly integrate snippets into the existing type system, we should introduce type aliases for clarity:
@@ -66,19 +68,6 @@ interface ScriptStructure {
     snippets: Snippets;
 }
 ```
-
-#### FountainScript.structure() Changes
-
-The `FountainScript.structure()` method should be modified to return both the main script structure and the parsed snippets:
-
-- Current: `structure(): StructureSection[]`
-- Proposed: `structure(): ScriptStructure`
-
-This change provides:
-- Clean separation between main script structure and snippets
-- Type safety for snippet operations
-- Consistent interface for accessing both types of content
-- Easy migration path (accessing `.sections` gives the original behavior)
 
 Happily the core parser remains unchanged. Only FountainScript.structure needs to
 operate as is for everything up to "# Snippets" and then store everything afterwards

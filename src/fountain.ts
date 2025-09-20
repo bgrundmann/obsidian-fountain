@@ -299,6 +299,16 @@ function mergeConsecutiveActions(script: FountainElement[]): FountainElement[] {
   return merged;
 }
 
+// Type aliases for snippets
+export type Snippet = FountainElement[];
+export type Snippets = Snippet[];
+
+// Updated return type for structure()
+export interface ScriptStructure {
+  sections: StructureSection[];
+  snippets: Snippets;
+}
+
 // ============================================================================
 // Structure Classes
 // ============================================================================
@@ -543,7 +553,7 @@ class FountainScript {
       in which the elements appear in the script is important, use this.script()
       instead.
   */
-  structure(): StructureSection[] {
+  structure(): ScriptStructure {
     const res: StructureSection[] = [];
     let currentSection: StructureSection = new StructureSection();
     let currentScene: StructureScene = new StructureScene();
@@ -631,7 +641,10 @@ class FountainScript {
     if (!isCurrentSectionEmpty()) {
       res.push(currentSection);
     }
-    return res;
+    return {
+      sections: res,
+      snippets: [],
+    };
   }
 
   /**

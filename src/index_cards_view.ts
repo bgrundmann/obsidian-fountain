@@ -437,7 +437,7 @@ export function renderIndexCards(
 ): void {
   const structure = script.structure();
   div.empty();
-  for (const s of structure) {
+  for (const s of structure.sections) {
     renderSection(div, path, script, s, callbacks);
   }
 }
