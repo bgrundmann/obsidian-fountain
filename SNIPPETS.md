@@ -99,11 +99,6 @@ Each snippet in the SNIPPETS section should be displayed as a scaled-down previe
 
 To maintain consistency and reduce code duplication, we should reuse the existing rendering logic from `reading_view.ts`:
 
-1. **Extract `convertElement` function**: 
-   - Rename `convertElement` to `renderElement` for clarity
-   - Make it a standalone function that can be imported and reused
-   - Keep the same signature and behavior for rendering individual fountain elements
-
 2. **Scaling Implementation**:
    - Wrap the rendered snippet content in a container div with CSS scaling
    - Use CSS `transform: scale()` to shrink the content to fit the sidebar width
@@ -111,8 +106,8 @@ To maintain consistency and reduce code duplication, we should reuse the existin
    - Set appropriate container dimensions to prevent overflow
 
 3. **Preview Generation**:
-   - Take the first 4 fountain elements from each snippet
-   - Use the extracted `renderElement` function to convert each element to HTML
+   - Take the first 4 fountain elements from each snippet (note: this is ok for the initial Implementation, but a fountainelement can actually render as multiple lines)
+   - Use the `renderElement` function to convert each element to HTML
    - Apply consistent styling and scaling across all snippet previews
 
 #### CSS Scaling Approach
@@ -130,6 +125,6 @@ The scaling can be achieved with CSS transforms:
 
 This approach allows us to:
 - Reuse all existing fountain rendering logic
-- Maintain perfect formatting fidelity in previews  
+- Maintain perfect formatting fidelity in previews
 - Easily adjust scale factor for different sidebar widths
 - Keep snippet previews visually consistent with the main document
