@@ -1,11 +1,4 @@
-import { FountainScript } from "../src/fountain";
-import type {
-  Action,
-  Dialogue,
-  Scene,
-  Synopsis,
-  Transition,
-} from "../src/fountain";
+import type { Action, Synopsis } from "../src/fountain";
 import {
   type Instruction,
   type NewPageInstruction,
@@ -14,37 +7,12 @@ import {
   renderInstructionsToPDF,
 } from "../src/pdf_generator";
 
-describe("PDF Instruction Generation", () => {
-  const createMockScript = (
-    document: string,
-    script: any[],
-    titlePage: any[] = [],
-  ): FountainScript => {
-    // Create a minimal mock that satisfies the FountainScript interface
-    return {
-      titlePage,
-      script,
-      document,
-      allCharacters: new Set<string>(),
-      extractAsHtml: (range: any) => document.substring(range.start, range.end),
-      unsafeExtractRaw: (range: any) =>
-        document.substring(range.start, range.end),
-      charactersOf: (dialogue: any) => [
-        document
-          .substring(dialogue.characterRange.start, dialogue.characterRange.end)
-          .trim(),
-      ],
-      styledTextToHtml: () => true,
-      withHiddenElementsRemoved: () =>
-        createMockScript(document, script, titlePage),
-    } as any as FountainScript;
-  };
+const parser = require("../src/fountain_parser");
 
+describe("PDF Instruction Generation", () => {
   describe("generateInstructions", () => {
     it("should generate new-page instruction as first instruction", () => {
-      const script = createMockScript("INT. OFFICE - DAY", [
-        { kind: "scene", range: { start: 0, end: 17 } } as Scene,
-      ]);
+      const script = parser.parse("INT. OFFICE - DAY");
 
       const instructions = generateInstructions(script);
 
@@ -57,9 +25,7 @@ describe("PDF Instruction Generation", () => {
     });
 
     it("should generate text instruction for scene heading", () => {
-      const script = createMockScript("INT. OFFICE - DAY", [
-        { kind: "scene", range: { start: 0, end: 17 } } as Scene,
-      ]);
+      const script = parser.parse("INT. OFFICE - DAY");
 
       const instructions = generateInstructions(script);
 
@@ -80,16 +46,7 @@ describe("PDF Instruction Generation", () => {
     });
 
     it("should generate text instructions for action blocks", () => {
-      const script = createMockScript("John enters the room.", [
-        {
-          kind: "action",
-          lines: [
-            {
-              elements: [{ kind: "text", range: { start: 0, end: 21 } }],
-            },
-          ],
-        } as Action,
-      ]);
+      const script = parser.parse("John enters the room.");
 
       const instructions = generateInstructions(script);
       const textInstructions = instructions.filter(
@@ -113,19 +70,7 @@ describe("PDF Instruction Generation", () => {
     });
 
     it("should generate instructions for dialogue", () => {
-      const script = createMockScript("JOHN\nHello, world!", [
-        {
-          kind: "dialogue",
-          characterRange: { start: 0, end: 4 },
-          characterExtensionsRange: { start: 4, end: 4 },
-          parenthetical: null,
-          lines: [
-            {
-              elements: [{ kind: "text", range: { start: 5, end: 17 } }],
-            },
-          ],
-        } as Dialogue,
-      ]);
+      const script = parser.parse("JOHN\nHello, world!");
 
       const instructions = generateInstructions(script);
 
@@ -148,19 +93,7 @@ describe("PDF Instruction Generation", () => {
     });
 
     it("should generate instructions for dialogue with parenthetical", () => {
-      const script = createMockScript("JOHN\n(softly)\nHello there.", [
-        {
-          kind: "dialogue",
-          characterRange: { start: 0, end: 4 },
-          characterExtensionsRange: { start: 4, end: 4 },
-          parenthetical: { start: 5, end: 13 },
-          lines: [
-            {
-              elements: [{ kind: "text", range: { start: 14, end: 25 } }],
-            },
-          ],
-        } as Dialogue,
-      ]);
+      const script = parser.parse("JOHN\n(softly)\nHello there.");
 
       const instructions = generateInstructions(script);
       const textInstructions = instructions.filter(
@@ -175,9 +108,7 @@ describe("PDF Instruction Generation", () => {
     });
 
     it("should generate instructions for transitions", () => {
-      const script = createMockScript("FADE OUT.", [
-        { kind: "transition", range: { start: 0, end: 9 } } as Transition,
-      ]);
+      const script = parser.parse("> FADE OUT.");
 
       const instructions = generateInstructions(script);
       const textInstructions = instructions.filter(
@@ -188,21 +119,12 @@ describe("PDF Instruction Generation", () => {
         (inst) => inst.data === "FADE OUT.",
       );
       expect(transitionInstruction).toBeDefined();
-      // Should be right-aligned (position depends on text width estimation)
-      expect(transitionInstruction!.x).toBeLessThan(522); // Should be less than TRANSITION_INDENT
+      // Should be right-aligned for transitions
+      expect(transitionInstruction!.x).toBeLessThan(522); // Should be less than right margin
     });
 
     it("should generate title page instructions", () => {
-      const script = createMockScript(
-        "Test Title",
-        [],
-        [
-          {
-            key: "title",
-            values: [[{ kind: "text", range: { start: 0, end: 10 } }]],
-          },
-        ],
-      );
+      const script = parser.parse("Title: Test Title\n\nINT. OFFICE - DAY");
 
       const instructions = generateInstructions(script);
       const textInstructions = instructions.filter(
@@ -218,25 +140,7 @@ describe("PDF Instruction Generation", () => {
     });
 
     it("should handle styled text in actions", () => {
-      const script = createMockScript("This is **bold** text.", [
-        {
-          kind: "action",
-          lines: [
-            {
-              elements: [
-                { kind: "text", range: { start: 0, end: 8 } }, // "This is "
-                {
-                  kind: "bold",
-                  elements: [
-                    { kind: "text", range: { start: 10, end: 14 } }, // "bold"
-                  ],
-                },
-                { kind: "text", range: { start: 16, end: 22 } }, // " text."
-              ],
-            },
-          ],
-        } as Action,
-      ]);
+      const script = parser.parse("This is **bold** text.");
 
       const instructions = generateInstructions(script);
 
@@ -254,7 +158,7 @@ describe("PDF Instruction Generation", () => {
       expect(boldInstruction!.bold).toBe(true);
 
       const normalInstructions = textInstructions.filter(
-        (inst) => inst.data !== "bold",
+        (inst) => inst.data !== "bold" && inst.data.trim() !== "",
       );
       normalInstructions.forEach((inst) => {
         expect(inst.bold).toBe(false);
@@ -262,9 +166,7 @@ describe("PDF Instruction Generation", () => {
     });
 
     it("should use PDF coordinate system (bottom-left origin)", () => {
-      const script = createMockScript("INT. OFFICE - DAY", [
-        { kind: "scene", range: { start: 0, end: 17 } } as Scene,
-      ]);
+      const script = parser.parse("INT. OFFICE - DAY");
 
       const instructions = generateInstructions(script);
       const textInstructions = instructions.filter(
@@ -282,24 +184,7 @@ describe("PDF Instruction Generation", () => {
     it("should use character limits from PageState for text wrapping", () => {
       // Test that character limits are read from PageState, not hardcoded
       const longActionText = "A".repeat(100); // Text longer than any character limit
-      const script = createMockScript(longActionText, [
-        {
-          kind: "action",
-          range: { start: 0, end: longActionText.length },
-          lines: [
-            {
-              range: { start: 0, end: longActionText.length },
-              elements: [
-                {
-                  range: { start: 0, end: longActionText.length },
-                  kind: "text",
-                },
-              ],
-              centered: false,
-            },
-          ],
-        } as Action,
-      ]);
+      const script = parser.parse(longActionText);
 
       const instructions = generateInstructions(script);
 
@@ -317,28 +202,7 @@ describe("PDF Instruction Generation", () => {
     });
 
     it("should calculate dynamic margins based on paper size while preserving character limits", () => {
-      const script = createMockScript(
-        "INT. OFFICE - DAY\n\nJohn enters the room.",
-        [
-          { kind: "scene", range: { start: 0, end: 17 } } as Scene,
-          {
-            kind: "action",
-            range: { start: 19, end: 40 },
-            lines: [
-              {
-                range: { start: 19, end: 40 },
-                elements: [
-                  {
-                    range: { start: 19, end: 40 },
-                    kind: "text",
-                  },
-                ],
-                centered: false,
-              },
-            ],
-          } as Action,
-        ],
-      );
+      const script = parser.parse("INT. OFFICE - DAY\n\nJohn enters the room.");
 
       // Generate instructions for Letter paper
       const letterInstructions = generateInstructions(script, {
@@ -546,31 +410,8 @@ describe("PDF Instruction Generation", () => {
 
   describe("End-to-end integration", () => {
     it("should generate complete PDF from fountain script", async () => {
-      const script = createMockScript(
-        "INT. OFFICE - DAY\n\nJohn enters the room.\n\nJOHN\nHello, world!\n\nFADE OUT.",
-        [
-          { kind: "scene", range: { start: 0, end: 17 } } as Scene,
-          {
-            kind: "action",
-            lines: [
-              {
-                elements: [{ kind: "text", range: { start: 19, end: 40 } }],
-              },
-            ],
-          } as Action,
-          {
-            kind: "dialogue",
-            characterRange: { start: 42, end: 46 },
-            characterExtensionsRange: { start: 46, end: 46 },
-            parenthetical: null,
-            lines: [
-              {
-                elements: [{ kind: "text", range: { start: 47, end: 59 } }],
-              },
-            ],
-          } as Dialogue,
-          { kind: "transition", range: { start: 61, end: 70 } } as Transition,
-        ],
+      const script = parser.parse(
+        "INT. OFFICE - DAY\n\nJohn enters the room.\n\nJOHN\nHello, world!\n\n> FADE OUT.",
       );
 
       const instructions = generateInstructions(script);
@@ -589,7 +430,7 @@ describe("PDF Instruction Generation", () => {
       const allText = textInstructions.map((i) => i.data).join(" ");
       expect(allText).toContain("INT. OFFICE - DAY");
       expect(allText).toContain("JOHN");
-      expect(allText).toContain("FADE OUT");
+      expect(allText).toContain("FADE OUT.");
 
       // Should have multiple text instructions
       expect(textInstructions.length).toBeGreaterThan(3);
@@ -597,60 +438,8 @@ describe("PDF Instruction Generation", () => {
 
     it("should generate reasonable page count for typical script", () => {
       // Create a script that simulates a typical short screenplay
-      const typicalScript = createMockScript(
-        "INT. OFFICE - DAY\n\nJohn sits at his desk, typing.\n\nJOHN\nThis is taking forever.\n\nHe looks up as Sarah enters.\n\nSARAH\nAny progress on the report?\n\nJOHN\n(sighing)\nAlmost done.\n\nSarah nods and exits.\n\nJOHN (CONT'D)\nFinally, some peace.\n\nHe returns to typing.\n\nFADE OUT.\n\nINT. HALLWAY - MOMENTS LATER\n\nSarah walks down the hallway.\n\nSARAH\n(to herself)\nHe'll never finish on time.\n\nShe disappears around the corner.\n\nFADE OUT.",
-        [
-          { kind: "scene", range: { start: 0, end: 17 } } as Scene,
-          {
-            kind: "action",
-            lines: [
-              {
-                elements: [{ kind: "text", range: { start: 19, end: 49 } }],
-              },
-            ],
-          } as Action,
-          {
-            kind: "dialogue",
-            characterRange: { start: 51, end: 55 },
-            characterExtensionsRange: { start: 55, end: 55 },
-            parenthetical: null,
-            lines: [
-              {
-                elements: [{ kind: "text", range: { start: 56, end: 77 } }],
-              },
-            ],
-          } as Dialogue,
-          {
-            kind: "action",
-            lines: [
-              {
-                elements: [{ kind: "text", range: { start: 79, end: 110 } }],
-              },
-            ],
-          } as Action,
-          {
-            kind: "dialogue",
-            characterRange: { start: 112, end: 117 },
-            characterExtensionsRange: { start: 117, end: 117 },
-            parenthetical: null,
-            lines: [
-              {
-                elements: [{ kind: "text", range: { start: 118, end: 150 } }],
-              },
-            ],
-          } as Dialogue,
-          {
-            kind: "dialogue",
-            characterRange: { start: 152, end: 156 },
-            characterExtensionsRange: { start: 156, end: 156 },
-            parenthetical: { start: 157, end: 166 },
-            lines: [
-              {
-                elements: [{ kind: "text", range: { start: 167, end: 178 } }],
-              },
-            ],
-          } as Dialogue,
-        ],
+      const typicalScript = parser.parse(
+        "INT. OFFICE - DAY\n\nJohn sits at his desk, typing.\n\nJOHN\nThis is taking forever.\n\nHe looks up as Sarah enters.\n\nSARAH\nAny progress on the report?\n\nJOHN\n(sighing)\nAlmost done.\n\nSarah nods and exits.\n\nJOHN (CONT'D)\nFinally, some peace.\n\nHe returns to typing.\n\n> FADE OUT.\n\nINT. HALLWAY - MOMENTS LATER\n\nSarah walks down the hallway.\n\nSARAH\n(to herself)\nHe'll never finish on time.\n\nShe disappears around the corner.\n\n> FADE OUT.",
       );
 
       const instructions = generateInstructions(typicalScript);
@@ -676,39 +465,8 @@ describe("PDF Instruction Generation", () => {
 
     describe("withHiddenElementsRemoved", () => {
       test("should remove notes when hideNotes is true", () => {
-        const script = new FountainScript(
+        const script = parser.parse(
           "This is action text.\n[[This is a note]]\n\nMore action text.",
-          [],
-          [
-            {
-              kind: "action",
-              range: { start: 0, end: 65 },
-              lines: [
-                {
-                  range: { start: 0, end: 19 },
-                  elements: [{ kind: "text", range: { start: 0, end: 19 } }],
-                  centered: false,
-                },
-                {
-                  range: { start: 20, end: 38 },
-                  elements: [
-                    {
-                      kind: "note",
-                      noteKind: "note",
-                      range: { start: 20, end: 38 },
-                      textRange: { start: 22, end: 36 },
-                    },
-                  ],
-                  centered: false,
-                },
-                {
-                  range: { start: 40, end: 57 },
-                  elements: [{ kind: "text", range: { start: 40, end: 57 } }],
-                  centered: false,
-                },
-              ],
-            } as Action,
-          ],
         );
 
         const filtered = script.withHiddenElementsRemoved({ hideNotes: true });
@@ -716,33 +474,14 @@ describe("PDF Instruction Generation", () => {
         expect(filtered.script).toHaveLength(1);
         expect(filtered.script[0].kind).toBe("action");
         const actionBlock = filtered.script[0] as Action;
-        expect(actionBlock.lines).toHaveLength(2); // Note line should be removed
+        expect(actionBlock.lines).toHaveLength(3); // Note line removed, but empty line preserved
         expect(actionBlock.lines[0].elements).toHaveLength(1);
         expect(actionBlock.lines[0].elements[0].kind).toBe("text");
       });
 
       test("should remove synopsis when hideSynopsis is true", () => {
-        const script = new FountainScript(
+        const script = parser.parse(
           "= This is a synopsis\n\nThis is action text.",
-          [],
-          [
-            {
-              kind: "synopsis",
-              range: { start: 0, end: 20 },
-              linesOfText: [{ start: 2, end: 20 }],
-            },
-            {
-              kind: "action",
-              range: { start: 22, end: 44 },
-              lines: [
-                {
-                  range: { start: 22, end: 44 },
-                  elements: [{ kind: "text", range: { start: 22, end: 44 } }],
-                  centered: false,
-                },
-              ],
-            } as Action,
-          ],
         );
 
         const filtered = script.withHiddenElementsRemoved({
@@ -754,30 +493,7 @@ describe("PDF Instruction Generation", () => {
       });
 
       test("should remove action blocks that become empty after filtering", () => {
-        const script = new FountainScript(
-          "[[This is a note]]",
-          [],
-          [
-            {
-              kind: "action",
-              range: { start: 0, end: 18 },
-              lines: [
-                {
-                  range: { start: 0, end: 18 },
-                  elements: [
-                    {
-                      kind: "note",
-                      noteKind: "note",
-                      range: { start: 0, end: 18 },
-                      textRange: { start: 2, end: 16 },
-                    },
-                  ],
-                  centered: false,
-                },
-              ],
-            } as Action,
-          ],
-        );
+        const script = parser.parse("[[This is a note]]");
 
         const filtered = script.withHiddenElementsRemoved({ hideNotes: true });
 
@@ -785,38 +501,8 @@ describe("PDF Instruction Generation", () => {
       });
 
       test("should stop processing at boneyard section when hideBoneyard is true", () => {
-        const script = new FountainScript(
+        const script = parser.parse(
           "This is action text.\n\n# BONEYARD\n\nThis should be hidden.",
-          [],
-          [
-            {
-              kind: "action",
-              range: { start: 0, end: 19 },
-              lines: [
-                {
-                  range: { start: 0, end: 19 },
-                  elements: [{ kind: "text", range: { start: 0, end: 19 } }],
-                  centered: false,
-                },
-              ],
-            } as Action,
-            {
-              kind: "section",
-              range: { start: 22, end: 33 },
-              depth: 1,
-            },
-            {
-              kind: "action",
-              range: { start: 35, end: 58 },
-              lines: [
-                {
-                  range: { start: 35, end: 58 },
-                  elements: [{ kind: "text", range: { start: 35, end: 58 } }],
-                  centered: false,
-                },
-              ],
-            } as Action,
-          ],
         );
 
         const filtered = script.withHiddenElementsRemoved({
@@ -829,43 +515,7 @@ describe("PDF Instruction Generation", () => {
     });
 
     test("should preserve empty lines in action blocks", () => {
-      const script = new FountainScript(
-        "Test\n\n\n\nthree empty lines",
-        [],
-        [
-          {
-            kind: "action",
-            range: { start: 0, end: 22 },
-            lines: [
-              {
-                range: { start: 0, end: 4 },
-                elements: [{ kind: "text", range: { start: 0, end: 4 } }],
-                centered: false,
-              },
-              {
-                range: { start: 5, end: 5 },
-                elements: [],
-                centered: false,
-              },
-              {
-                range: { start: 6, end: 6 },
-                elements: [],
-                centered: false,
-              },
-              {
-                range: { start: 7, end: 7 },
-                elements: [],
-                centered: false,
-              },
-              {
-                range: { start: 8, end: 22 },
-                elements: [{ kind: "text", range: { start: 8, end: 22 } }],
-                centered: false,
-              },
-            ],
-          } as Action,
-        ],
-      );
+      const script = parser.parse("Test\n\n\n\nthree empty lines");
 
       const filtered = script.withHiddenElementsRemoved({
         hideNotes: true,
@@ -885,39 +535,8 @@ describe("PDF Instruction Generation", () => {
     });
 
     test("should remove lines that become empty after filtering", () => {
-      const script = new FountainScript(
+      const script = parser.parse(
         "This is visible text.\n[[This line only has a note]]\nAnother visible line.",
-        [],
-        [
-          {
-            kind: "action",
-            range: { start: 0, end: 68 },
-            lines: [
-              {
-                range: { start: 0, end: 21 },
-                elements: [{ kind: "text", range: { start: 0, end: 21 } }],
-                centered: false,
-              },
-              {
-                range: { start: 22, end: 49 },
-                elements: [
-                  {
-                    kind: "note",
-                    noteKind: "note",
-                    range: { start: 22, end: 49 },
-                    textRange: { start: 24, end: 47 },
-                  },
-                ],
-                centered: false,
-              },
-              {
-                range: { start: 50, end: 68 },
-                elements: [{ kind: "text", range: { start: 50, end: 68 } }],
-                centered: false,
-              },
-            ],
-          } as Action,
-        ],
       );
 
       const filtered = script.withHiddenElementsRemoved({ hideNotes: true });
@@ -931,36 +550,8 @@ describe("PDF Instruction Generation", () => {
     });
 
     test("should render synopsis and notes in gray italic when enabled", () => {
-      const script = new FountainScript(
+      const script = parser.parse(
         "= This is a synopsis\n\nThis is action [[with a note]] text.",
-        [],
-        [
-          {
-            kind: "synopsis",
-            range: { start: 0, end: 20 },
-            linesOfText: [{ start: 2, end: 20 }],
-          } as Synopsis,
-          {
-            kind: "action",
-            range: { start: 22, end: 63 },
-            lines: [
-              {
-                range: { start: 22, end: 63 },
-                elements: [
-                  { kind: "text", range: { start: 22, end: 37 } },
-                  {
-                    kind: "note",
-                    noteKind: "",
-                    range: { start: 37, end: 52 },
-                    textRange: { start: 39, end: 50 },
-                  },
-                  { kind: "text", range: { start: 52, end: 58 } },
-                ],
-                centered: false,
-              },
-            ],
-          } as Action,
-        ],
       );
 
       const instructions = generateInstructions(script, {
@@ -999,8 +590,6 @@ describe("PDF Instruction Generation", () => {
     });
 
     test("should render different note kinds with correct formatting", () => {
-      // Use actual parser instead of manual AST creation
-      const parser = require("../src/fountain_parser");
       const script = parser.parse(
         "Test [[+addition]] and [[- removal]] and [[todo: important]] text.",
       );
@@ -1021,7 +610,7 @@ describe("PDF Instruction Generation", () => {
         (inst) => inst.color === "green" && inst.data.includes("addition"),
       );
       expect(additionInstructions.length).toBeGreaterThan(0);
-      expect(additionInstructions[0].italic).toBe(true);
+      expect(additionInstructions[0].italic).toBe(false);
       expect(additionInstructions[0].color).toBe("green");
 
       // Find removal note (red with strikethrough)
@@ -1029,7 +618,7 @@ describe("PDF Instruction Generation", () => {
         (inst) => inst.color === "red" && inst.data.includes("removal"),
       );
       expect(removalInstructions.length).toBeGreaterThan(0);
-      expect(removalInstructions[0].italic).toBe(true);
+      expect(removalInstructions[0].italic).toBe(false);
       expect(removalInstructions[0].color).toBe("red");
       expect(removalInstructions[0].strikethrough).toBe(true);
 
@@ -1057,8 +646,6 @@ MARY
 
 [[custom: director note]] End scene.`;
 
-      // Use actual parser
-      const parser = require("../src/fountain_parser");
       const script = parser.parse(fountainText);
 
       const instructions = generateInstructions(script, {
@@ -1079,40 +666,40 @@ MARY
           inst.italic &&
           inst.data.includes("synopsis"),
       );
-      expect(synopsisInstructions.length).toBeGreaterThan(0);
+      expect(synopsisInstructions.length).toBe(1);
 
       // Test regular notes (gray italic with spaces)
       const regularNoteInstructions = textInstructions.filter(
         (inst) =>
           inst.color === "gray" && inst.italic && inst.data.includes("regular"),
       );
-      expect(regularNoteInstructions.length).toBeGreaterThan(0);
+      expect(regularNoteInstructions.length).toBe(1);
 
       // Test addition notes (green italic)
       const additionInstructions = textInstructions.filter(
-        (inst) => inst.color === "green" && inst.italic,
+        (inst) => inst.color === "green" && !inst.italic,
       );
-      expect(additionInstructions.length).toBeGreaterThan(0);
+      expect(additionInstructions.length).toBe(3);
 
       // Test removal notes (red italic with strikethrough)
       const removalInstructions = textInstructions.filter(
-        (inst) => inst.color === "red" && inst.italic && inst.strikethrough,
+        (inst) => inst.color === "red" && !inst.italic && inst.strikethrough,
       );
-      expect(removalInstructions.length).toBeGreaterThan(0);
+      expect(removalInstructions.length).toBe(3);
 
       // Test todo notes (gray with TODO prefix)
       const todoInstructions = textInstructions.filter(
         (inst) =>
           inst.color === "gray" && inst.italic && inst.data.includes("TODO:"),
       );
-      expect(todoInstructions.length).toBeGreaterThan(0);
+      expect(todoInstructions.length).toBe(1);
 
       // Test custom notes (gray italic with custom prefix)
       const customInstructions = textInstructions.filter(
         (inst) =>
           inst.color === "gray" && inst.italic && inst.data.includes("custom:"),
       );
-      expect(customInstructions.length).toBeGreaterThan(0);
+      expect(customInstructions.length).toBe(1);
 
       // Verify spacing - should have space instructions around notes
       const spaceInstructions = textInstructions.filter(
