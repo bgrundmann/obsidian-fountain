@@ -10,7 +10,7 @@ import type {
 } from "./fountain";
 import { NBSP, dataRange, extractTransitionText } from "./fountain";
 import { renderBlankLine } from "./render_tools";
-export { renderFountain, getDataRange, rangeOfFirstVisibleLine };
+export { renderFountain, getDataRange, rangeOfFirstVisibleLine, renderElement };
 
 function renderAction(
   parent: HTMLElement,
@@ -132,6 +132,76 @@ function renderSynopsis(
 }
 
 /**
+ * Renders a single fountain element to HTML.
+ */
+function renderElement(
+  parent: HTMLElement,
+  el: FountainElement,
+  script: FountainScript,
+  settings: ShowHideSettings,
+  blackoutCharacter?: string,
+): void {
+  switch (el.kind) {
+    case "action":
+      renderAction(parent, el, script, settings);
+      break;
+    case "scene":
+      {
+        parent.createEl("h3", {
+          cls: "scene-heading",
+          attr: dataRange(el.range),
+          text: script.unsafeExtractRaw(el.range),
+        });
+        renderBlankLine(parent, el.range);
+      }
+      break;
+
+    case "synopsis":
+      renderSynopsis(parent, script, el, settings);
+      break;
+
+    case "section":
+      {
+        const title = script.unsafeExtractRaw(el.range);
+        if (
+          title
+            .toLowerCase()
+            .replace(/^ *#+ */, "")
+            .trimEnd() === "boneyard"
+        ) {
+          parent.createEl("hr");
+        }
+        const tag = `h${el.depth ?? 1}` as keyof HTMLElementTagNameMap;
+        parent.createEl(tag, {
+          cls: "section",
+          attr: dataRange(el.range),
+          text: title,
+        });
+      }
+      break;
+    case "dialogue":
+      renderDialogue(parent, el, script, settings, blackoutCharacter);
+      break;
+    case "transition":
+      {
+        const transitionText = extractTransitionText(el, script);
+        parent.createDiv({
+          cls: "transition",
+          attr: dataRange(el.range),
+          text: transitionText,
+        });
+        renderBlankLine(parent, el.range);
+      }
+      break;
+    case "page-break":
+      parent.createEl("hr", {
+        attr: dataRange(el.range),
+      });
+      break;
+  }
+}
+
+/**
  * Render the content of the script (everything but the title page).
  */
 function renderContent(
@@ -140,68 +210,8 @@ function renderContent(
   settings: ShowHideSettings,
   blackoutCharacter?: string,
 ): void {
-  const convertElement = (el: FountainElement): void => {
-    switch (el.kind) {
-      case "action":
-        renderAction(parent, el, script, settings);
-        break;
-      case "scene":
-        {
-          parent.createEl("h3", {
-            cls: "scene-heading",
-            attr: dataRange(el.range),
-            text: script.unsafeExtractRaw(el.range),
-          });
-          renderBlankLine(parent, el.range);
-        }
-        break;
-
-      case "synopsis":
-        renderSynopsis(parent, script, el, settings);
-        break;
-
-      case "section":
-        {
-          const title = script.unsafeExtractRaw(el.range);
-          if (
-            title
-              .toLowerCase()
-              .replace(/^ *#+ */, "")
-              .trimEnd() === "boneyard"
-          ) {
-            parent.createEl("hr");
-          }
-          const tag = `h${el.depth ?? 1}` as keyof HTMLElementTagNameMap;
-          parent.createEl(tag, {
-            cls: "section",
-            attr: dataRange(el.range),
-            text: title,
-          });
-        }
-        break;
-      case "dialogue":
-        renderDialogue(parent, el, script, settings, blackoutCharacter);
-        break;
-      case "transition":
-        {
-          const transitionText = extractTransitionText(el, script);
-          parent.createDiv({
-            cls: "transition",
-            attr: dataRange(el.range),
-            text: transitionText,
-          });
-          renderBlankLine(parent, el.range);
-        }
-        break;
-      case "page-break":
-        parent.createEl("hr", {
-          attr: dataRange(el.range),
-        });
-        break;
-    }
-  };
   for (const el of script.script) {
-    convertElement(el);
+    renderElement(parent, el, script, settings, blackoutCharacter);
   }
 }
 
