@@ -58,11 +58,13 @@ FountainScript.structure has been changed to return a `ScriptStructure` object c
 To cleanly integrate snippets into the existing type system, we should introduce type aliases for clarity:
 
 ```typescript
-// Type aliases for snippets
-type Snippet = FountainElement[];
+interface Snippet {
+  content: FountainElement[];
+  pageBreak?: PageBreak;
+}
+
 type Snippets = Snippet[];
 
-// Updated return type for structure()
 interface ScriptStructure {
     sections: StructureSection[];
     snippets: Snippets;
@@ -71,15 +73,15 @@ interface ScriptStructure {
 
 Happily the core parser remains unchanged. Only FountainScript.structure needs to
 operate as is for everything up to "# Snippets" and then store everything afterwards
-as separate snippets. Particular attention needs to be paid to the the page breaks
-that separate the snippets. FountainScript.structure will add each page break as the
-last element of each snippet preceding the page break. Note that the last element of
-the last snippet might not be a page break. Also if the last snippet is empty (that is
-the file ends with a page break), then that snippet will be ignored and not added
+as separate snippets. To handle page breaks that separate snippets, each Snippet object
+has an optional pageBreak field that contains the PageBreak element that followed the
+snippet content (if any). The last snippet may not have a pageBreak. Empty snippets
+(those ending with a page break but containing no content) are ignored and not added
 to ScriptStructure.snippets.
 
 Conversely when snippets are added by drag and drop from the main script into the
-snippets section, the code automatically adds the page break after the snippet.
+snippets section, the code automatically creates appropriate page breaks to separate
+them from existing snippets.
 
 Note that there is no need to every directly modify the FountainScript.structure class.
 Instead after modifications the parser is called and then FountainScript.structure will

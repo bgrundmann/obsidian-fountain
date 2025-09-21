@@ -63,6 +63,43 @@ All fountain elements track their position in the source document via `Range` ob
 - Safe editing operations (replace, move, duplicate scenes)
 - Syntax highlighting in editor mode
 
+## Snippets Architecture
+
+The snippets feature allows reusable blocks of fountain content to be stored and managed within the same document. To handle the complexity of page breaks that separate snippets, we use an explicit interface design.
+
+### Snippet Interface
+
+Instead of treating snippets as simple arrays of fountain elements, we use an explicit interface that separates content from separators:
+
+```typescript
+interface Snippet {
+  content: FountainElement[];
+  pageBreak?: PageBreak;
+}
+
+type Snippets = Snippet[];
+
+interface ScriptStructure {
+  sections: StructureSection[];
+  snippets: Snippets;
+}
+```
+
+### Page Break Handling
+
+- Page breaks (`===`) serve as separators between snippets and are NOT part of snippet content
+- Each snippet may optionally have an associated page break that followed it in the original document
+- The last snippet in a document may not have a page break
+- Empty snippets (ending with a page break but no content) are ignored during parsing
+- This explicit design prevents subtle bugs where page breaks are accidentally treated as snippet content
+
+### Implementation Notes
+
+- `FountainScript.structure()` parses everything after `# Snippets` as snippet content
+- Page breaks are captured and associated with the preceding snippet
+- When snippets are inserted via drag-and-drop, appropriate page breaks are automatically added
+- Instead of trying to modify a ScriptStructure in place after a modification we re-parse the document.
+
 ## PDF Generation
 
 Uses `pdf-lib` to generate formatted PDFs directly in the browser. Supports:

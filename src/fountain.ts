@@ -300,7 +300,10 @@ function mergeConsecutiveActions(script: FountainElement[]): FountainElement[] {
 }
 
 // Type aliases for snippets
-export type Snippet = FountainElement[];
+export interface Snippet {
+  content: FountainElement[];
+  pageBreak?: PageBreak;
+}
 export type Snippets = Snippet[];
 
 // Updated return type for structure()

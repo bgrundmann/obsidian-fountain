@@ -505,4 +505,232 @@ More action here.`;
 
     expect(structure).toEqual(expected);
   });
+
+  // Snippets functionality tests - these should FAIL until FountainScript.structure implements support for snippets.
+
+  test("parses document with snippets section", () => {
+    const scriptWithSnippets = `EXT. PARK - DAY
+
+A simple scene.
+
+JOHN
+Hello world.
+
+# Snippets
+EXT. KITCHEN - DAY
+
+Some reusable kitchen scene.
+
+MARY
+This is a snippet.
+
+===
+INT. OFFICE - DAY
+
+Another snippet here.
+
+BOSS
+Get back to work!`;
+
+    const script: FountainScript = parse(scriptWithSnippets, {});
+    const structure = script.structure();
+
+    expect(structure.snippets).toHaveLength(2);
+
+    // First snippet should contain kitchen scene
+    const firstSnippet = structure.snippets[0];
+    expect(firstSnippet.content).toHaveLength(3); // scene, action, dialogue
+    expect(firstSnippet.content[0].kind).toBe("scene");
+    expect(firstSnippet.content[2].kind).toBe("dialogue");
+    expect(firstSnippet.pageBreak).toBeDefined();
+    expect(firstSnippet.pageBreak?.kind).toBe("page-break");
+
+    // Second snippet should contain office scene
+    const secondSnippet = structure.snippets[1];
+    expect(secondSnippet.content).toHaveLength(3); // scene, action, dialogue
+    expect(secondSnippet.content[0].kind).toBe("scene");
+    expect(secondSnippet.content[2].kind).toBe("dialogue");
+    expect(secondSnippet.pageBreak).toBeUndefined(); // Last snippet has no page break
+  });
+
+  test("parses document with boneyard and snippets", () => {
+    const scriptWithBoneyardAndSnippets = `EXT. PARK - DAY
+
+Main script content.
+
+# Boneyard
+
+Some boneyard content here.
+
+OLD_CHARACTER
+This is in the boneyard.
+
+# Snippets
+
+EXT. STORE - DAY
+
+Snippet content.
+
+CLERK
+Can I help you?`;
+
+    const script: FountainScript = parse(scriptWithBoneyardAndSnippets, {});
+    const structure = script.structure();
+
+    // Main sections includes boneyard but not snippets content
+    expect(structure.sections).toHaveLength(2);
+
+    // Should have one snippet
+    expect(structure.snippets).toHaveLength(1);
+    const snippet = structure.snippets[0];
+    expect(snippet.content).toHaveLength(3); // scene, action, dialogue
+    expect(snippet.content[0].kind).toBe("scene");
+    expect(snippet.content[2].kind).toBe("dialogue");
+    expect(snippet.pageBreak).toBeUndefined(); // Last snippet has no page break
+  });
+
+  test("handles multiple snippets separated by page breaks", () => {
+    const scriptWithMultipleSnippets = `EXT. MAIN - DAY
+
+Main content.
+
+# Snippets
+
+First snippet content.
+
+ACTION
+Some action.
+
+===
+
+Second snippet here.
+
+MORE_ACTION
+More action text.
+
+===
+
+Third and final snippet.
+
+FINAL_ACTION
+The end.`;
+
+    const script: FountainScript = parse(scriptWithMultipleSnippets, {});
+    const structure = script.structure();
+
+    expect(structure.snippets).toHaveLength(3);
+
+    // Each snippet should have 2 elements (action line + dialogue/action)
+    expect(structure.snippets[0].content).toHaveLength(2);
+    expect(structure.snippets[0].pageBreak).toBeDefined();
+    expect(structure.snippets[1].content).toHaveLength(2);
+    expect(structure.snippets[1].pageBreak).toBeDefined();
+    expect(structure.snippets[2].content).toHaveLength(2);
+    expect(structure.snippets[2].pageBreak).toBeUndefined(); // Last snippet has no page break
+  });
+
+  test("handles snippets section with no page breaks", () => {
+    const scriptWithSingleSnippet = `EXT. MAIN - DAY
+
+Main content.
+
+# Snippets
+
+Single snippet without page breaks.
+
+CHARACTER
+Some dialogue here.
+
+More action text.`;
+
+    const script: FountainScript = parse(scriptWithSingleSnippet, {});
+    const structure = script.structure();
+
+    expect(structure.snippets).toHaveLength(1);
+    const snippet = structure.snippets[0];
+    expect(snippet.content).toHaveLength(3); // action, dialogue, action
+    expect(snippet.pageBreak).toBeUndefined(); // Single snippet with no page break
+  });
+
+  test("handles empty snippets section", () => {
+    const scriptWithEmptySnippets = `EXT. MAIN - DAY
+
+Main content.
+
+# Snippets`;
+
+    const script: FountainScript = parse(scriptWithEmptySnippets, {});
+    const structure = script.structure();
+
+    expect(structure.snippets).toEqual([]);
+  });
+
+  test("handles snippets ending with page break", () => {
+    const scriptWithTrailingPageBreak = `EXT. MAIN - DAY
+
+Main content.
+
+# Snippets
+
+First snippet.
+
+CHARACTER
+Some dialogue.
+
+===
+
+Second snippet.
+
+MORE_CHARACTER
+More dialogue.
+
+===`;
+
+    const script: FountainScript = parse(scriptWithTrailingPageBreak, {});
+    const structure = script.structure();
+
+    // Should have 2 snippets, empty snippet at end should be ignored
+    expect(structure.snippets).toHaveLength(2);
+    expect(structure.snippets[0].content).toHaveLength(2);
+    expect(structure.snippets[0].pageBreak).toBeDefined();
+    expect(structure.snippets[1].content).toHaveLength(2);
+    expect(structure.snippets[1].pageBreak).toBeDefined(); // Has page break but empty content after is ignored
+  });
+
+  test("snippets section includes other sections as content", () => {
+    const scriptWithSectionsInSnippets = `EXT. MAIN - DAY
+
+Main content.
+
+# Snippets
+
+First snippet.
+
+# Some Other Section
+
+This should be part of first snippet.
+
+===
+
+# Yet Another Section
+
+This should be second snippet.
+
+More content here.`;
+
+    const script: FountainScript = parse(scriptWithSectionsInSnippets, {});
+    const structure = script.structure();
+
+    expect(structure.snippets).toHaveLength(2);
+
+    // First snippet should include the section header
+    const firstSnippet = structure.snippets[0];
+    expect(firstSnippet.content.length).toBeGreaterThan(2);
+    expect(firstSnippet.pageBreak).toBeDefined();
+
+    // Second snippet should also include section header
+    const secondSnippet = structure.snippets[1];
+    expect(secondSnippet.content.length).toBeGreaterThan(2);
+    expect(secondSnippet.pageBreak).toBeUndefined(); // Last snippet has no page break
+  });
 });
