@@ -33,7 +33,7 @@ The snippets feature extends the existing table of contents (TOC) view in the ri
 - Users can drag snippets from SNIPPETS into the document. If they do drop them, they are inserted at the cursor position. Even if that position is after the "# Boneyard" or "# Snippets". That way one can easily duplicate snippets.
 - The original snippet remains in the `# Snippets` section (copy, not move operation)
 - To edit a snippet, users just edit the relevant snippet in the document. Clicking on the snippet in the list scrolls to the snippet's location in the document.
-- To create a snippet, users either directly edit the "# Snippets" section or drag and drop selected text into SNIPPETS.
+- To create a snippet, users either directly edit the "# Snippets" section or drag and drop selected text into SNIPPETS (the latter removes the text from the main script, and adds them to the beginning of the `# Snippets` section).
 
 ## Extension of Existing Features
 
@@ -71,7 +71,19 @@ interface ScriptStructure {
 
 Happily the core parser remains unchanged. Only FountainScript.structure needs to
 operate as is for everything up to "# Snippets" and then store everything afterwards
-as separate snippets.
+as separate snippets. Particular attention needs to be paid to the the page breaks
+that separate the snippets. FountainScript.structure will add each page break as the
+last element of each snippet preceding the page break. Note that the last element of
+the last snippet might not be a page break. Also if the last snippet is empty (that is
+the file ends with a page break), then that snippet will be ignored and not added
+to ScriptStructure.snippets.
+
+Conversely when snippets are added by drag and drop from the main script into the
+snippets section, the code automatically adds the page break after the snippet.
+
+Note that there is no need to every directly modify the FountainScript.structure class.
+Instead after modifications the parser is called and then FountainScript.structure will
+create a new instance of ScriptStructure.
 
 ### Snippet Display Design
 
