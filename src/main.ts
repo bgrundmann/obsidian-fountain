@@ -2,7 +2,7 @@ import { Notice, Plugin, type TFile, type WorkspaceLeaf } from "obsidian";
 import { parse } from "./fountain_parser";
 import { generatePDF } from "./pdf_generator";
 import { type PDFOptions, PDFOptionsDialog } from "./pdf_options_dialog";
-import { FountainSideBarView, VIEW_TYPE_./sidebar_view "./sidebar_view";
+import { FountainSideBarView, VIEW_TYPE_SIDEBAR } from "./sidebar_view";
 import { FountainView, VIEW_TYPE_FOUNTAIN } from "./view";
 
 export default class FountainPlugin extends Plugin {
@@ -10,7 +10,7 @@ export default class FountainPlugin extends Plugin {
     // Register our custom view and associate it with .fountain files
     this.registerView(VIEW_TYPE_FOUNTAIN, (leaf) => new FountainView(leaf));
     this.registerExtensions(["fountain"], VIEW_TYPE_FOUNTAIN);
-    this.registerView(VIEW_TYPE_TOC, (leaf) => new FountainSideBarView(leaf));
+    this.registerView(VIEW_TYPE_SIDEBAR, (leaf) => new FountainSideBarView(leaf));
     this.registerCommands();
     this.app.workspace.onLayoutReady(() => {
       this.registerTocInSideBar();
@@ -25,12 +25,12 @@ export default class FountainPlugin extends Plugin {
   private async registerTocInSideBar() {
     const { workspace } = this.app;
     let leaf: WorkspaceLeaf | null = null;
-    const leaves = workspace.getLeavesOfType(VIEW_TYPE_TOC);
+    const leaves = workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR);
     if (leaves.length > 0) {
       leaf = leaves[0];
     } else {
       leaf = workspace.getRightLeaf(false);
-      await leaf?.setViewState({ type: VIEW_TYPE_TOC, active: true });
+      await leaf?.setViewState({ type: VIEW_TYPE_SIDEBAR, active: true });
     }
   }
 
