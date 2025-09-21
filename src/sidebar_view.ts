@@ -9,13 +9,13 @@ import {
 } from "./fountain";
 import { FountainView } from "./view";
 
-export const VIEW_TYPE_TOC = "obsidian-toc";
+export const VIEW_TYPE_TOC = "fountain-sidebar";
 
 // TODO: In an ideal world, instead of registering an additional view, we
 // would take over the normal outline view (so that for markdown views the
 // regular outline view does its job but for foutainview's our view does
 // what it should...)
-export class TocView extends ItemView {
+export class FountainSideBarView extends ItemView {
   private updateToc: () => void;
   private expanded: boolean;
   private showTodos: boolean;
