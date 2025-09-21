@@ -583,9 +583,11 @@ Can I help you?`;
     // Should have one snippet
     expect(structure.snippets).toHaveLength(1);
     const snippet = structure.snippets[0];
-    expect(snippet.content).toHaveLength(3); // scene, action, dialogue
-    expect(snippet.content[0].kind).toBe("scene");
-    expect(snippet.content[2].kind).toBe("dialogue");
+    expect(snippet.content).toHaveLength(4); // action, scene, action, dialogue
+    expect(snippet.content[0].kind).toBe("action");
+    expect(snippet.content[1].kind).toBe("scene");
+    expect(snippet.content[2].kind).toBe("action");
+    expect(snippet.content[3].kind).toBe("dialogue");
     expect(snippet.pageBreak).toBeUndefined(); // Last snippet has no page break
   });
 

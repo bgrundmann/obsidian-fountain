@@ -560,6 +560,7 @@ class FountainScript {
     const res: StructureSection[] = [];
     let currentSection: StructureSection = new StructureSection();
     let currentScene: StructureScene = new StructureScene();
+    let snippetsStartIndex: number | null = null;
 
     const isCurrentSceneEmpty = () =>
       !currentScene.content.length &&
@@ -575,7 +576,27 @@ class FountainScript {
         (fe) =>
           fe.kind === "action" && fe.lines.every((l) => !l.elements.length),
       );
-    for (const fe of this.script) {
+
+    // First pass: find the index where snippets start
+    for (let i = 0; i < this.script.length; i++) {
+      const fe = this.script[i];
+      if (fe.kind === "section" && fe.depth <= 3) {
+        // Check if this is a "Snippets" section
+        const sectionText = this.unsafeExtractRaw(fe.range).trim();
+        if (sectionText.toLowerCase().includes("snippets")) {
+          snippetsStartIndex = i;
+          break;
+        }
+      }
+    }
+
+    // Process main script elements up to snippets
+    const mainScriptElements =
+      snippetsStartIndex !== null
+        ? this.script.slice(0, snippetsStartIndex)
+        : this.script;
+
+    for (const fe of mainScriptElements) {
       switch (fe.kind) {
         case "section":
           {
@@ -644,9 +665,42 @@ class FountainScript {
     if (!isCurrentSectionEmpty()) {
       res.push(currentSection);
     }
+
+    // Parse snippets
+    const snippets: Snippets = [];
+    if (
+      snippetsStartIndex !== null &&
+      snippetsStartIndex < this.script.length - 1
+    ) {
+      const snippetElements = this.script.slice(snippetsStartIndex + 1);
+      let currentSnippetContent: FountainElement[] = [];
+
+      for (const fe of snippetElements) {
+        if (fe.kind === "page-break") {
+          // End current snippet if it has content
+          if (currentSnippetContent.length > 0) {
+            snippets.push({
+              content: currentSnippetContent,
+              pageBreak: fe as PageBreak,
+            });
+            currentSnippetContent = [];
+          }
+        } else {
+          currentSnippetContent.push(fe);
+        }
+      }
+
+      // Add the last snippet if it has content
+      if (currentSnippetContent.length > 0) {
+        snippets.push({
+          content: currentSnippetContent,
+        });
+      }
+    }
+
     return {
       sections: res,
-      snippets: [],
+      snippets: snippets,
     };
   }
 
