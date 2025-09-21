@@ -157,7 +157,20 @@ describe("Parser tests", () => {
     ".A SCENE\n\n",
     [{ kind: "scene", range: { start: 0, end: 10 } }],
   );
-
+  test_script("a page break", "A action line\n\n===\nAnother action line", [
+    { kind: "action", source: "A action line\n\n" },
+    { kind: "page-break", source: "===\n" },
+    { kind: "action", source: "Another action line" },
+  ]);
+  test_script(
+    "a page break without a blank line before it",
+    "A action line\n===\nAnother action line",
+    [
+      { kind: "action", source: "A action line\n" },
+      { kind: "page-break", source: "===\n" },
+      { kind: "action", source: "Another action line" },
+    ],
+  );
   test_script(
     "only a single dot forces a heading",
     `EXT. OLYMPIA CIRCUS - NIGHT

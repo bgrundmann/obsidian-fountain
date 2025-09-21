@@ -73,13 +73,20 @@ ActionLine
  = [ \t]*  ">" [ \t]* elements:(!EndOfCenteredLine @LineTextElement)+ EndOfCenteredLine
    { return { range: range(), centered: true, elements:mergeText(elements) } }
  / ForcedActionLine
- / Line
+ / !PageBreakPattern @Line
+
+PageBreakPattern
+ = OptionalBlanks "="|3..|
 
 ForcedActionLine
  = "!" line:Line  { line.range.start = line.range.start - 1; return line; }
 
 ActionLines
- = @lines:ActionLine+ NewLineOrEndOfInput
+ = @lines:ActionLine+ ActionTerminator
+
+ActionTerminator
+ = &PageBreakPattern
+ / NewLineOrEndOfInput
 
 Transition
  = ">" transition:([^\n]*) !{ return transition.join("").endsWith("<") } BlankLineOrEndOfInput
