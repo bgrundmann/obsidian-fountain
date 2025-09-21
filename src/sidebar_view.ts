@@ -17,14 +17,12 @@ export const VIEW_TYPE_TOC = "fountain-sidebar";
 // what it should...)
 export class FountainSideBarView extends ItemView {
   private updateToc: () => void;
-  private expanded: boolean;
   private showTodos: boolean;
   private showSynopsis: boolean;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
     this.updateToc = debounce(() => this.render(), 500, true);
-    this.expanded = false;
     this.showTodos = true;
     this.showSynopsis = false;
   }
