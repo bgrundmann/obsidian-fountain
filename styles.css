@@ -63,6 +63,47 @@
 	max-width: var(--max-width);
 }
 
+.screenplay-snippets .snippet {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	zoom: 0.5;
+	margin-bottom: 10px;
+	max-height: 8em; /* Limit to roughly 4 lines at current zoom */
+	min-height: 4em;
+	overflow: hidden;
+	position: relative;
+	background-color: var(--background-secondary-alt);
+}
+
+.screenplay-snippets .snippet .screenplay {
+	margin: 0; /* Remove auto centering for snippets */
+	max-width: none; /* Allow content to fit in scaled container */
+}
+
+/* Split layout for sidebar */
+.sidebar-container {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+.toc-section {
+	flex: 1 1 50%; /* Take up to 50% of space */
+	min-height: 200px; /* Minimum guaranteed space */
+	overflow-y: auto;
+	border-bottom: 1px solid var(--background-modifier-border);
+	padding-bottom: 10px;
+}
+
+.snippets-section {
+	flex: 1 1 50%;
+	min-height: 200px;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column-reverse; /* Grow from bottom up */
+	padding-top: 10px;
+}
+
 .screenplay:not(.is-phone) {
 	width: var(--max-width);
 	min-width: var(--max-width);
