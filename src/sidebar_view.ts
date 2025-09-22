@@ -102,7 +102,7 @@ class SnippetsSection extends SidebarSection {
           snippetDiv.addEventListener("click", (evt) => {
             // Don't scroll if we started a drag
             if (evt.defaultPrevented) return;
-            this.callbacks.scrollToRange(snippet.content[0].range);
+            this.callbacks.scrollToRange(snippetRange);
           });
           snippetDiv.style.cursor = "pointer";
         }

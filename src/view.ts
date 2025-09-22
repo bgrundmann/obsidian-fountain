@@ -1,5 +1,5 @@
 import { history } from "@codemirror/commands";
-import { EditorState, StateField } from "@codemirror/state";
+import { EditorSelection, EditorState, StateField } from "@codemirror/state";
 import {
   EditorView,
   type Tooltip,
@@ -496,6 +496,8 @@ class EditorViewState {
         y: "start",
         yMargin: 50,
       }),
+      // select the text range
+      selection: EditorSelection.range(r.start, r.end),
     });
     this.cmEditor.focus();
   }
