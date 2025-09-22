@@ -59,6 +59,14 @@ class SnippetsSection extends SidebarSection {
     index: number,
   ): void {
     parent.createDiv({ cls: ["snippet"] }, (snippetDiv) => {
+      // Add click handler to scroll to snippet location
+      if (snippet.content.length > 0) {
+        snippetDiv.addEventListener("click", () => {
+          this.callbacks.scrollToRange(snippet.content[0].range);
+        });
+        snippetDiv.style.cursor = "pointer";
+      }
+
       snippetDiv.createDiv({ cls: ["screenplay"] }, (div) => {
         // Show first 4 elements or all if fewer than 4
         const elementsToShow = snippet.content.slice(0, 4);
