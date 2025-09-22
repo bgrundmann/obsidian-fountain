@@ -15,6 +15,7 @@ export const VIEW_TYPE_SIDEBAR = "fountain-sidebar";
 
 interface SidebarCallbacks {
   scrollToRange: (range: Range) => void;
+  getText: (range: Range) => string;
 }
 
 abstract class SidebarSection {
@@ -58,32 +59,55 @@ class SnippetsSection extends SidebarSection {
     snippet: Snippet,
     index: number,
   ): void {
-    parent.createDiv({ cls: ["snippet"] }, (snippetDiv) => {
-      // Add click handler to scroll to snippet location
-      if (snippet.content.length > 0) {
-        snippetDiv.addEventListener("click", () => {
-          this.callbacks.scrollToRange(snippet.content[0].range);
-        });
-        snippetDiv.style.cursor = "pointer";
-      }
+    const snippetRange =
+      snippet.content.length > 0
+        ? {
+            start: snippet.content[0].range.start,
+            end: snippet.content[snippet.content.length - 1].range.end,
+          }
+        : { start: 0, end: 0 };
 
-      snippetDiv.createDiv({ cls: ["screenplay"] }, (div) => {
-        // Show first 4 elements or all if fewer than 4
-        const elementsToShow = snippet.content.slice(0, 4);
-        const hasMore = snippet.content.length > 4;
-
-        for (const element of elementsToShow) {
-          renderElement(div, element, script, {});
-        }
-
-        if (hasMore) {
-          div.createDiv({
-            cls: "snippet-more",
-            text: "...",
+    parent.createDiv(
+      {
+        cls: ["snippet"],
+        attr: {
+          draggable: "true",
+          ...dataRange(snippetRange),
+        },
+      },
+      (snippetDiv) => {
+        // Add click handler to scroll to snippet location
+        if (snippet.content.length > 0) {
+          snippetDiv.addEventListener("click", (evt) => {
+            // Don't scroll if we started a drag
+            if (evt.defaultPrevented) return;
+            this.callbacks.scrollToRange(snippet.content[0].range);
           });
+          snippetDiv.style.cursor = "pointer";
         }
-      });
-    });
+
+        // Add drag handlers
+        snippetDiv.addEventListener("dragstart", (evt: DragEvent) => {
+          if (!evt.dataTransfer) return;
+
+          // Get the actual snippet text content
+          const snippetText = this.callbacks.getText(snippetRange);
+          if (!snippetText) return;
+
+          evt.dataTransfer.clearData();
+          evt.dataTransfer.setData("text/plain", snippetText);
+        });
+
+        snippetDiv.createDiv({ cls: ["screenplay"] }, (div) => {
+          // Show first 4 elements or all if fewer than 4
+          // Most likely, we will end up displaying even less, if any of the elements use more than one line
+          const elementsToShow = snippet.content.slice(0, 4);
+          for (const element of elementsToShow) {
+            renderElement(div, element, script, {});
+          }
+        });
+      },
+    );
   }
 }
 
@@ -248,6 +272,7 @@ export class FountainSideBarView extends ItemView {
 
     const callbacks: SidebarCallbacks = {
       scrollToRange: (range: Range) => this.scrollActiveScriptToHere(range),
+      getText: (range: Range) => this.getText(range),
     };
 
     this.sections = [new TocSection(callbacks), new SnippetsSection(callbacks)];
@@ -298,6 +323,11 @@ export class FountainSideBarView extends ItemView {
       return ft;
     }
     return null;
+  }
+
+  private getText(range: Range): string {
+    const ft = this.theFountainView();
+    return ft?.getText(range) ?? "";
   }
 
   private render() {

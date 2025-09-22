@@ -469,3 +469,24 @@
 	margin: 0;
 	word-break: break-all;
 }
+
+/* Drag and Drop Support for Existing Snippets */
+.screenplay-snippets .snippet[draggable="true"] {
+	cursor: grab;
+}
+
+.screenplay-snippets .snippet[draggable="true"]:active {
+	cursor: grabbing;
+}
+
+.screenplay-snippets .snippet:hover {
+	border-color: var(--interactive-accent);
+}
+
+.screenplay-snippets .snippet-more {
+	text-align: center;
+	color: var(--text-muted);
+	font-style: italic;
+	font-size: 0.9em;
+	margin-top: 0.25rem;
+}
