@@ -1,5 +1,5 @@
 import { history } from "@codemirror/commands";
-import { EditorSelection, EditorState } from "@codemirror/state";
+import { EditorState } from "@codemirror/state";
 import { EditorView, type ViewUpdate, drawSelection } from "@codemirror/view";
 import {
   Menu,
@@ -336,6 +336,7 @@ function firstScrollableElement(node: HTMLElement): HTMLElement | null {
 class EditorViewState {
   private cmEditor: EditorView;
   private path: string;
+  private snipButton: HTMLButtonElement;
 
   constructor(
     contentEl: HTMLElement,
@@ -346,6 +347,20 @@ class EditorViewState {
   ) {
     contentEl.empty();
     const editorContainer = contentEl.createDiv("custom-editor-component");
+
+    // Create snip button
+    this.snipButton = editorContainer.createEl("button", {
+      text: "Snip",
+      cls: "snip-button",
+    });
+    this.snipButton.style.position = "absolute";
+    this.snipButton.style.top = "10px";
+    this.snipButton.style.right = "10px";
+    this.snipButton.style.zIndex = "1000";
+    this.snipButton.style.display = "none";
+    this.snipButton.addEventListener("click", () => {
+      parentView.saveSelectionAsSnippet();
+    });
     // our screenplay sets some of the styling information
     // before the code mirror overrides them. And instead of
     // messing with !important in the css, we force the theme
@@ -378,6 +393,16 @@ class EditorViewState {
         EditorView.updateListener.of((update: ViewUpdate) => {
           if (update.docChanged) {
             requestSave();
+          }
+          // Show/hide snip button based on selection
+          if (update.selectionSet || update.docChanged) {
+            const selection = update.state.selection.main;
+            if (!selection.empty) {
+              this.snipButton.style.display = "block";
+              this.snipButton.textContent = "Snip";
+            } else {
+              this.snipButton.style.display = "none";
+            }
           }
         }),
       ],
@@ -415,12 +440,36 @@ class EditorViewState {
     this.cmEditor.destroy();
   }
 
+  hasSelection(): boolean {
+    const selection = this.cmEditor.state.selection.main;
+    return !selection.empty;
+  }
+
+  getSelection(): { from: number; to: number; text: string } | null {
+    const selection = this.cmEditor.state.selection.main;
+    if (selection.empty) return null;
+    return {
+      from: selection.from,
+      to: selection.to,
+      text: this.cmEditor.state.doc.sliceString(selection.from, selection.to),
+    };
+  }
+
+  dispatchChanges(changes: { from: number; to: number; insert: string }): void {
+    this.cmEditor.dispatch({ changes });
+  }
+
+  getDocText(): string {
+    return this.cmEditor.state.doc.toString();
+  }
+
   scrollToHere(r: Range): void {
     this.cmEditor.dispatch({
       // scroll the view
-      effects: EditorView.scrollIntoView(r.start, { y: "start" }),
-      // move the cursor as well
-      selection: EditorSelection.single(r.start),
+      effects: EditorView.scrollIntoView(r.start, {
+        y: "start",
+        yMargin: 50,
+      }),
     });
     this.cmEditor.focus();
   }
@@ -903,6 +952,73 @@ export class FountainView extends TextFileView {
         () => this.requestSave(),
         this,
       );
+    }
+  }
+
+  hasSelection(): boolean {
+    if (this.state instanceof EditorViewState) {
+      return this.state.hasSelection();
+    }
+    return false;
+  }
+
+  saveSelectionAsSnippet(): void {
+    if (this.state instanceof EditorViewState) {
+      const selection = this.state.getSelection();
+      if (selection) {
+        // Remove the selected text from the document
+        this.state.dispatchChanges({
+          from: selection.from,
+          to: selection.to,
+          insert: "",
+        });
+
+        // Add to snippets section
+        this.insertAfterSnippetsHeader(`${selection.text}\n\n===\n\n`);
+        this.requestSave();
+      }
+    }
+  }
+
+  private insertAfterSnippetsHeader(text: string): void {
+    if (!(this.state instanceof EditorViewState)) return;
+
+    const script = this.getCachedScript();
+    if (!script || "error" in script) return;
+
+    const docText = this.state.getDocText();
+
+    // Find the "# Snippets" header position
+    let snippetsHeaderEnd: number | null = null;
+    for (const element of script.script) {
+      if (element.kind === "section") {
+        const sectionText = docText.slice(
+          element.range.start,
+          element.range.end,
+        );
+        if (sectionText.toLowerCase().includes("snippets")) {
+          snippetsHeaderEnd = element.range.end;
+          break;
+        }
+      }
+    }
+
+    if (snippetsHeaderEnd !== null) {
+      // Insert text right after the snippets header
+      this.state.dispatchChanges({
+        from: snippetsHeaderEnd,
+        to: snippetsHeaderEnd,
+        insert: `\n\n${text}`,
+      });
+    } else {
+      // If no snippets section exists, add it at the end
+      const docLength = docText.length;
+      const snippetsSection = `\n\n# Snippets\n\n${text}`;
+      this.state.dispatchChanges({
+        from: docLength,
+        to: docLength,
+        insert: snippetsSection,
+      });
     }
   }
 }

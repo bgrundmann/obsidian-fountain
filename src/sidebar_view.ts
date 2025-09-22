@@ -16,6 +16,7 @@ export const VIEW_TYPE_SIDEBAR = "fountain-sidebar";
 interface SidebarCallbacks {
   scrollToRange: (range: Range) => void;
   getText: (range: Range) => string;
+  insertAfterSnippetsHeader: (text: string) => void;
 }
 
 abstract class SidebarSection {
@@ -38,6 +39,26 @@ class SnippetsSection extends SidebarSection {
     container.createDiv({ cls: "snippets-section" }, (sectionDiv) => {
       // Add class to section div for styling
       sectionDiv.addClass("screenplay-snippets");
+
+      // Add drop handling
+      sectionDiv.addEventListener("dragover", (event) => {
+        event.preventDefault(); // Allow drop
+        sectionDiv.addClass("drag-over");
+      });
+
+      sectionDiv.addEventListener("dragleave", (event) => {
+        sectionDiv.removeClass("drag-over");
+      });
+
+      sectionDiv.addEventListener("drop", (event) => {
+        event.preventDefault();
+        sectionDiv.removeClass("drag-over");
+
+        const droppedText = event.dataTransfer?.getData("text/plain");
+        if (droppedText) {
+          this.callbacks.insertAfterSnippetsHeader(`${droppedText}\n\n===\n\n`);
+        }
+      });
 
       // Add subtle instruction text
       sectionDiv.createEl("div", {
@@ -273,6 +294,8 @@ export class FountainSideBarView extends ItemView {
     const callbacks: SidebarCallbacks = {
       scrollToRange: (range: Range) => this.scrollActiveScriptToHere(range),
       getText: (range: Range) => this.getText(range),
+      insertAfterSnippetsHeader: (text: string) =>
+        this.insertAfterSnippetsHeader(text),
     };
 
     this.sections = [new TocSection(callbacks), new SnippetsSection(callbacks)];
@@ -328,6 +351,42 @@ export class FountainSideBarView extends ItemView {
   private getText(range: Range): string {
     const ft = this.theFountainView();
     return ft?.getText(range) ?? "";
+  }
+
+  private insertAfterSnippetsHeader(text: string) {
+    const ft = this.theFountainView();
+    if (!ft) return;
+
+    const script = ft.script();
+    if ("error" in script) return;
+
+    // Find the "# Snippets" header position
+    let snippetsHeaderEnd: number | null = null;
+    for (const element of script.script) {
+      if (element.kind === "section") {
+        const sectionText = script.document.slice(
+          element.range.start,
+          element.range.end,
+        );
+        if (sectionText.toLowerCase().includes("snippets")) {
+          snippetsHeaderEnd = element.range.end;
+          break;
+        }
+      }
+    }
+
+    if (snippetsHeaderEnd !== null) {
+      // Insert text right after the snippets header
+      ft.replaceText(
+        { start: snippetsHeaderEnd, end: snippetsHeaderEnd },
+        `\n\n${text}`,
+      );
+    } else {
+      // If no snippets section exists, add it at the end
+      const docLength = script.document.length;
+      const snippetsSection = `\n\n# Snippets\n\n${text}`;
+      ft.replaceText({ start: docLength, end: docLength }, snippetsSection);
+    }
   }
 
   private render() {

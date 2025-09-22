@@ -10,7 +10,10 @@ export default class FountainPlugin extends Plugin {
     // Register our custom view and associate it with .fountain files
     this.registerView(VIEW_TYPE_FOUNTAIN, (leaf) => new FountainView(leaf));
     this.registerExtensions(["fountain"], VIEW_TYPE_FOUNTAIN);
-    this.registerView(VIEW_TYPE_SIDEBAR, (leaf) => new FountainSideBarView(leaf));
+    this.registerView(
+      VIEW_TYPE_SIDEBAR,
+      (leaf) => new FountainSideBarView(leaf),
+    );
     this.registerCommands();
     this.app.workspace.onLayoutReady(() => {
       this.registerTocInSideBar();
@@ -66,6 +69,15 @@ export default class FountainPlugin extends Plugin {
     if (checking) return fv !== null;
     if (fv) {
       fv.toggleEditMode();
+    }
+    return true;
+  }
+
+  private saveSelectionAsSnippetCommand(checking: boolean): boolean {
+    const fv = this.app.workspace.getActiveViewOfType(FountainView);
+    if (checking) return fv?.hasSelection() ?? false;
+    if (fv) {
+      fv.saveSelectionAsSnippet();
     }
     return true;
   }
@@ -169,6 +181,13 @@ export default class FountainPlugin extends Plugin {
       name: "Generate PDF",
       checkCallback: (checking: boolean) => {
         return this.generatePDFCommand(checking);
+      },
+    });
+    this.addCommand({
+      id: "save-selection-as-snippet",
+      name: "Save selection as snippet",
+      checkCallback: (checking: boolean) => {
+        return this.saveSelectionAsSnippetCommand(checking);
       },
     });
   }
