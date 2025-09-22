@@ -38,11 +38,14 @@ class SnippetsSection extends SidebarSection {
       // Add class to section div for styling
       sectionDiv.addClass("screenplay-snippets");
 
-      // Add header (will appear at bottom due to column-reverse)
-      sectionDiv.createEl("h2", { text: "SNIPPETS", cls: "snippets-header" });
+      // Add subtle instruction text
+      sectionDiv.createEl("div", {
+        text: "Drag and drop text here",
+        cls: "snippets-instruction",
+      });
 
-      // Add snippets directly to section div (will appear in reverse order)
-      for (let i = structure.snippets.length - 1; i >= 0; i--) {
+      // Add snippets in file order
+      for (let i = 0; i < structure.snippets.length; i++) {
         const snippet = structure.snippets[i];
         this.renderSnippet(sectionDiv, script, snippet, i);
       }

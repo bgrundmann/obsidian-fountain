@@ -68,8 +68,8 @@
 	border-radius: var(--radius-m);
 	zoom: 0.5;
 	margin-bottom: 10px;
-	max-height: 8em; /* Limit to roughly 4 lines at current zoom */
-	min-height: 4em;
+	max-height: 5.5em; /* Limit to roughly 4 lines (4 × 1.1em line-height) */
+	min-height: 3.3em;
 	overflow: hidden;
 	position: relative;
 	background-color: var(--background-secondary-alt);
@@ -80,6 +80,15 @@
 	max-width: none; /* Allow content to fit in scaled container */
 }
 
+.screenplay-snippets .snippets-instruction {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	text-align: center;
+	padding: var(--size-4-2) var(--size-4-1);
+	font-style: italic;
+	margin-bottom: var(--size-4-2);
+}
+
 /* Split layout for sidebar */
 .sidebar-container {
 	display: flex;
@@ -88,7 +97,7 @@
 }
 
 .toc-section {
-	flex: 1 1 50%; /* Take up to 50% of space */
+	flex: 1 1 60%; /* Take up to 50% of space */
 	min-height: 200px; /* Minimum guaranteed space */
 	overflow-y: auto;
 	border-bottom: 1px solid var(--background-modifier-border);
@@ -96,11 +105,9 @@
 }
 
 .snippets-section {
-	flex: 1 1 50%;
+	flex: 1 1 40%;
 	min-height: 200px;
 	overflow-y: auto;
-	display: flex;
-	flex-direction: column-reverse; /* Grow from bottom up */
 	padding-top: 10px;
 }
 
