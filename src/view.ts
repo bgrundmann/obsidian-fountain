@@ -339,13 +339,37 @@ function firstScrollableElement(node: HTMLElement): HTMLElement | null {
   return (document.scrollingElement as HTMLElement) || document.documentElement;
 }
 
+// Helper function to get the position where snippets section starts
+function getSnippetsStartPosition(parentView: FountainView): number | null {
+  const script = parentView.getCachedScript();
+  if (!script || "error" in script) return null;
+
+  // Find the "# Snippets" header position
+  for (const element of script.script) {
+    if (element.kind === "section") {
+      const sectionText = script.unsafeExtractRaw(element.range);
+      if (sectionText.toLowerCase().includes("snippets")) {
+        return element.range.start;
+      }
+    }
+  }
+  return null;
+}
+
 // Helper function to create snip tooltips for text selections
 function getSnipTooltips(
   state: EditorState,
   parentView: FountainView,
 ): readonly Tooltip[] {
+  const snippetsStart = getSnippetsStartPosition(parentView);
+
   return state.selection.ranges
     .filter((range) => !range.empty)
+    .filter((range) => {
+      // Only show snip button if selection is not after snippets section
+      if (snippetsStart === null) return true;
+      return range.from < snippetsStart;
+    })
     .map((range) => {
       // Position tooltip at the end of the selection
       return {
@@ -990,10 +1014,39 @@ export class FountainView extends TextFileView {
     return false;
   }
 
+  hasValidSelectionForSnipping(): boolean {
+    if (!(this.state instanceof EditorViewState)) {
+      return false;
+    }
+
+    if (!this.state.hasSelection()) {
+      return false;
+    }
+
+    const selection = this.state.getSelection();
+    if (!selection) {
+      return false;
+    }
+
+    // Check if selection is in snippets section
+    const snippetsStart = getSnippetsStartPosition(this);
+    if (snippetsStart !== null && selection.from >= snippetsStart) {
+      return false;
+    }
+
+    return true;
+  }
+
   saveSelectionAsSnippet(): void {
     if (this.state instanceof EditorViewState) {
       const selection = this.state.getSelection();
       if (selection) {
+        // Check if selection is in snippets section - if so, don't allow snipping
+        const snippetsStart = getSnippetsStartPosition(this);
+        if (snippetsStart !== null && selection.from >= snippetsStart) {
+          return;
+        }
+
         // Remove the selected text from the document
         this.state.dispatchChanges({
           from: selection.from,

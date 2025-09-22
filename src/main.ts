@@ -75,7 +75,7 @@ export default class FountainPlugin extends Plugin {
 
   private saveSelectionAsSnippetCommand(checking: boolean): boolean {
     const fv = this.app.workspace.getActiveViewOfType(FountainView);
-    if (checking) return fv?.hasSelection() ?? false;
+    if (checking) return fv?.hasValidSelectionForSnipping() ?? false;
     if (fv) {
       fv.saveSelectionAsSnippet();
     }
