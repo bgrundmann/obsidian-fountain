@@ -1,6 +1,12 @@
 import { history } from "@codemirror/commands";
-import { EditorState } from "@codemirror/state";
-import { EditorView, type ViewUpdate, drawSelection } from "@codemirror/view";
+import { EditorState, StateField } from "@codemirror/state";
+import {
+  EditorView,
+  type Tooltip,
+  type ViewUpdate,
+  drawSelection,
+  showTooltip,
+} from "@codemirror/view";
 import {
   Menu,
   type TFile,
@@ -333,10 +339,51 @@ function firstScrollableElement(node: HTMLElement): HTMLElement | null {
   return (document.scrollingElement as HTMLElement) || document.documentElement;
 }
 
+// Helper function to create snip tooltips for text selections
+function getSnipTooltips(
+  state: EditorState,
+  parentView: FountainView,
+): readonly Tooltip[] {
+  return state.selection.ranges
+    .filter((range) => !range.empty)
+    .map((range) => {
+      // Position tooltip at the end of the selection
+      return {
+        pos: range.to,
+        above: true,
+        strictSide: true,
+        arrow: true,
+        create: () => {
+          const dom = document.createElement("button");
+          dom.className = "cm-tooltip-snip";
+          dom.textContent = "Snip";
+          dom.addEventListener("click", (e) => {
+            e.preventDefault();
+            parentView.saveSelectionAsSnippet();
+          });
+          return { dom };
+        },
+      };
+    });
+}
+
+// Function to create state field with captured parentView
+function createSnipTooltipField(parentView: FountainView) {
+  return StateField.define<readonly Tooltip[]>({
+    create: (state) => getSnipTooltips(state, parentView),
+
+    update(tooltips, tr) {
+      if (!tr.selection && !tr.docChanged) return tooltips;
+      return getSnipTooltips(tr.state, parentView);
+    },
+
+    provide: (f) => showTooltip.computeN([f], (state) => state.field(f)),
+  });
+}
+
 class EditorViewState {
   private cmEditor: EditorView;
   private path: string;
-  private snipButton: HTMLButtonElement;
 
   constructor(
     contentEl: HTMLElement,
@@ -348,19 +395,6 @@ class EditorViewState {
     contentEl.empty();
     const editorContainer = contentEl.createDiv("custom-editor-component");
 
-    // Create snip button
-    this.snipButton = editorContainer.createEl("button", {
-      text: "Snip",
-      cls: "snip-button",
-    });
-    this.snipButton.style.position = "absolute";
-    this.snipButton.style.top = "10px";
-    this.snipButton.style.right = "10px";
-    this.snipButton.style.zIndex = "1000";
-    this.snipButton.style.display = "none";
-    this.snipButton.addEventListener("click", () => {
-      parentView.saveSelectionAsSnippet();
-    });
     // our screenplay sets some of the styling information
     // before the code mirror overrides them. And instead of
     // messing with !important in the css, we force the theme
@@ -390,19 +424,11 @@ class EditorViewState {
           () => parentView.getCachedScript() || parse("", {}),
           (script: FountainScript) => parentView.updateScriptDirectly(script),
         ),
+        // Add snip tooltip functionality
+        createSnipTooltipField(parentView),
         EditorView.updateListener.of((update: ViewUpdate) => {
           if (update.docChanged) {
             requestSave();
-          }
-          // Show/hide snip button based on selection
-          if (update.selectionSet || update.docChanged) {
-            const selection = update.state.selection.main;
-            if (!selection.empty) {
-              this.snipButton.style.display = "block";
-              this.snipButton.textContent = "Snip";
-            } else {
-              this.snipButton.style.display = "none";
-            }
           }
         }),
       ],

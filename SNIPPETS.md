@@ -30,10 +30,10 @@ The snippets feature extends the existing table of contents (TOC) view in the ri
 
 ### Interaction Model
 
-- Users can drag snippets from SNIPPETS into the document. If they do drop them, they are inserted at the cursor position. Even if that position is after the "# Boneyard" or "# Snippets". That way one can easily duplicate snippets.
+- Users can drag snippets from SNIPPETS into the document. If they do drop them, they are inserted using the same logic as any text dragged into the document (it reuses the codemirror's drag and drop functionality). Even if that position is after the "# Boneyard" or "# Snippets". That way one can easily duplicate snippets.
 - The original snippet remains in the `# Snippets` section (copy, not move operation)
 - To edit a snippet, users just edit the relevant snippet in the document. Clicking on the snippet in the list scrolls to the snippet's location in the document.
-- To create a snippet, users either directly edits the "# Snippets" section or drag and drop selected text into SNIPPETS (the latter removes the text from the main script, and adds them to the beginning of the `# Snippets` section).
+- To create a snippet, users either directly edits the "# Snippets" section or press the snip button that appears when text is selected in the document. When they do that the text is moved into the snippets section.
 
 ## Extension of Existing Features
 

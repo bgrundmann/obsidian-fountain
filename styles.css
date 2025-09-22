@@ -479,29 +479,30 @@
 	cursor: grabbing;
 }
 
-/* Snip Button Styling */
-.snip-button {
-	background: var(--interactive-accent);
-	color: var(--text-on-accent);
-	border: none;
-	padding: 6px 12px;
-	border-radius: 4px;
-	font-size: 12px;
-	font-weight: 500;
-	cursor: pointer;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-	transition: all 0.2s ease;
+/* Tooltip-based Snip Button Styling */
+.cm-tooltip-snip {
+	background: var(--interactive-accent) !important;
+	color: var(--text-on-accent) !important;
+	border: none !important;
+	padding: 6px 12px !important;
+	border-radius: 4px !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+	cursor: pointer !important;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+	transition: all 0.2s ease !important;
+	margin: 0 !important;
 }
 
-.snip-button:hover {
-	background: var(--interactive-accent-hover);
-	transform: translateY(-1px);
-	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+.cm-tooltip-snip:hover {
+	background: var(--interactive-accent-hover) !important;
+	transform: translateY(-1px) !important;
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
 }
 
-.snip-button:active {
-	transform: translateY(0);
-	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+.cm-tooltip-snip:active {
+	transform: translateY(0) !important;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
 }
 
 .screenplay-snippets .snippet:hover {
