@@ -104,8 +104,7 @@ To maintain consistency and reduce code duplication, we should reuse the existin
 
 2. **Scaling Implementation**:
    - Wrap the rendered snippet content in a container div with CSS scaling
-   - Use CSS `transform: scale()` to shrink the content to fit the sidebar width
-   - Apply `transform-origin: top left` to ensure proper alignment
+   - Use CSS `zoom()` to shrink the content to fit the sidebar width
    - Set appropriate container dimensions to prevent overflow
 
 3. **Preview Generation**:

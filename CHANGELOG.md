@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.10.0] - Snippets System
+
+### Added
+- **Snippets Feature**: Complete snippets system for reusable content blocks
+  - Store reusable fountain content in a `# Snippets` section at the end of your document
+  - Snip button appears when selecting text outside the snippets section
+  - Drag and drop snippets from the sidebar into your script
+  - Snippets are separated by page breaks (`===`) and can contain any fountain elements
+  - Extended table of contents view to show snippet previews in the lower half
+  - "Save Selection as Snippet" command available via command palette
+
 ## [0.9.2] - No unnecessary scrollbars when editing
 
 - Exactly what it says on the tin, thanks to https://github.com/chuangcaleb

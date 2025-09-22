@@ -13,6 +13,11 @@
   - Duplicate / delete scene / reorder scenes with drag & drop
   - Edit synopsis directly on index cards
   - Cross-file scene moving capabilities
+- Snippets system for reusable content blocks
+  - Store snippets in "# Snippets" section within the document
+  - Snip button for moving selected text to snippets
+  - Drag and drop snippets from sidebar into script
+  - Scaled preview rendering in TOC sidebar
 - Boneyard support (everything after "# boneyard" header is hidden when enabled)
 - Show/hide settings for synopsis, notes, and boneyard content
 
@@ -99,6 +104,31 @@ interface ScriptStructure {
 - Page breaks are captured and associated with the preceding snippet
 - When snippets are inserted via drag-and-drop, appropriate page breaks are automatically added
 - Instead of trying to modify a ScriptStructure in place after a modification we re-parse the document.
+
+### Snip Button Implementation
+
+The "snip" functionality is implemented through CodeMirror tooltips and position detection:
+
+- **Position Detection**: `getSnippetsStartPosition()` helper function finds the start of the "# Snippets" section by iterating through parsed fountain elements
+- **Tooltip Filtering**: `getSnipTooltips()` only creates snip button tooltips for text selections that occur before the snippets section
+- **Command Integration**: The "Save Selection as Snippet" command uses `hasValidSelectionForSnipping()` to determine availability
+- **Text Movement**: Selected text is removed from its original location and appended to the snippets section with appropriate page break separators
+
+### TOC View Integration
+
+The table of contents view (`TocView`, renamed to `FountainSideBarView`) is extended to show snippets in the lower half:
+
+- **Dual Layout**: Upper half shows traditional TOC, lower half shows snippet previews
+- **Snippet Rendering**: Reuses existing fountain rendering logic with CSS scaling for compact display
+- **Drag & Drop**: Snippets can be dragged into the main document using CodeMirror's built-in drag-and-drop
+- **Preview Scaling**: CSS transforms scale snippet previews to fit sidebar width while maintaining formatting fidelity
+
+### Future Development Notes
+
+- **Parser Independence**: The core fountain parser is unchanged - all snippets logic is in `FountainScript.structure()`
+- **Re-parsing Strategy**: After any document modification, the entire document is re-parsed rather than attempting in-place modifications to `ScriptStructure`
+- **Position Tracking**: All snippet functionality relies on character position ranges (`Range` objects) for precise text operations
+- **Extension Points**: The snippet system can be extended by modifying `ScriptStructure` parsing and the TOC view rendering
 
 ## PDF Generation
 

@@ -9,6 +9,7 @@
 - editable index card view to plan your script with drag & drop scene reordering and todo rendering
 - Rehearsal mode (blackout of a characters dialogue)
 - table of contents in right hand pane (with todos and synopsis included)
+- snippets system for reusable content blocks (stored within the document)
 - button in ribbon to create a new script (as scripts have .fountain extension)
 - boneyard support (content after "# boneyard" header can be hidden)
 
@@ -41,6 +42,71 @@ On the todo list with low priority:
 
 ![index cards](https://github.com/user-attachments/assets/0f0a7c3b-f7a6-4ad7-a809-75da6991d103)
 
+## Using Snippets
+
+The snippets feature allows you to store blocks of content within your fountain document for two main purposes:
+
+**Reusable Content**: Store frequently used elements like:
+- Standard character introductions or descriptions
+- Common scene transitions (FADE IN, FADE OUT, CUT TO:)
+- Recurring dialogue patterns or catchphrases
+- Action descriptions for similar locations or situations
+
+**Temporary Stash**: Use snippets as a holding area for uncertain content:
+- Scenes you're not sure belong in the current draft
+- Alternative dialogue or action that you want to compare
+- Cut scenes that might be useful later
+- Experimental content you're workshopping
+
+Unlike the boneyard (which hides content completely), snippets remain visible in the sidebar, making them perfect for content you're actively reconsidering or might want to quickly reintegrate.
+
+### Setting up Snippets
+
+Snippets are stored at the end of your fountain document in a special section:
+
+```fountain
+# Snippets
+
+EXT. COFFEE SHOP - DAY
+
+The usual busy morning crowd fills the cozy coffee shop.
+
+===
+
+WAITRESS
+(approaching)
+What can I get you today?
+
+===
+
+FADE TO BLACK:
+```
+
+### Creating Snippets
+
+**Method 1: Direct editing**
+- Scroll to the end of your document and add a `# Snippets` section
+- Add your reusable content blocks, separating each with `===` (page breaks)
+
+**Method 2: Using the Snip button**
+- Select any text in your script (outside the snippets section)
+- Click the "Snip" button that appears, or use the command palette: "Save Selection as Snippet"
+- The selected text will be moved to the snippets section automatically
+
+### Using Snippets
+
+- Open the Table of Contents panel in the right sidebar
+- The bottom half shows your available snippets as scaled-down previews
+- Click on any snippet to jump to its location in the document for editing
+- Drag and drop snippets from the sidebar into your script to insert them
+- Snippets are copied (not moved) when dragged, so they remain available for reuse
+
+### Important Notes
+
+- Everything after `# Snippets` is considered snippet content, even other section headers
+- Snippets are hidden from the main script when boneyard hiding is enabled
+- The snip button only appears for text selections outside the snippets section
+- You can duplicate snippets by dragging them into the snippets section itself
 
 ## Why did I do this?
 
