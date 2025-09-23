@@ -5,7 +5,7 @@
 - obsidian syntax highlighting when editing
 - close to print readonly view / preview (with ability to hide notes, synopsis, boneyard)
 - PDF export with configurable options (paper size, scene heading formatting, optionally include synopsis & notes)
-- mark notes as todo
+- mark notes as todo `[[todo: I still need to do this]]`
 - editable index card view to plan your script with drag & drop scene reordering and todo rendering
 - Rehearsal mode (blackout of a characters dialogue)
 - table of contents in right hand pane (with todos and synopsis included)
@@ -47,8 +47,6 @@ On the todo list with low priority:
 The snippets feature allows you to store blocks of content within your fountain document for two main purposes:
 
 **Reusable Content**: Store frequently used elements like:
-- Standard character introductions or descriptions
-- Common scene transitions (FADE IN, FADE OUT, CUT TO:)
 - Recurring dialogue patterns or catchphrases
 - Action descriptions for similar locations or situations
 
