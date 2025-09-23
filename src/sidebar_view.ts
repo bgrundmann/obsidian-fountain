@@ -382,7 +382,7 @@ export class FountainSideBarView extends ItemView {
     } else {
       // If no snippets section exists, add it at the end
       const docLength = script.document.length;
-      const snippetsSection = `\n\n# Snippets\n\n${text}`;
+      const snippetsSection = `\n\n# Boneyard\n# Snippets\n${text}`;
       ft.replaceText({ start: docLength, end: docLength }, snippetsSection);
     }
   }

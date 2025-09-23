@@ -68,7 +68,7 @@
 	border-radius: var(--radius-m);
 	zoom: 0.5;
 	margin-bottom: 10px;
-	max-height: 5.5em; /* Limit to roughly 4 lines (4 × 1.1em line-height) */
+	max-height: 5.5em; /* Limit to roughly 5 lines (5 × 1.1em line-height) */
 	min-height: 3.3em;
 	overflow: hidden;
 	position: relative;
