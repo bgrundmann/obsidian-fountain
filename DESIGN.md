@@ -30,7 +30,9 @@ to improve readability and maintainability.
 
 The plugin registers two main view types:
 - `FountainView` - handles fountain files with readonly/edit modes
-- `TocView` - provides table of contents in sidebar
+- `FountainSideBarView` - provides the sidebar
+	- table of contents with `TocSection`
+	- snippets with `SnippetsSection`
 
 ## Custom Parser
 
@@ -116,9 +118,8 @@ The "snip" functionality is implemented through CodeMirror tooltips and position
 
 ### TOC View Integration
 
-The table of contents view (`TocView`, renamed to `FountainSideBarView`) is extended to show snippets in the lower half:
+The sidebar shows snippets in the lower half.
 
-- **Dual Layout**: Upper half shows traditional TOC, lower half shows snippet previews
 - **Snippet Rendering**: Reuses existing fountain rendering logic with CSS scaling for compact display
 - **Drag & Drop**: Snippets can be dragged into the main document using CodeMirror's built-in drag-and-drop
 - **Preview Scaling**: CSS transforms scale snippet previews to fit sidebar width while maintaining formatting fidelity
@@ -173,7 +174,7 @@ That means we will sometimes not get the standard margin sizes, but we will alwa
 
 - **`fountain_editor.ts`** - CodeMirror integration providing syntax highlighting and decorations for edit mode. Handles bold, italic, underline, notes, and boneyard styling.
 
-- **`toc_view.ts`** - Table of contents sidebar view. Provides clickable navigation and toggles for synopsis/notes display.
+- **`sidebar_view.ts`** - Table of contents and Snippets sidebar view. Provides clickable navigation and toggles for synopsis/notes display.
 
 - **`index_cards_view.ts`** - Index card view implementation with drag-and-drop scene reordering, synopsis editing, and cross-file scene moving capabilities.
 
