@@ -1,10 +1,11 @@
-import { history } from "@codemirror/commands";
+import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { EditorSelection, EditorState, StateField } from "@codemirror/state";
 import {
   EditorView,
   type Tooltip,
   type ViewUpdate,
   drawSelection,
+  keymap,
   showTooltip,
 } from "@codemirror/view";
 import {
@@ -442,6 +443,7 @@ class EditorViewState {
         theme,
         history(),
         drawSelection(),
+        keymap.of([...defaultKeymap, ...historyKeymap]),
         EditorView.editorAttributes.of({ class: "screenplay" }),
         EditorView.lineWrapping,
         createFountainEditorPlugin(
