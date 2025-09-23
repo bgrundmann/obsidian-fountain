@@ -91,6 +91,7 @@ FADE TO BLACK:
 **Method 2: Using the Snip button**
 - Select any text in your script (outside the snippets section)
 - Click the "Snip" button that appears, or use the command palette: "Save Selection as Snippet"
+- For quick access, consider binding this command to `CMD+SHIFT+X` in Obsidian's hotkey settings
 - The selected text will be moved to the snippets section automatically
 
 ### Using Snippets

@@ -62,7 +62,7 @@ class SnippetsSection extends SidebarSection {
 
       // Add subtle instruction text
       sectionDiv.createEl("div", {
-        text: "Drag and drop text here",
+        text: "Maybe later...",
         cls: "snippets-instruction",
       });
 
