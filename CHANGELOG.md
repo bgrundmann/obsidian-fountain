@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.11.0] - Standard Keybindings in the editor
+
+- Standard keybindings for common actions in the editor. Most importantly undo/redo.
+
 ## [0.10.1] - Auto-Focus on New Documents
 
 ### Improved
