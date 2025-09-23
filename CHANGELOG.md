@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.10.1] - Auto-Focus on New Documents
+
+### Improved
+- **New Document Creation**: Editor now automatically receives focus when creating a new fountain document, allowing immediate typing without additional clicks
+
 ## [0.10.0] - Snippets System
 
 ### Added

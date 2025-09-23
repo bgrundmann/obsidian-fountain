@@ -55,6 +55,7 @@ export default class FountainPlugin extends Plugin {
         await leaf.openFile(newFile);
         if (leaf.view instanceof FountainView) {
           leaf.view.switchToEditMode();
+          leaf.view.focusEditor();
         }
         this.app.workspace.setActiveLeaf(leaf, { focus: true });
       } catch (_error) {

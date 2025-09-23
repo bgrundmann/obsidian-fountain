@@ -535,6 +535,10 @@ class EditorViewState {
     const lp = this.cmEditor.lineBlockAt(pos ?? 0);
     return { start: lp.from, end: lp.to + 1 };
   }
+
+  focus(): void {
+    this.cmEditor.focus();
+  }
 }
 
 /** Stored in persistent state (workspace.json under the fountain key) */
@@ -688,6 +692,15 @@ export class FountainView extends TextFileView {
   switchToEditMode() {
     if (!(this.state instanceof EditorViewState)) {
       this.toggleEditMode();
+    }
+  }
+
+  focusEditor() {
+    if (this.state instanceof EditorViewState) {
+      const editorState = this.state;
+      requestAnimationFrame(() => {
+        editorState.focus();
+      });
     }
   }
 
