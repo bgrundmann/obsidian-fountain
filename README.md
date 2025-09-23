@@ -42,6 +42,10 @@ On the todo list with low priority:
 
 ![index cards](https://github.com/user-attachments/assets/0f0a7c3b-f7a6-4ad7-a809-75da6991d103)
 
+## Quick overview over most features
+
+https://github.com/user-attachments/assets/310fd6db-1b51-4cd4-9006-8758addc3807
+
 ## Using Snippets
 
 The snippets feature allows you to store blocks of content within your fountain document for two main purposes:
