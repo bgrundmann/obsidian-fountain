@@ -73,6 +73,11 @@
 	overflow: hidden;
 	position: relative;
 	background-color: var(--background-secondary-alt);
+	transition: max-height 0.3s ease-in-out;
+}
+
+.screenplay-snippets .snippet:hover {
+	max-height: none;
 }
 
 .screenplay-snippets .snippet .screenplay {

@@ -120,10 +120,8 @@ class SnippetsSection extends SidebarSection {
         });
 
         snippetDiv.createDiv({ cls: ["screenplay"] }, (div) => {
-          // Show first 4 elements or all if fewer than 4
-          // Most likely, we will end up displaying even less, if any of the elements use more than one line
-          const elementsToShow = snippet.content.slice(0, 4);
-          for (const element of elementsToShow) {
+          // Render all snippet content - CSS max-height will handle truncation
+          for (const element of snippet.content) {
             renderElement(div, element, script, {});
           }
         });
