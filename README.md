@@ -2,7 +2,7 @@
 
 ## Features
 
-- obsidian syntax highlighting when editing
+- Automatic screenplay formatting. As long as you follow the fountain syntax, the editor will in real-time format what you type.
 - close to print readonly view / preview (with ability to hide notes, synopsis, boneyard)
 - PDF export with configurable options (paper size, scene heading formatting, optionally include synopsis & notes)
 - mark notes as todo `[[todo: I still need to do this]]`
@@ -14,6 +14,12 @@
 - boneyard support (content after "# boneyard" header can be hidden)
 
 ## Known Issues
+
+### The PDF export is probably not following industry standards
+
+- That is I don't need it to follow industry standards. I just needed something that gave me a decent PDF.
+- If you have stricter requirements, chances are you should use something like Highland Pro
+- But if you can let me know *exactly* what you need, I promise to at least contemplate implementing it.
 
 ### Compatibility with Custom File Extensions Plugin
 
