@@ -83,6 +83,7 @@ export function createCharacterCompletion(
   getScript: () => FountainScript,
 ): Extension {
   return autocompletion({
+    icons: false,
     activateOnTyping: true,
     override: [createCharacterCompletionSource(getScript)],
   });
