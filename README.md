@@ -5,7 +5,7 @@
 - Automatic screenplay formatting. As long as you follow the fountain syntax, the editor will in real-time format what you type.
 - close to print readonly view / preview (with ability to hide notes, synopsis, boneyard)
 - PDF export with configurable options (paper size, scene heading formatting, optionally include synopsis & notes)
-- mark notes as todo `[[todo: I still need to do this]]`
+- mark notes as todo `[[todo: This is a todo]]`
 - editable index card view to plan your script with drag & drop scene reordering and todo rendering
 - Rehearsal mode (blackout of a characters dialogue)
 - table of contents in right hand pane (with todos and synopsis included)
