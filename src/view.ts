@@ -16,6 +16,7 @@ import {
   type WorkspaceLeaf,
   setIcon,
 } from "obsidian";
+import { createCharacterCompletion } from "./character_completion";
 import type { FountainScript, Range, ShowHideSettings } from "./fountain";
 import { createFountainEditorPlugin } from "./fountain_editor";
 import { parse } from "./fountain_parser";
@@ -449,6 +450,10 @@ class EditorViewState {
         createFountainEditorPlugin(
           () => parentView.getCachedScript() || parse("", {}),
           (script: FountainScript) => parentView.updateScriptDirectly(script),
+        ),
+        // Add character completion functionality
+        createCharacterCompletion(
+          () => parentView.getCachedScript() || parse("", {}),
         ),
         // Add snip tooltip functionality
         createSnipTooltipField(parentView),

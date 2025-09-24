@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.0] - Character Name Autocompletion
+
+### Added
+- **Character Completion**: Intelligent autocompletion for character names in the editor
+  - Triggered when typing at least 2 uppercase characters/numbers with at least one uppercase letter (e.g., `JO`, `FBI`, `3CPO`, `R2D2`, `JOSÉ`)
+  - Triggered when typing @ symbol followed by any characters for special character names (e.g., `@McAlister`)
+  - Uses prefix matching against all character names found in the script
+
 ## [0.11.0] - Standard Keybindings in the editor
 
 - Standard keybindings for common actions in the editor. Most importantly undo/redo.

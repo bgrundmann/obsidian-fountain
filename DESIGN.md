@@ -26,6 +26,10 @@
 Use typescript with functional programming style. Types are used extensively
 to improve readability and maintainability.
 
+unit tests are used when possible and sensible, and are written using Jest.
+Note that unit tests never mock the parser. If a FountainScript instance is
+required, use `parse` to create a FountainScript instance.
+
 ## Plugin Architecture
 
 The plugin registers two main view types:
@@ -173,6 +177,8 @@ That means we will sometimes not get the standard margin sizes, but we will alwa
 - **`reading_view.ts`** - Renders formatted fountain content for readonly mode. Handles title page, scenes, dialogue, actions, and boneyard sections with show/hide settings.
 
 - **`fountain_editor.ts`** - CodeMirror integration providing syntax highlighting and decorations for edit mode. Handles bold, italic, underline, notes, and boneyard styling.
+
+- **`character_completion.ts`** - Character name autocompletion system for CodeMirror editor. Provides intelligent completion when typing character names using uppercase patterns or @ symbol prefix.
 
 - **`sidebar_view.ts`** - Table of contents and Snippets sidebar view. Provides clickable navigation and toggles for synopsis/notes display.
 
