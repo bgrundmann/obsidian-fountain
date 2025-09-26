@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.12.1] - Cosmetics
+
+- **Selection background color**: Fixed to use the right obsidian variable
+- **don't select text** when switching into edit mode -- it's distracting.
+
 ## [0.12.0] - Character Name Autocompletion
 
 ### Added
