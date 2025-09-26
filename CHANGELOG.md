@@ -4,6 +4,7 @@
 
 - **Selection background color**: Fixed to use the right obsidian variable
 - **don't select text** when switching into edit mode -- it's distracting.
+- **a slightly thicker cursor** to make it more visible.
 
 ## [0.12.0] - Character Name Autocompletion
 
