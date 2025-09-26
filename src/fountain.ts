@@ -5,6 +5,7 @@ export {
   intersect,
   extractNotes,
   extractTransitionText,
+  collapseRangeToStart,
 };
 export type {
   Range,
@@ -47,6 +48,10 @@ export function dataRange(r: Range): { "data-range": string } {
 
 function intersect(r1: Range, r2: Range): boolean {
   return r1.start < r2.end && r2.start < r1.end;
+}
+
+function collapseRangeToStart(r: Range): Range {
+  return { start: r.start, end: r.start };
 }
 
 // ============================================================================

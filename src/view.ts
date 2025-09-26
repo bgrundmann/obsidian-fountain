@@ -17,7 +17,12 @@ import {
   setIcon,
 } from "obsidian";
 import { createCharacterCompletion } from "./character_completion";
-import type { FountainScript, Range, ShowHideSettings } from "./fountain";
+import {
+  type FountainScript,
+  type Range,
+  type ShowHideSettings,
+  collapseRangeToStart,
+} from "./fountain";
 import { createFountainEditorPlugin } from "./fountain_editor";
 import { parse } from "./fountain_parser";
 import { FuzzySelectString } from "./fuzzy_select_string";
@@ -679,7 +684,9 @@ export class FountainView extends TextFileView {
 
   startEditModeHere(r: Range): void {
     this.switchToEditMode();
-    this.scrollToHere(r);
+    // scrollToHere selects the range. We don't want this to happen
+    // when we just switched into edit mode.
+    this.scrollToHere(collapseRangeToStart(r));
   }
 
   startReadingModeHere(r: Range): void {
@@ -926,7 +933,7 @@ export class FountainView extends TextFileView {
         this.requestSave,
         this,
       );
-      if (r !== null) this.state.scrollToHere(r);
+      if (r !== null) this.state.scrollToHere(collapseRangeToStart(r));
     }
     this.toggleEditAction.empty();
     setIcon(this.toggleEditAction, this.isEditMode() ? "book-open" : "edit");
