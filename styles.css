@@ -358,7 +358,8 @@
 }
 
 .screenplay .cm-cursorLayer .cm-cursor {
-	border-left: 2px solid var(--caret-color);
+	border-left: 3.2px solid var(--caret-color);
+	margin-left: -1.6px;
 }
 
 .screenplay .cm-selectionLayer .cm-selectionBackground {
