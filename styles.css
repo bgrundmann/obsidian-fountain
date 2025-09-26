@@ -363,7 +363,7 @@
 }
 
 .screenplay .cm-selectionLayer .cm-selectionBackground {
-	background-color: var(--selection-color);
+	background-color: var(--text-selection);
 }
 
 /****************************** index view */
