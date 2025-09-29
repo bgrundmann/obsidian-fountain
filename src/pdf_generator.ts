@@ -429,6 +429,9 @@ function generateScriptInstructions(
       case "section":
         // TODO
         break;
+      case "lyrics":
+        // TODO: Implement lyrics rendering in PDF
+        break;
     }
   }
 

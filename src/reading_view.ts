@@ -198,6 +198,9 @@ function renderElement(
         attr: dataRange(el.range),
       });
       break;
+    case "lyrics":
+      // TODO: Implement lyrics rendering in reading view
+      break;
   }
 }
 

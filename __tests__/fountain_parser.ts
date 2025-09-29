@@ -578,6 +578,111 @@ describe("Synopsis handling", () => {
   );
 });
 
+describe("Lyrics handling", () => {
+  test("parses single lyrics line", () => {
+    const script: FountainScript = parse("~ This is a lyrics line", {});
+    expect(script.script).toHaveLength(1);
+    expect(script.script[0]).toMatchObject({
+      kind: "lyrics",
+      lines: [
+        {
+          centered: false,
+          elements: [{ kind: "text" }],
+        },
+      ],
+    });
+  });
+
+  test("parses multiple consecutive lyrics lines", () => {
+    const script: FountainScript = parse(
+      "~ First lyrics line\n~ Second lyrics line\n~ Third lyrics line",
+      {},
+    );
+    expect(script.script).toHaveLength(1);
+    expect(script.script[0]).toMatchObject({
+      kind: "lyrics",
+      lines: [
+        {
+          centered: false,
+          elements: [{ kind: "text" }],
+        },
+        {
+          centered: false,
+          elements: [{ kind: "text" }],
+        },
+        {
+          centered: false,
+          elements: [{ kind: "text" }],
+        },
+      ],
+    });
+  });
+
+  test("parses lyrics with styled text", () => {
+    const script: FountainScript = parse(
+      "~ This is **bold** and *italic* lyrics",
+      {},
+    );
+    expect(script.script).toHaveLength(1);
+    expect(script.script[0]).toMatchObject({
+      kind: "lyrics",
+      lines: [
+        {
+          centered: false,
+          elements: [
+            { kind: "text" },
+            { kind: "bold" },
+            { kind: "text" },
+            { kind: "italics" },
+            { kind: "text" },
+          ],
+        },
+      ],
+    });
+  });
+
+  test("lyrics terminated by blank line", () => {
+    const script: FountainScript = parse(
+      "~ First lyrics line\n~ Second lyrics line\n\nThis is action",
+      {},
+    );
+    expect(script.script).toHaveLength(2);
+    expect(script.script[0]).toMatchObject({
+      kind: "lyrics",
+      lines: [
+        {
+          centered: false,
+          elements: [{ kind: "text" }],
+        },
+        {
+          centered: false,
+          elements: [{ kind: "text" }],
+        },
+      ],
+    });
+    expect(script.script[1]).toMatchObject({
+      kind: "action",
+    });
+  });
+
+  test("lyrics with indentation is not a lyrics line", () => {
+    const script: FountainScript = parse(
+      "  ~   Indented lyrics with spaces  ",
+      {},
+    );
+    expect(script.script).toHaveLength(1);
+    expect(script.script[0]).toMatchObject({
+      kind: "action",
+      lines: [
+        {
+          centered: false,
+          elements: [{ kind: "text" }],
+        },
+      ],
+    });
+  });
+});
+
 describe("Corner cases from big fish", () => {
   // These are corner cases from big fish we got wrong at some point or the other.
   // josephine was an example of us mistaking ALL UPPERCASE followed by blank line

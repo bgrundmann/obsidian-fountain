@@ -200,6 +200,10 @@ class FountainEditorPlugin implements PluginValue {
             builder.add(el.range.start, el.range.end, transition);
             break;
 
+          case "lyrics":
+            // TODO: Implement lyrics syntax highlighting
+            break;
+
           default:
             break;
         }

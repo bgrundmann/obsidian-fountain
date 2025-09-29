@@ -45,6 +45,7 @@ Element
  / Transition
  / Section
  / Synopsis
+ / Lyrics
  / Dialogue
  / Action
 
@@ -175,6 +176,15 @@ RestOfLine = [^\n]+ { return range() }
 
 OptionalBlanks
  = [ \t]*
+
+Lyrics
+ = lines:LyricsLine+
+ { return { kind: 'lyrics', range: range(), lines: lines }; }
+
+LyricsLine
+ = "~" elements:LineTextElement* newline:("\n" / !.)
+ { return { range: range(), centered: false, elements: mergeText(elements) }; }
+
 
 Scene
  = SceneStart RestOfLine BlankLineOrEndOfInput { return { kind: 'scene', range: range() }; }

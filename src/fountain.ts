@@ -156,6 +156,12 @@ type Section = {
   depth: number;
 };
 
+type Lyrics = {
+  kind: "lyrics";
+  range: Range;
+  lines: Line[];
+};
+
 type FountainElement =
   | Synopsis
   | Transition
@@ -163,6 +169,7 @@ type FountainElement =
   | Scene
   | Dialogue
   | Section
+  | Lyrics
   | PageBreak;
 
 type KeyValue = {
