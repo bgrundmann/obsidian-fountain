@@ -37,7 +37,6 @@ This plugin handles `.fountain` files natively and doesn't require Custom File E
 
 On the todo list with low priority:
 
-- support for lyrics
 - support for dual dialogue
 
 ## Screenshots

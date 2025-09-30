@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.13.0] - Sing me a song
+
+### New feature:
+
+- **Lyrics**: Support lyrics.
+
+### Bug fixes:
+
+- **Actions**: Leading spaces should be preserved.
+
 ## [0.12.1] - Cosmetics
 
 - **Selection background color**: Fixed to use the right obsidian variable
