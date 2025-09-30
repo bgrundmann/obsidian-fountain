@@ -261,6 +261,10 @@
 	background-color: var(--background-primary-alt);
 }
 
+.screenplay .lyrics {
+	font-style: italic;
+}
+
 .screenplay-toc .synopsis {
 	color: var(--text-muted);
 	font-style: italic;

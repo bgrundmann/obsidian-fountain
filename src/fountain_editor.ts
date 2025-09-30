@@ -130,6 +130,7 @@ class FountainEditorPlugin implements PluginValue {
     const action = Decoration.mark({ class: "action" });
     const pageBreak = Decoration.mark({ class: "page-break" });
     const transition = Decoration.mark({ class: "transition" });
+    const lyrics = Decoration.mark({ class: "lyrics" });
 
     if (fscript.titlePage !== null) {
       for (const kv of fscript.titlePage) {
@@ -201,7 +202,7 @@ class FountainEditorPlugin implements PluginValue {
             break;
 
           case "lyrics":
-            // TODO: Implement lyrics syntax highlighting
+            builder.add(el.range.start, el.range.end, lyrics);
             break;
 
           default:

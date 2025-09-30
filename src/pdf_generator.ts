@@ -3,6 +3,7 @@ import {
   type Action,
   type Dialogue,
   type FountainScript,
+  type Lyrics,
   type Scene,
   type StyledText,
   type Synopsis,
@@ -430,7 +431,6 @@ function generateScriptInstructions(
         // TODO
         break;
       case "lyrics":
-        // TODO: Implement lyrics rendering in PDF
         break;
     }
   }

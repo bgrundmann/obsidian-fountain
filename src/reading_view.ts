@@ -4,6 +4,7 @@ import type {
   FountainElement,
   FountainScript,
   Line,
+  Lyrics,
   Range,
   ShowHideSettings,
   Synopsis,
@@ -20,6 +21,17 @@ function renderAction(
 ): void {
   if (renderLines(parent, script, ["action"], action.lines, true, settings)) {
     renderBlankLine(parent, action.range);
+  }
+}
+
+function renderLyrics(
+  parent: HTMLElement,
+  lyrics: Lyrics,
+  script: FountainScript,
+  settings: ShowHideSettings,
+): void {
+  if (renderLines(parent, script, ["lyrics"], lyrics.lines, true, settings)) {
+    renderBlankLine(parent, lyrics.range);
   }
 }
 
@@ -199,7 +211,7 @@ function renderElement(
       });
       break;
     case "lyrics":
-      // TODO: Implement lyrics rendering in reading view
+      renderLyrics(parent, el, script, settings);
       break;
   }
 }

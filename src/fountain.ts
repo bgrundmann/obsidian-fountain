@@ -13,6 +13,7 @@ export type {
   Transition,
   KeyValue,
   Line,
+  Lyrics,
   StyledTextElement,
   StyledText,
   TextElementWithNotesAndBoneyard,
