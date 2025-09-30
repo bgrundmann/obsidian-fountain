@@ -69,6 +69,43 @@ describe("PDF Instruction Generation", () => {
       expect(actionText!.x).toBe(108); // ACTION_INDENT
     });
 
+    it("should preserve leading spaces in actions", () => {
+      const script = parser.parse("abc\n bc\n  c");
+
+      const instructions = generateInstructions(script);
+      const textInstructions = instructions.filter(
+        (inst) => inst.type === "text",
+      ) as TextInstruction[];
+
+      // Find action instructions (not italic)
+      const actionInstructions = textInstructions.filter(
+        (inst) => !inst.italic,
+      );
+
+      expect(actionInstructions.length).toBe(5);
+
+      // Verify the segments are correct: "abc", " ", "bc", "  ", "c"
+      expect(actionInstructions[0].data).toBe("abc");
+      expect(actionInstructions[0].x).toBe(108); // ACTION_INDENT
+
+      expect(actionInstructions[1].data).toBe(" ");
+      expect(actionInstructions[1].x).toBe(108); // ACTION_INDENT (start of new line)
+
+      expect(actionInstructions[2].data).toBe("bc");
+      expect(actionInstructions[2].x).toBe(115.2); // After the space
+
+      expect(actionInstructions[3].data).toBe("  ");
+      expect(actionInstructions[3].x).toBe(108); // ACTION_INDENT (start of new line)
+
+      expect(actionInstructions[4].data).toBe("c");
+      expect(actionInstructions[4].x).toBe(122.4); // After the two spaces
+
+      // Verify they're all non-italic
+      actionInstructions.forEach((inst) => {
+        expect(inst.italic).toBe(false);
+      });
+    });
+
     it("should generate text instructions for lyrics with italic formatting", () => {
       const script = parser.parse("~Twinkle, twinkle, little star");
 
@@ -89,6 +126,41 @@ describe("PDF Instruction Generation", () => {
       expect(lyricsText).toBeDefined();
       expect(lyricsText!.x).toBe(108); // ACTION_INDENT (same as actions)
       expect(lyricsText!.italic).toBe(true); // Should be italic
+    });
+
+    it("should preserve leading spaces in lyrics", () => {
+      const script = parser.parse("~abc\n~ bc\n~  c");
+
+      const instructions = generateInstructions(script);
+      const textInstructions = instructions.filter(
+        (inst) => inst.type === "text",
+      ) as TextInstruction[];
+
+      // Find lyrics instructions (should be italic)
+      const lyricsInstructions = textInstructions.filter((inst) => inst.italic);
+
+      expect(lyricsInstructions.length).toBe(5);
+
+      // Verify the segments are correct: "abc", " ", "bc", "  ", "c"
+      expect(lyricsInstructions[0].data).toBe("abc");
+      expect(lyricsInstructions[0].x).toBe(108); // ACTION_INDENT
+
+      expect(lyricsInstructions[1].data).toBe(" ");
+      expect(lyricsInstructions[1].x).toBe(108); // ACTION_INDENT (start of new line)
+
+      expect(lyricsInstructions[2].data).toBe("bc");
+      expect(lyricsInstructions[2].x).toBe(115.2); // After the space
+
+      expect(lyricsInstructions[3].data).toBe("  ");
+      expect(lyricsInstructions[3].x).toBe(108); // ACTION_INDENT (start of new line)
+
+      expect(lyricsInstructions[4].data).toBe("c");
+      expect(lyricsInstructions[4].x).toBe(122.4); // After the two spaces
+
+      // Verify they're all italic
+      lyricsInstructions.forEach((inst) => {
+        expect(inst.italic).toBe(true);
+      });
     });
 
     it("should generate instructions for dialogue", () => {
@@ -707,7 +779,7 @@ MARY
       const removalInstructions = textInstructions.filter(
         (inst) => inst.color === "red" && !inst.italic && inst.strikethrough,
       );
-      expect(removalInstructions.length).toBe(3);
+      expect(removalInstructions.length).toBe(4);
 
       // Test todo notes (gray with TODO prefix)
       const todoInstructions = textInstructions.filter(

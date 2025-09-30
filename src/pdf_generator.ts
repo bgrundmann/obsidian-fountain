@@ -1456,11 +1456,9 @@ function wrapStyledText(
       }
 
       // Add word to current line
-      if (word.trim().length > 0 || currentLine.length > 0) {
-        // Don't start lines with whitespace
-        currentLine.push({ ...segment, text: word });
-        currentLineLength += word.length;
-      }
+      // Preserve leading spaces and tabs as per fountain specification
+      currentLine.push({ ...segment, text: word });
+      currentLineLength += word.length;
     }
   }
 
