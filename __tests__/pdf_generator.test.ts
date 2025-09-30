@@ -69,6 +69,28 @@ describe("PDF Instruction Generation", () => {
       expect(actionText!.x).toBe(108); // ACTION_INDENT
     });
 
+    it("should generate text instructions for lyrics with italic formatting", () => {
+      const script = parser.parse("~Twinkle, twinkle, little star");
+
+      const instructions = generateInstructions(script);
+      const textInstructions = instructions.filter(
+        (inst) => inst.type === "text",
+      ) as TextInstruction[];
+
+      expect(textInstructions.length).toBeGreaterThan(0);
+
+      // Find lyrics instruction
+      const lyricsText = textInstructions.find(
+        (inst) =>
+          inst.data.includes("Twinkle") ||
+          inst.data.includes("little") ||
+          inst.data.includes("star"),
+      );
+      expect(lyricsText).toBeDefined();
+      expect(lyricsText!.x).toBe(108); // ACTION_INDENT (same as actions)
+      expect(lyricsText!.italic).toBe(true); // Should be italic
+    });
+
     it("should generate instructions for dialogue", () => {
       const script = parser.parse("JOHN\nHello, world!");
 

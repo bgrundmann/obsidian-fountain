@@ -431,6 +431,13 @@ function generateScriptInstructions(
         // TODO
         break;
       case "lyrics":
+        currentState = generateLyricsInstructions(
+          instructions,
+          currentState,
+          element,
+          fountainScript,
+          options,
+        );
         break;
     }
   }
@@ -896,6 +903,107 @@ function generateActionInstructions(
   return {
     ...currentState,
     lastElementType: "action",
+  };
+}
+
+function generateLyricsInstructions(
+  instructions: Instruction[],
+  pageState: PageState,
+  lyrics: Lyrics,
+  fountainScript: FountainScript,
+  options: PDFOptions,
+): PageState {
+  // Extract styled text from all lines in the lyrics block, preserving centering info
+  // Lyrics are rendered like action lines but with italic styling
+  type LyricsLineInfo = {
+    segments: StyledTextSegment[];
+    centered: boolean;
+  };
+
+  const lyricsLines: LyricsLineInfo[] = [];
+
+  for (const line of lyrics.lines) {
+    if (line.elements.length > 0) {
+      const styledSegments = extractStyledSegments(
+        line.elements,
+        fountainScript.document,
+        options,
+      );
+      const wrappedLines = wrapStyledText(
+        styledSegments,
+        pageState.charactersPerLine.action,
+      );
+
+      // Add each wrapped line with the original centering information
+      // Force italic styling for all segments in lyrics
+      for (const wrappedLine of wrappedLines) {
+        const italicSegments = wrappedLine.map((segment) => ({
+          ...segment,
+          italic: true, // Force italics for lyrics
+        }));
+        lyricsLines.push({
+          segments: italicSegments,
+          centered: line.centered,
+        });
+      }
+    } else {
+      lyricsLines.push({
+        segments: [],
+        centered: line.centered,
+      });
+    }
+  }
+
+  // Add spacing before lyrics block and ensure we have space for all lines
+  let currentState = addElementSpacing(pageState);
+  currentState = needLines(instructions, currentState, lyricsLines.length);
+
+  // Generate instructions for each line of the lyrics block
+  for (const lineInfo of lyricsLines) {
+    // Ensure we have space for this line
+    currentState = needLines(instructions, currentState, 1);
+
+    // Generate instructions for the line with styled segments
+    if (lineInfo.segments.length > 0) {
+      let currentX: number;
+
+      if (lineInfo.centered) {
+        // Calculate line width for centering
+        let lineWidth = 0;
+        for (const segment of lineInfo.segments) {
+          lineWidth +=
+            segment.text.length * getCharacterWidth(pageState.fontSize);
+        }
+
+        // Center the line
+        currentX = (pageState.pageWidth - lineWidth) / 2;
+      } else {
+        // Use standard action indent for lyrics
+        currentX = ACTION_INDENT;
+      }
+
+      for (const segment of lineInfo.segments) {
+        if (segment.text.length > 0) {
+          currentX = emitText(instructions, currentState, {
+            data: segment.text,
+            x: currentX,
+            bold: segment.bold || false,
+            italic: segment.italic || false,
+            underline: segment.underline || false,
+            color: segment.color || "black",
+            strikethrough: segment.strikethrough || false,
+            backgroundColor: segment.backgroundColor,
+          });
+        }
+      }
+    }
+
+    currentState = advanceLine(currentState);
+  }
+
+  return {
+    ...currentState,
+    lastElementType: "action", // Treat lyrics similar to action for spacing purposes
   };
 }
 
