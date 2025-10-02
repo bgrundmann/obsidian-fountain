@@ -359,6 +359,8 @@
 		var(--text-faint) 55%,
 		transparent 55%
 	);
+	display: inline-block;
+	width: 100%;
 }
 
 .screenplay .cm-cursorLayer .cm-cursor {
