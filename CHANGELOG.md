@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.13.1] - Page Break Recognition Fix
+
+### Bug fixes:
+
+- **Page Breaks After Dialogue**: Fixed bug where page-break sequences ("===") directly following dialogue without a blank line were not recognized as page breaks and were instead treated as part of the dialogue text.
+
 ## [0.13.0] - Sing me a song
 
 ### New feature:

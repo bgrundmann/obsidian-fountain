@@ -64,8 +64,17 @@ Line
  = elements:LineTextElement+ newline:("\n" / !.)
  { return { range:range(), centered: false, elements:mergeText(elements) } }
 
-Lines
- = @lines:Line+ NewLineOrEndOfInput
+
+
+DialogueLine
+ = !PageBreakPattern @Line
+
+DialogueLines
+ = @lines:DialogueLine+ DialogueTerminator
+
+DialogueTerminator
+ = &PageBreakPattern
+ / NewLineOrEndOfInput
 
 EndOfCenteredLine
  = [ \t]* ("<" !. / "<\n")
@@ -143,7 +152,7 @@ NewLineOrEndOfInput
 Dialogue
  = OptionalBlanks character:Character [ \t]* exts:CharacterExtensions "\n"
   parenthetical:(Parenthetical)?
-  dialogue:Lines
+  dialogue:DialogueLines
  { return {
      range: range(),
      kind: 'dialogue',

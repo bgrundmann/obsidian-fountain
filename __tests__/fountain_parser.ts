@@ -172,6 +172,24 @@ describe("Parser tests", () => {
     ],
   );
   test_script(
+    "a page break after dialogue without blank line",
+    "CHARACTER\nThis is some dialogue\n===\nAnother action line",
+    [
+      { kind: "dialogue", source: "CHARACTER\nThis is some dialogue\n" },
+      { kind: "page-break", source: "===\n" },
+      { kind: "action", source: "Another action line" },
+    ],
+  );
+  test_script(
+    "a page break after dialogue with blank line",
+    "CHARACTER\nThis is some dialogue\n\n===\nAnother action line",
+    [
+      { kind: "dialogue", source: "CHARACTER\nThis is some dialogue\n\n" },
+      { kind: "page-break", source: "===\n" },
+      { kind: "action", source: "Another action line" },
+    ],
+  );
+  test_script(
     "only a single dot forces a heading",
     `EXT. OLYMPIA CIRCUS - NIGHT
 
