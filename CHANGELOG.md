@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.14.1] - Bugfix
+
+- **whitespace in PDFs**: A bug fix where word wrapping of action and dialogue lines could introduce whitespace at the beginning of the line.
+
 ## [0.14.0] - Snippets and style
 
 ### Changed:
