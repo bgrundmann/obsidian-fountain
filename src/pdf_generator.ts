@@ -550,6 +550,7 @@ function generateCenteredTitleElementInstructions(
       const wrappedLines = wrapStyledText(
         segments,
         pageState.charactersPerLine.titlePageCenter,
+        false,
       );
 
       for (const line of wrappedLines) {
@@ -617,6 +618,7 @@ function generateLowerLeftTitleElementInstructions(
       const wrappedLines = wrapStyledText(
         segments,
         pageState.charactersPerLine.titlePageSides,
+        false,
       );
 
       for (const line of wrappedLines) {
@@ -674,6 +676,7 @@ function generateLowerRightTitleElementInstructions(
       const wrappedLines = wrapStyledText(
         segments,
         pageState.charactersPerLine.titlePageSides,
+        false,
       );
 
       for (const line of wrappedLines) {
@@ -836,6 +839,7 @@ function generateActionInstructions(
       const wrappedLines = wrapStyledText(
         styledSegments,
         pageState.charactersPerLine.action,
+        false,
       );
 
       // Add each wrapped line with the original centering information
@@ -929,9 +933,10 @@ function generateLyricsInstructions(
         fountainScript.document,
         options,
       );
-      const wrappedLines = wrapStyledTextPreserveWhitespace(
+      const wrappedLines = wrapStyledText(
         styledSegments,
         pageState.charactersPerLine.action,
+        true, // preserveWhitespace for lyrics
       );
 
       // Add each wrapped line with the original centering information
@@ -1095,6 +1100,7 @@ function generateDialogueInstructions(
       const wrappedLines = wrapStyledText(
         styledSegments,
         pageState.charactersPerLine.dialogue,
+        false,
       );
 
       for (const wrappedLine of wrappedLines) {
@@ -1412,6 +1418,7 @@ function extractStyledSegments(
 function wrapStyledText(
   segments: StyledTextSegment[],
   maxChars: number,
+  preserveWhitespace: boolean,
 ): StyledTextSegment[][] {
   if (segments.length === 0) {
     return [[]];
@@ -1456,75 +1463,15 @@ function wrapStyledText(
       }
 
       // Add word to current line
-      if (word.trim().length > 0 || currentLine.length > 0) {
-        // Don't start lines with whitespace
+      if (
+        preserveWhitespace ||
+        word.trim().length > 0 ||
+        currentLine.length > 0
+      ) {
+        // Don't start lines with whitespace unless preserveWhitespace is true
         currentLine.push({ ...segment, text: word });
         currentLineLength += word.length;
       }
-    }
-  }
-
-  // Add the last line if it has content
-  if (currentLine.length > 0) {
-    lines.push(currentLine);
-  }
-
-  return lines.length > 0 ? lines : [[]];
-}
-
-/**
- * Text wrapping for lyrics that preserves exact whitespace
- * Unlike wrapStyledText, this doesn't remove leading/trailing whitespace
- */
-function wrapStyledTextPreserveWhitespace(
-  segments: StyledTextSegment[],
-  maxChars: number,
-): StyledTextSegment[][] {
-  if (segments.length === 0) {
-    return [[]];
-  }
-
-  const lines: StyledTextSegment[][] = [];
-  let currentLine: StyledTextSegment[] = [];
-  let currentLineLength = 0;
-
-  for (const segment of segments) {
-    const words = segment.text.split(/(\s+)/); // Split on whitespace but keep separators
-
-    for (const word of words) {
-      if (word.length === 0) continue;
-
-      // Handle very long words
-      if (word.length > maxChars) {
-        // Finish current line if it has content
-        if (currentLine.length > 0) {
-          lines.push(currentLine);
-          currentLine = [];
-          currentLineLength = 0;
-        }
-
-        // Split long word into chunks
-        for (let i = 0; i < word.length; i += maxChars) {
-          const chunk = word.substring(i, i + maxChars);
-          lines.push([{ ...segment, text: chunk }]);
-        }
-        continue;
-      }
-
-      // Check if adding this word would exceed the limit
-      if (
-        currentLineLength + word.length > maxChars &&
-        currentLine.length > 0
-      ) {
-        // Start new line
-        lines.push(currentLine);
-        currentLine = [];
-        currentLineLength = 0;
-      }
-
-      // Add word to current line - preserve all whitespace for lyrics
-      currentLine.push({ ...segment, text: word });
-      currentLineLength += word.length;
     }
   }
 
