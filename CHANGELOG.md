@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.14.0] - Snippets and style
+
+### Changed:
+
+- **Snippets**: Instead of one command save-selection-as-snippet, now there are two commands: copy-selection-as-snippet and cut-selection-as-snippet.
+
+- **Style**: The editor component no longer has a focus outline, matching obsidians editor.
+
+### Bug fixes:
+
+- **Page Breaks After Dialogue**: Fixed bug where page-break sequences ("===") directly following dialogue without a blank line were not recognized as page breaks and were instead treated as part of the dialogue text.
+
 ## [0.13.1] - Page Break Recognition Fix
 
 ### Bug fixes:
