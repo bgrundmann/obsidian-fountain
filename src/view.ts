@@ -390,7 +390,7 @@ function getSnipTooltips(
           dom.textContent = "Snip";
           dom.addEventListener("click", (e) => {
             e.preventDefault();
-            parentView.saveSelectionAsSnippet();
+            parentView.saveSelectionAsSnippet(true);
           });
           return { dom };
         },
@@ -1064,7 +1064,12 @@ export class FountainView extends TextFileView {
     return true;
   }
 
-  saveSelectionAsSnippet(): void {
+  /**
+   * Moves or copies a selection to a new snippet. If necessary creates the snippets
+   * section.
+   * @param cut Remove the original? (that is move the selection to snippets)
+   */
+  saveSelectionAsSnippet(cut: boolean): void {
     if (this.state instanceof EditorViewState) {
       const selection = this.state.getSelection();
       if (selection) {
@@ -1074,15 +1079,17 @@ export class FountainView extends TextFileView {
           return;
         }
 
-        // Remove the selected text from the document
-        this.state.dispatchChanges({
-          from: selection.from,
-          to: selection.to,
-          insert: "",
-        });
+        if (cut) {
+          // Remove the selected text from the document
+          this.state.dispatchChanges({
+            from: selection.from,
+            to: selection.to,
+            insert: "",
+          });
+        }
 
         // Add to snippets section
-        this.insertAfterSnippetsHeader(`${selection.text}\n\n===\n\n`);
+        this.insertAfterSnippetsHeader(`${selection.text}\n\n===\n`);
         this.requestSave();
       }
     }
@@ -1104,7 +1111,9 @@ export class FountainView extends TextFileView {
           element.range.start,
           element.range.end,
         );
-        if (sectionText.toLowerCase().includes("snippets")) {
+        if (
+          sectionText.toLowerCase().replace(/^#+/, "").trim() === "snippets"
+        ) {
           snippetsHeaderEnd = element.range.end;
           break;
         }
@@ -1116,12 +1125,12 @@ export class FountainView extends TextFileView {
       this.state.dispatchChanges({
         from: snippetsHeaderEnd,
         to: snippetsHeaderEnd,
-        insert: `\n\n${text}`,
+        insert: `\n${text}`,
       });
     } else {
       // If no snippets section exists, add it at the end
       const docLength = docText.length;
-      const snippetsSection = `\n\n# Snippets\n\n${text}`;
+      const snippetsSection = `\n\n# Snippets\n${text}`;
       this.state.dispatchChanges({
         from: docLength,
         to: docLength,

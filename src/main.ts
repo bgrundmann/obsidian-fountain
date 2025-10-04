@@ -74,11 +74,20 @@ export default class FountainPlugin extends Plugin {
     return true;
   }
 
-  private saveSelectionAsSnippetCommand(checking: boolean): boolean {
+  private copySelectionAsSnippetCommand(checking: boolean): boolean {
     const fv = this.app.workspace.getActiveViewOfType(FountainView);
     if (checking) return fv?.hasValidSelectionForSnipping() ?? false;
     if (fv) {
-      fv.saveSelectionAsSnippet();
+      fv.saveSelectionAsSnippet(false);
+    }
+    return true;
+  }
+
+  private cutSelectionAsSnippetCommand(checking: boolean): boolean {
+    const fv = this.app.workspace.getActiveViewOfType(FountainView);
+    if (checking) return fv?.hasValidSelectionForSnipping() ?? false;
+    if (fv) {
+      fv.saveSelectionAsSnippet(true);
     }
     return true;
   }
@@ -185,10 +194,17 @@ export default class FountainPlugin extends Plugin {
       },
     });
     this.addCommand({
-      id: "save-selection-as-snippet",
-      name: "Save selection as snippet",
+      id: "copy-selection-as-snippet",
+      name: "Copy selection to a new snippet",
       checkCallback: (checking: boolean) => {
-        return this.saveSelectionAsSnippetCommand(checking);
+        return this.copySelectionAsSnippetCommand(checking);
+      },
+    });
+    this.addCommand({
+      id: "cut-selection-as-snippet",
+      name: "Move selection to a new snippet.",
+      checkCallback: (checking: boolean) => {
+        return this.cutSelectionAsSnippetCommand(checking);
       },
     });
   }
