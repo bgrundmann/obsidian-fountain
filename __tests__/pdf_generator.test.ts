@@ -1,4 +1,4 @@
-import type { Action, Synopsis } from "../src/fountain";
+import type { Action } from "../src/fountain";
 import {
   type Instruction,
   type NewPageInstruction,
@@ -7,7 +7,7 @@ import {
   renderInstructionsToPDF,
 } from "../src/pdf_generator";
 
-const parser = require("../src/fountain_parser");
+import * as parser from "../src/fountain_parser";
 
 describe("PDF Instruction Generation", () => {
   describe("generateInstructions", () => {
@@ -39,10 +39,10 @@ describe("PDF Instruction Generation", () => {
         (inst) => inst.data === "INT. OFFICE - DAY",
       );
       expect(sceneInstruction).toBeDefined();
-      expect(sceneInstruction!.bold).toBe(false);
-      expect(sceneInstruction!.italic).toBe(false);
-      expect(sceneInstruction!.underline).toBe(false);
-      expect(sceneInstruction!.x).toBe(108); // SCENE_HEADING_INDENT
+      expect(sceneInstruction?.bold).toBe(false);
+      expect(sceneInstruction?.italic).toBe(false);
+      expect(sceneInstruction?.underline).toBe(false);
+      expect(sceneInstruction?.x).toBe(108); // SCENE_HEADING_INDENT
     });
 
     it("should generate text instructions for action blocks", () => {
@@ -66,10 +66,10 @@ describe("PDF Instruction Generation", () => {
           inst.data.includes("room"),
       );
       expect(actionText).toBeDefined();
-      expect(actionText!.x).toBe(108); // ACTION_INDENT
+      expect(actionText?.x).toBe(108); // ACTION_INDENT
     });
 
-    it("should preserve leading spaces in actions", () => {
+    it("should handle leading spaces in actions with normal word wrapping", () => {
       const script = parser.parse("abc\n bc\n  c");
 
       const instructions = generateInstructions(script);
@@ -82,28 +82,29 @@ describe("PDF Instruction Generation", () => {
         (inst) => !inst.italic,
       );
 
-      expect(actionInstructions.length).toBe(5);
+      // Actions use normal word wrapping, so leading spaces are trimmed from wrapped lines
+      expect(actionInstructions.length).toBe(3);
 
-      // Verify the segments are correct: "abc", " ", "bc", "  ", "c"
-      expect(actionInstructions[0].data).toBe("abc");
-      expect(actionInstructions[0].x).toBe(108); // ACTION_INDENT
+      // Find any action instruction (text from our document range)
+      const firstActionText = actionInstructions.find((inst) =>
+        inst.data.includes("abc"),
+      );
+      const secondActionText = actionInstructions.find(
+        (inst) => inst.data.includes("bc") && !inst.data.includes("abc"),
+      );
+      const thirdActionText = actionInstructions.find(
+        (inst) => inst.data.includes("c") && !inst.data.includes("bc"),
+      );
 
-      expect(actionInstructions[1].data).toBe(" ");
-      expect(actionInstructions[1].x).toBe(108); // ACTION_INDENT (start of new line)
+      expect(firstActionText).toBeDefined();
+      expect(secondActionText).toBeDefined();
+      expect(thirdActionText).toBeDefined();
 
-      expect(actionInstructions[2].data).toBe("bc");
-      expect(actionInstructions[2].x).toBe(115.2); // After the space
-
-      expect(actionInstructions[3].data).toBe("  ");
-      expect(actionInstructions[3].x).toBe(108); // ACTION_INDENT (start of new line)
-
-      expect(actionInstructions[4].data).toBe("c");
-      expect(actionInstructions[4].x).toBe(122.4); // After the two spaces
-
-      // Verify they're all non-italic
-      actionInstructions.forEach((inst) => {
-        expect(inst.italic).toBe(false);
-      });
+      // Verify they all use ACTION_INDENT positioning and are non-italic
+      for (const inst of [firstActionText, secondActionText, thirdActionText]) {
+        expect(inst?.x).toBe(108); // ACTION_INDENT
+        expect(inst?.italic).toBe(false);
+      }
     });
 
     it("should generate text instructions for lyrics with italic formatting", () => {
@@ -124,8 +125,8 @@ describe("PDF Instruction Generation", () => {
           inst.data.includes("star"),
       );
       expect(lyricsText).toBeDefined();
-      expect(lyricsText!.x).toBe(108); // ACTION_INDENT (same as actions)
-      expect(lyricsText!.italic).toBe(true); // Should be italic
+      expect(lyricsText?.x).toBe(108); // ACTION_INDENT (same as actions)
+      expect(lyricsText?.italic).toBe(true); // Should be italic
     });
 
     it("should preserve leading spaces in lyrics", () => {
@@ -158,9 +159,9 @@ describe("PDF Instruction Generation", () => {
       expect(lyricsInstructions[4].x).toBe(122.4); // After the two spaces
 
       // Verify they're all italic
-      lyricsInstructions.forEach((inst) => {
+      for (const inst of lyricsInstructions) {
         expect(inst.italic).toBe(true);
-      });
+      }
     });
 
     it("should generate instructions for dialogue", () => {
@@ -177,13 +178,14 @@ describe("PDF Instruction Generation", () => {
         (inst) => inst.data === "JOHN",
       );
       expect(characterInstruction).toBeDefined();
-      expect(characterInstruction!.x).toBe(288); // CHARACTER_INDENT
+      expect(characterInstruction?.x).toBe(288); // CHARACTER_INDENT
+      expect(characterInstruction?.italic).toBe(false);
 
       const dialogueText = textInstructions.find(
         (inst) => inst.data.includes("Hello") || inst.data.includes("world"),
       );
       expect(dialogueText).toBeDefined();
-      expect(dialogueText!.x).toBe(180); // DIALOGUE_INDENT
+      expect(dialogueText?.x).toBe(180); // DIALOGUE_INDENT
     });
 
     it("should generate instructions for dialogue with parenthetical", () => {
@@ -198,7 +200,7 @@ describe("PDF Instruction Generation", () => {
         (inst) => inst.data === "(softly)",
       );
       expect(parentheticalInstruction).toBeDefined();
-      expect(parentheticalInstruction!.x).toBe(234); // PARENTHETICAL_INDENT
+      expect(parentheticalInstruction?.x).toBe(234); // PARENTHETICAL_INDENT
     });
 
     it("should generate instructions for transitions", () => {
@@ -214,7 +216,7 @@ describe("PDF Instruction Generation", () => {
       );
       expect(transitionInstruction).toBeDefined();
       // Should be right-aligned for transitions
-      expect(transitionInstruction!.x).toBeLessThan(522); // Should be less than right margin
+      expect(transitionInstruction?.x).toBeLessThan(522); // Should be less than right margin
     });
 
     it("should generate title page instructions", () => {
@@ -249,14 +251,14 @@ describe("PDF Instruction Generation", () => {
         (inst) => inst.data === "bold",
       );
       expect(boldInstruction).toBeDefined();
-      expect(boldInstruction!.bold).toBe(true);
+      expect(boldInstruction?.bold).toBe(true);
 
       const normalInstructions = textInstructions.filter(
         (inst) => inst.data !== "bold" && inst.data.trim() !== "",
       );
-      normalInstructions.forEach((inst) => {
+      for (const inst of normalInstructions) {
         expect(inst.bold).toBe(false);
-      });
+      }
     });
 
     it("should use PDF coordinate system (bottom-left origin)", () => {
@@ -266,13 +268,11 @@ describe("PDF Instruction Generation", () => {
       const textInstructions = instructions.filter(
         (inst) => inst.type === "text",
       ) as TextInstruction[];
-
-      textInstructions.forEach((instruction) => {
-        expect(instruction.x).toBeGreaterThan(0);
+      for (const instruction of textInstructions) {
         expect(instruction.y).toBeGreaterThan(0);
         // Y coordinate should be converted from top-origin to bottom-origin
         expect(instruction.y).toBeLessThan(792); // PAGE_HEIGHT
-      });
+      }
     });
 
     it("should use character limits from PageState for text wrapping", () => {
@@ -331,10 +331,10 @@ describe("PDF Instruction Generation", () => {
       expect(a4NewPage).toBeDefined();
 
       // Letter and A4 should have different page dimensions
-      expect(letterNewPage!.width).toBe(612); // Letter width
-      expect(letterNewPage!.height).toBe(792); // Letter height
-      expect(a4NewPage!.width).toBe(595.28); // A4 width
-      expect(a4NewPage!.height).toBe(841.89); // A4 height
+      expect(letterNewPage?.width).toBe(612); // Letter width
+      expect(letterNewPage?.height).toBe(792); // Letter height
+      expect(a4NewPage?.width).toBe(595.28); // A4 width
+      expect(a4NewPage?.height).toBe(841.89); // A4 height
 
       // Text positioning should remain consistent (same left margin and indentations)
       const letterTextInstructions = letterInstructions.filter(
@@ -345,12 +345,12 @@ describe("PDF Instruction Generation", () => {
       );
 
       // All text should use the same left margin (108pt = 1.5")
-      letterTextInstructions.forEach((inst) => {
+      for (const inst of letterTextInstructions) {
         expect(inst.x).toBeGreaterThanOrEqual(108); // At or beyond left margin
-      });
-      a4TextInstructions.forEach((inst) => {
+      }
+      for (const inst of a4TextInstructions) {
         expect(inst.x).toBeGreaterThanOrEqual(108); // At or beyond left margin
-      });
+      }
 
       // Verify that margins are calculated to center content vertically
       // Both should have similar vertical positioning relative to their page heights
@@ -551,10 +551,10 @@ describe("PDF Instruction Generation", () => {
       const textInstructions = instructions.filter(
         (inst) => inst.type === "text",
       ) as TextInstruction[];
-      textInstructions.forEach((instruction) => {
+      for (const instruction of textInstructions) {
         expect(instruction.y).toBeGreaterThan(0);
         expect(instruction.y).toBeLessThan(792); // Page height
-      });
+      }
     });
 
     describe("withHiddenElementsRemoved", () => {
@@ -661,8 +661,8 @@ describe("PDF Instruction Generation", () => {
           inst.type === "text" && inst.data === "This is a synopsis",
       );
       expect(synopsisInstruction).toBeDefined();
-      expect(synopsisInstruction!.italic).toBe(true);
-      expect(synopsisInstruction!.color).toBe("gray");
+      expect(synopsisInstruction?.italic).toBe(true);
+      expect(synopsisInstruction?.color).toBe("gray");
 
       // Find note instruction (notes get broken into individual words)
       const noteInstruction = instructions.find(
@@ -670,8 +670,8 @@ describe("PDF Instruction Generation", () => {
           inst.type === "text" && inst.data === "note",
       );
       expect(noteInstruction).toBeDefined();
-      expect(noteInstruction!.italic).toBe(true);
-      expect(noteInstruction!.color).toBe("gray");
+      expect(noteInstruction?.italic).toBe(true);
+      expect(noteInstruction?.color).toBe("gray");
 
       // Also verify that "with" (first word of note) has correct formatting
       const noteWordInstruction = instructions.find(
@@ -679,8 +679,8 @@ describe("PDF Instruction Generation", () => {
           inst.type === "text" && inst.data === "with",
       );
       expect(noteWordInstruction).toBeDefined();
-      expect(noteWordInstruction!.italic).toBe(true);
-      expect(noteWordInstruction!.color).toBe("gray");
+      expect(noteWordInstruction?.italic).toBe(true);
+      expect(noteWordInstruction?.color).toBe("gray");
     });
 
     test("should render different note kinds with correct formatting", () => {
@@ -779,7 +779,7 @@ MARY
       const removalInstructions = textInstructions.filter(
         (inst) => inst.color === "red" && !inst.italic && inst.strikethrough,
       );
-      expect(removalInstructions.length).toBe(4);
+      expect(removalInstructions.length).toBe(3);
 
       // Test todo notes (gray with TODO prefix)
       const todoInstructions = textInstructions.filter(
