@@ -231,6 +231,11 @@ function emitNewPage(
   };
 }
 
+function hasSpaceForLines(pageState: PageState, numLines: number): boolean {
+  const requiredSpace = numLines * pageState.lineHeight;
+  return pageState.currentY - requiredSpace >= pageState.margins.bottom;
+}
+
 /**
  * Helper function to ensure enough lines are available on the current page
  * If not enough space, adds a new page instruction and updates page state
@@ -240,12 +245,9 @@ function needLines(
   pageState: PageState,
   numLines: number,
 ): PageState {
-  const requiredSpace = numLines * pageState.lineHeight;
-
-  if (pageState.currentY - requiredSpace < pageState.margins.bottom) {
+  if (!hasSpaceForLines(pageState, numLines)) {
     return emitNewPage(instructions, pageState);
   }
-
   return pageState;
 }
 
@@ -1018,6 +1020,10 @@ type PreparedDialogue = {
   dialogueLines: StyledTextSegment[][];
 };
 
+function dialogueRequiredLines(dialogue: PreparedDialogue): number {
+  return 1 + dialogue.parentheticalLines.length + dialogue.dialogueLines.length;
+}
+
 /**
  * Prepares dialogue data by extracting and wrapping all text
  */
@@ -1100,9 +1106,38 @@ function emitDialogueInstructions(
   pageState: PageState,
   preparedDialogue: PreparedDialogue,
 ): PageState {
-  // Add spacing before dialogue block and ensure space for character name
+  // Add spacing before dialogue block
   let currentState = addElementSpacing(pageState);
-  currentState = needLines(instructions, currentState, 1);
+
+  const requiredLines = dialogueRequiredLines(preparedDialogue);
+
+  if (requiredLines <= 5) {
+    // Simple case: everything fits with minimum spacing
+    currentState = needLines(instructions, currentState, requiredLines);
+    return emitCompleteDialogue(instructions, currentState, preparedDialogue);
+  }
+
+  // Complex case: might need to split
+  currentState = needLines(instructions, currentState, 5);
+
+  if (hasSpaceForLines(currentState, requiredLines)) {
+    // We have space for everything after ensuring minimum 5 lines
+    return emitCompleteDialogue(instructions, currentState, preparedDialogue);
+  }
+
+  // Need to split dialogue across pages
+  return emitSplitDialogue(instructions, currentState, preparedDialogue);
+}
+
+/**
+ * Emits a complete dialogue block without splitting
+ */
+function emitCompleteDialogue(
+  instructions: Instruction[],
+  pageState: PageState,
+  preparedDialogue: PreparedDialogue,
+): PageState {
+  let currentState = pageState;
 
   // Emit character name
   emitText(instructions, currentState, {
@@ -1119,8 +1154,6 @@ function emitDialogueInstructions(
 
   // Emit parenthetical lines
   for (const parentheticalLine of preparedDialogue.parentheticalLines) {
-    currentState = needLines(instructions, currentState, 1);
-
     emitText(instructions, currentState, {
       data: parentheticalLine,
       x: PARENTHETICAL_INDENT,
@@ -1136,8 +1169,6 @@ function emitDialogueInstructions(
 
   // Emit dialogue lines
   for (const wrappedLine of preparedDialogue.dialogueLines) {
-    currentState = needLines(instructions, currentState, 1);
-
     if (wrappedLine.length > 0) {
       let currentX = DIALOGUE_INDENT;
       for (const segment of wrappedLine) {
@@ -1162,6 +1193,102 @@ function emitDialogueInstructions(
     ...currentState,
     lastElementType: "dialogue",
   };
+}
+
+/**
+ * Emits a dialogue block split across pages with (MORE) and (CONT'D)
+ */
+function emitSplitDialogue(
+  instructions: Instruction[],
+  pageState: PageState,
+  preparedDialogue: PreparedDialogue,
+): PageState {
+  let currentState = pageState;
+
+  // Emit character name
+  emitText(instructions, currentState, {
+    data: preparedDialogue.characterLine,
+    x: CHARACTER_INDENT,
+    bold: false,
+    italic: false,
+    underline: false,
+    color: "black",
+    strikethrough: false,
+    backgroundColor: undefined,
+  });
+  currentState = advanceLine(currentState);
+
+  // Emit parenthetical lines (only in first part)
+  for (const parentheticalLine of preparedDialogue.parentheticalLines) {
+    emitText(instructions, currentState, {
+      data: parentheticalLine,
+      x: PARENTHETICAL_INDENT,
+      bold: false,
+      italic: false,
+      underline: false,
+      color: "black",
+      strikethrough: false,
+      backgroundColor: undefined,
+    });
+    currentState = advanceLine(currentState);
+  }
+
+  // Calculate how many dialogue lines fit in part A
+  // Total lines available: 5
+  // Used: 1 (character) + parenthetical.length + 1 (MORE)
+  // Remaining for dialogue: 5 - 1 - parenthetical.length - 1
+  const linesForPartA = 5 - 1 - preparedDialogue.parentheticalLines.length - 1;
+  const dialogueLinesPartA = preparedDialogue.dialogueLines.slice(
+    0,
+    linesForPartA,
+  );
+  const dialogueLinesPartB =
+    preparedDialogue.dialogueLines.slice(linesForPartA);
+
+  // Emit dialogue lines for part A
+  for (const wrappedLine of dialogueLinesPartA) {
+    if (wrappedLine.length > 0) {
+      let currentX = DIALOGUE_INDENT;
+      for (const segment of wrappedLine) {
+        if (segment.text.length > 0) {
+          currentX = emitText(instructions, currentState, {
+            data: segment.text,
+            x: currentX,
+            bold: segment.bold || false,
+            italic: segment.italic || false,
+            underline: segment.underline || false,
+            color: segment.color || "black",
+            strikethrough: segment.strikethrough || false,
+            backgroundColor: segment.backgroundColor,
+          });
+        }
+      }
+    }
+    currentState = advanceLine(currentState);
+  }
+
+  // Emit (MORE)
+  emitText(instructions, currentState, {
+    data: "(MORE)",
+    x: PARENTHETICAL_INDENT,
+    bold: false,
+    italic: false,
+    underline: false,
+    color: "black",
+    strikethrough: false,
+    backgroundColor: undefined,
+  });
+  currentState = advanceLine(currentState);
+
+  // Create part B with (CONT'D) and remaining dialogue
+  const partB: PreparedDialogue = {
+    characterLine: `${preparedDialogue.characterLine} (CONT'D)`,
+    parentheticalLines: [],
+    dialogueLines: dialogueLinesPartB,
+  };
+
+  // Recurse on part B
+  return emitDialogueInstructions(instructions, currentState, partB);
 }
 
 /**
