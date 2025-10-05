@@ -1012,20 +1012,21 @@ function generateLyricsInstructions(
   };
 }
 
+type PreparedDialogue = {
+  characterLine: string;
+  parentheticalLines: string[];
+  dialogueLines: StyledTextSegment[][];
+};
+
 /**
- * Generates instructions for a dialogue block
+ * Prepares dialogue data by extracting and wrapping all text
  */
-function generateDialogueInstructions(
-  instructions: Instruction[],
+function prepareDialogueData(
   pageState: PageState,
   dialogue: Dialogue,
   fountainScript: FountainScript,
   options: PDFOptions,
-): PageState {
-  // Add spacing before dialogue block and ensure space for character name
-  let currentState = addElementSpacing(pageState);
-  currentState = needLines(instructions, currentState, 1);
-
+): PreparedDialogue {
   // Extract character name
   const characterName = fountainScript.document
     .substring(dialogue.characterRange.start, dialogue.characterRange.end)
@@ -1046,50 +1047,25 @@ function generateDialogueInstructions(
       .trim();
   }
 
-  const fullCharacterLine = characterName + characterExtensions;
+  const characterLine = characterName + characterExtensions;
 
-  // Generate instruction for character name
-  emitText(instructions, currentState, {
-    data: fullCharacterLine,
-    x: CHARACTER_INDENT,
-    bold: false,
-    italic: false,
-    underline: false,
-    color: "black",
-    strikethrough: false,
-    backgroundColor: undefined,
-  });
-  currentState = advanceLine(currentState);
-
-  // Generate instructions for parenthetical if it exists
+  // Prepare parenthetical lines
+  const parentheticalLines: string[] = [];
   if (dialogue.parenthetical) {
     const parentheticalText = fountainScript.document
       .substring(dialogue.parenthetical.start, dialogue.parenthetical.end)
       .trim();
 
-    const wrappedParentheticals = wrapPlainText(
-      parentheticalText,
-      pageState.charactersPerLine.parenthetical,
+    parentheticalLines.push(
+      ...wrapPlainText(
+        parentheticalText,
+        pageState.charactersPerLine.parenthetical,
+      ),
     );
-
-    for (const parentheticalLine of wrappedParentheticals) {
-      currentState = needLines(instructions, currentState, 1);
-
-      emitText(instructions, currentState, {
-        data: parentheticalLine,
-        x: PARENTHETICAL_INDENT,
-        bold: false,
-        italic: false,
-        underline: false,
-        color: "black",
-        strikethrough: false,
-        backgroundColor: undefined,
-      });
-      currentState = advanceLine(currentState);
-    }
   }
 
-  // Generate instructions for dialogue lines
+  // Prepare dialogue lines
+  const dialogueLines: StyledTextSegment[][] = [];
   for (const line of dialogue.lines) {
     if (line.elements.length > 0) {
       const styledSegments = extractStyledSegments(
@@ -1102,39 +1078,109 @@ function generateDialogueInstructions(
         pageState.charactersPerLine.dialogue,
         false,
       );
-
-      for (const wrappedLine of wrappedLines) {
-        currentState = needLines(instructions, currentState, 1);
-
-        if (wrappedLine.length > 0) {
-          let currentX = DIALOGUE_INDENT;
-          for (const segment of wrappedLine) {
-            if (segment.text.length > 0) {
-              currentX = emitText(instructions, currentState, {
-                data: segment.text,
-                x: currentX,
-                bold: segment.bold || false,
-                italic: segment.italic || false,
-                underline: segment.underline || false,
-                color: segment.color || "black",
-                strikethrough: segment.strikethrough || false,
-                backgroundColor: segment.backgroundColor,
-              });
-            }
-          }
-        }
-        currentState = advanceLine(currentState);
-      }
+      dialogueLines.push(...wrappedLines);
     } else {
-      currentState = needLines(instructions, currentState, 1);
-      currentState = advanceLine(currentState);
+      // Empty line
+      dialogueLines.push([]);
     }
+  }
+
+  return {
+    characterLine,
+    parentheticalLines,
+    dialogueLines,
+  };
+}
+
+/**
+ * Emits instructions for prepared dialogue data
+ */
+function emitDialogueInstructions(
+  instructions: Instruction[],
+  pageState: PageState,
+  preparedDialogue: PreparedDialogue,
+): PageState {
+  // Add spacing before dialogue block and ensure space for character name
+  let currentState = addElementSpacing(pageState);
+  currentState = needLines(instructions, currentState, 1);
+
+  // Emit character name
+  emitText(instructions, currentState, {
+    data: preparedDialogue.characterLine,
+    x: CHARACTER_INDENT,
+    bold: false,
+    italic: false,
+    underline: false,
+    color: "black",
+    strikethrough: false,
+    backgroundColor: undefined,
+  });
+  currentState = advanceLine(currentState);
+
+  // Emit parenthetical lines
+  for (const parentheticalLine of preparedDialogue.parentheticalLines) {
+    currentState = needLines(instructions, currentState, 1);
+
+    emitText(instructions, currentState, {
+      data: parentheticalLine,
+      x: PARENTHETICAL_INDENT,
+      bold: false,
+      italic: false,
+      underline: false,
+      color: "black",
+      strikethrough: false,
+      backgroundColor: undefined,
+    });
+    currentState = advanceLine(currentState);
+  }
+
+  // Emit dialogue lines
+  for (const wrappedLine of preparedDialogue.dialogueLines) {
+    currentState = needLines(instructions, currentState, 1);
+
+    if (wrappedLine.length > 0) {
+      let currentX = DIALOGUE_INDENT;
+      for (const segment of wrappedLine) {
+        if (segment.text.length > 0) {
+          currentX = emitText(instructions, currentState, {
+            data: segment.text,
+            x: currentX,
+            bold: segment.bold || false,
+            italic: segment.italic || false,
+            underline: segment.underline || false,
+            color: segment.color || "black",
+            strikethrough: segment.strikethrough || false,
+            backgroundColor: segment.backgroundColor,
+          });
+        }
+      }
+    }
+    currentState = advanceLine(currentState);
   }
 
   return {
     ...currentState,
     lastElementType: "dialogue",
   };
+}
+
+/**
+ * Generates instructions for a dialogue block
+ */
+function generateDialogueInstructions(
+  instructions: Instruction[],
+  pageState: PageState,
+  dialogue: Dialogue,
+  fountainScript: FountainScript,
+  options: PDFOptions,
+): PageState {
+  const preparedDialogue = prepareDialogueData(
+    pageState,
+    dialogue,
+    fountainScript,
+    options,
+  );
+  return emitDialogueInstructions(instructions, pageState, preparedDialogue);
 }
 
 /**
