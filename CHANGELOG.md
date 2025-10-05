@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.15.0] - Multi-Page Dialogue Support
+
+### Improved
+- **PDF Export - Long Dialogue**: New dialogue splitting logic to properly handle dialogue that spans multiple pages and dialogue at the end of a page. This makes the PDF export a lot closer to what you would expect.
+
 ## [0.14.1] - Bugfix
 
 - **whitespace in PDFs**: A bug fix where word wrapping of action and dialogue lines could introduce whitespace at the beginning of the line.
