@@ -18,6 +18,10 @@
   - Snip button for moving selected text to snippets
   - Drag and drop snippets from sidebar into script
   - Scaled preview rendering in TOC sidebar
+- Margin marks for script annotations (`[[@marker]]` syntax)
+  - Render as single words in the margin during reading view
+  - Common uses: effects, laughs, cues, beats
+  - Vertically aligned across different line types (action, dialogue)
 - Boneyard support (everything after "# boneyard" header is hidden when enabled)
 - Show/hide settings for synopsis, notes, and boneyard content
 
@@ -48,6 +52,8 @@ Key parser outputs:
   - `titlePage`: key-value pairs from title page
   - `script`: array of fountain elements (scenes, dialogue, actions, etc.)
   - `allCharacters`: extracted character names
+
+Supports various note types including margin marks (`[[@marker]]`), which are parsed as notes with a noteKind starting with "@".
 
 ## View State Management
 
@@ -162,7 +168,7 @@ That means we will sometimes not get the standard margin sizes, but we will alwa
 
 - **`view.ts`** - Main FountainView class that handles fountain files. Contains ReadonlyViewState and EditorViewState classes for seamless mode switching, plus all editing operations (scene move/duplicate, text replacement).
 
-- **`fountain.ts`** - Core types and FountainScript class. Defines all fountain element types (Scene, Dialogue, Action, etc.) and provides text processing utilities, HTML escaping, and character extraction.
+- **`fountain.ts`** - Core types and FountainScript class. Defines all fountain element types (Scene, Dialogue, Action, etc.) and provides text processing utilities, HTML escaping, character extraction, and margin mark detection (`extractMarginMarker`).
 
 ### Parser
 

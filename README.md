@@ -10,10 +10,15 @@
 - Rehearsal mode (blackout of a characters dialogue)
 - table of contents in right hand pane (with todos and synopsis included)
 - snippets system for reusable content blocks (stored within the document)
+- margin marks for script annotations (`[[@marker]]` syntax) that appear in the margin during reading view
 - button in ribbon to create a new script (as scripts have .fountain extension)
 - boneyard support (content after "# boneyard" header can be hidden)
 
 ## Known Issues
+
+### Margin marks
+
+- Multiple margin marks on the same line will overlap in the reading view.
 
 ### The PDF export is probably not following industry standards
 
@@ -50,6 +55,32 @@ On the todo list with low priority:
 ## Quick overview over most features
 
 https://github.com/user-attachments/assets/310fd6db-1b51-4cd4-9006-8758addc3807
+
+## Using Margin Marks
+
+Margin marks are special annotations that render as single words in the page margin during reading view, allowing you to quickly scan for specific moments in your script.
+
+### Syntax
+
+Use `[[@marker_word]]` where the marker word is alphanumeric with underscores (no spaces):
+
+```fountain
+The magician waves the wand, the ball disappears. [[@effect]]
+The audience gasps. [[@laugh]]
+The lights dim. [[@lights]]
+```
+
+### Common Use Cases
+
+**Magic/Performance Scripts**: Mark effects with `[[@effect]]`
+**Comedy Scripts**: Mark jokes with `[[@setup]]`, `[[@punchline]]`, `[[@laugh]]`
+**Drama Scripts**: Mark emotional beats with `[[@tension]]`, `[[@release]]`, `[[@revelation]]`
+**Technical Scripts**: Mark cues with `[[@lights]]`, `[[@sound]]`, `[[@music]]`
+
+### How It Works
+
+- In reading view: Margin marks appear as small labels in the right margin
+- In editor view: Margin marks are displayed inline with distinct styling
 
 ## Using Snippets
 

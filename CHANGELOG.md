@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.16.0] - Margin Marks
+
+### Added
+- **Margin Marks**: New annotation syntax `[[@marker]]` for adding visual markers in the script margin during reading view. Perfect for marking effects, laughs, cues, beats, and other important moments in your script. Margin marks appear as small labels in the right margin and are vertically aligned across different line types (action, dialogue, etc.). Common uses include `[[@effect]]` for magic shows, `[[@laugh]]` and `[[@punchline]]` for comedy, `[[@lights]]` and `[[@sound]]` for technical cues.
+
 ## [0.15.0] - Multi-Page Dialogue Support
 
 ### Improved
