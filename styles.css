@@ -336,7 +336,36 @@
 .screenplay .note {
 	color: var(--text-muted);
 	font-style: italic;
-	background-color: var(--background-primary-alt);
+	background-color: rgba(var(--background-modifier-info-rgb), 0.3);
+}
+
+/* Margin note styling in editor view */
+.screenplay .cm-line .note-margin-editor {
+	color: var(--text-accent);
+	font-style: normal;
+	background: rgba(var(--background-modifier-accent-rgb), 0.2);
+	border-radius: 3px;
+	padding: 0 2px;
+}
+
+.screenplay .note-margin {
+	position: absolute;
+	left: calc(100% + 2ch);
+	width: 8ch;
+	color: var(--text-muted);
+	font-size: 0.9em;
+	font-style: normal;
+	background: none;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* Parent needs relative positioning for margin notes */
+.screenplay .action,
+.screenplay .dialogue-words,
+.screenplay .lyrics {
+	position: relative;
 }
 
 .screenplay .blackout {

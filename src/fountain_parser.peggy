@@ -121,9 +121,12 @@ NoteText
 NoteKind
  = "+"   { return "+"; }
  / "-"   { return "-"; }
+ / "@" marker:MarkerWord { return "@" + marker; }
  / kind:NoteKindName ":" " "* { return kind }
 
 NoteKindName = [a-zA-Z0-9]+ { return text() }
+
+MarkerWord = [a-zA-Z0-9_]* { return text() }
 
 Boneyard "boneyard"
  = OptionalBlanks "/*" (!"*/" .)* "*/"

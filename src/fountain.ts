@@ -6,6 +6,7 @@ export {
   extractNotes,
   extractTransitionText,
   collapseRangeToStart,
+  extractMarginMarker,
 };
 export type {
   Range,
@@ -233,8 +234,11 @@ function extractNotes(elements: FountainElement[]): Note[] {
       }
     }
   }
-
   return notes;
+}
+
+function extractMarginMarker(note: Note): string | null {
+  return note.noteKind.startsWith("@") ? note.noteKind.substring(1) : null;
 }
 
 function escapeHtml(s: string): string {
@@ -512,6 +516,20 @@ class FountainScript {
           if (settings.hideNotes) {
             return false;
           }
+
+          // Check if this is a margin note
+          const markerWord = extractMarginMarker(el);
+          if (markerWord !== null) {
+            parent.createEl(
+              "span",
+              { cls: "note-margin", attr: dataRange(el.range) },
+              (span) => {
+                span.appendText(markerWord);
+              },
+            );
+            return true;
+          }
+
           let noteKindClass = "";
           switch (el.noteKind) {
             case "+":

@@ -31,6 +31,7 @@ class FountainEditorPlugin implements PluginValue {
   private noteSymbolMinus: Decoration;
   private noteTodo: Decoration;
   private note: Decoration;
+  private noteMargin: Decoration;
   private centered: Decoration;
 
   constructor(
@@ -46,6 +47,7 @@ class FountainEditorPlugin implements PluginValue {
     this.noteSymbolMinus = Decoration.mark({ class: "note-symbol-minus" });
     this.noteTodo = Decoration.mark({ class: "note-todo" });
     this.note = Decoration.mark({ class: "note" });
+    this.noteMargin = Decoration.mark({ class: "note-margin-editor" });
     this.centered = Decoration.mark({ class: "centered" });
     this.decorations = this.buildDecorations(view);
   }
@@ -109,6 +111,8 @@ class FountainEditorPlugin implements PluginValue {
               noteDeco = this.noteSymbolMinus;
             } else if (tel.noteKind === "todo") {
               noteDeco = this.noteTodo;
+            } else if (tel.noteKind.startsWith("@")) {
+              noteDeco = this.noteMargin;
             }
             builder.add(tel.range.start, tel.range.end, noteDeco);
             break;
