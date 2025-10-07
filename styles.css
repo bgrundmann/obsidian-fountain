@@ -359,13 +359,25 @@
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	text-transform: uppercase;
 }
 
 /* Parent needs relative positioning for margin notes */
 .screenplay .action,
-.screenplay .dialogue-words,
 .screenplay .lyrics {
 	position: relative;
+}
+
+/* Dialogue words need special handling for margin marks */
+.screenplay .dialogue-words {
+	position: relative;
+}
+
+/* Align dialogue margin marks with action margin marks */
+/* Action is 62ch wide, dialogue-words is 34ch wide + 1.5in margin (≈15ch),
+   in the end we experimentally determined that 16ch + 3pt works out just right */
+.screenplay .dialogue-words .note-margin {
+	left: calc(100% + 16ch + 3pt);
 }
 
 .screenplay .blackout {
