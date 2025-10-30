@@ -11,7 +11,13 @@ import type {
 } from "./fountain";
 import { NBSP, dataRange, extractTransitionText } from "./fountain";
 import { renderBlankLine } from "./render_tools";
-export { renderFountain, getDataRange, rangeOfFirstVisibleLine, renderElement };
+export {
+  renderFountain,
+  getDataRange,
+  rangeOfFirstVisibleLine,
+  renderElement,
+  renderContent,
+};
 
 function renderAction(
   parent: HTMLElement,

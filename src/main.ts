@@ -1,7 +1,14 @@
-import { Notice, Plugin, type TFile, type WorkspaceLeaf } from "obsidian";
+import {
+  type MarkdownPostProcessorContext,
+  Notice,
+  Plugin,
+  type TFile,
+  type WorkspaceLeaf,
+} from "obsidian";
 import { parse } from "./fountain_parser";
 import { generatePDF } from "./pdf_generator";
 import { type PDFOptions, PDFOptionsDialog } from "./pdf_options_dialog";
+import { renderContent } from "./reading_view";
 import { FountainSideBarView, VIEW_TYPE_SIDEBAR } from "./sidebar_view";
 import { FountainView, VIEW_TYPE_FOUNTAIN } from "./view";
 
@@ -18,11 +25,39 @@ export default class FountainPlugin extends Plugin {
     this.app.workspace.onLayoutReady(() => {
       this.registerTocInSideBar();
     });
+    this.registerMarkdownPostProcessor(this.markdownPostProcessor);
   }
 
   async onunload() {
     // Note that there is no unregisterView or unregisterExtensions methods
     // because obsidian already does this automatically when the plugin is unloaded.
+  }
+
+  private markdownPostProcessor(
+    element: HTMLElement,
+    context: MarkdownPostProcessorContext,
+  ) {
+    // Find all code blocks
+    const codeblocks = element.findAll("code");
+
+    for (const codeblock of codeblocks) {
+      // Check if it's a fountain block
+      const parent = codeblock.parentElement;
+      if (
+        parent?.tagName === "PRE" &&
+        codeblock.classList.contains("language-fountain")
+      ) {
+        const fountainText = codeblock.textContent || "";
+
+        // Create your custom rendering
+        const container = createDiv({ cls: "screenplay" });
+        const script = parse(fountainText, {});
+        renderContent(container, script, {});
+
+        // Replace the code block
+        parent.replaceWith(container);
+      }
+    }
   }
 
   private async registerTocInSideBar() {
