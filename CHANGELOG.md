@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.17.0] - Basic Fountain Code Blocks Support
+
+### Added
+- **Fountain Code Blocks**: Basic support for rendering fountain code blocks in reading mode
+  - Use triple backticks with `fountain` language identifier to create fountain code blocks
+  - Example: ````fountain BENE\nThis is a small script````
+  - Rendered with proper fountain formatting in reading mode only
+  - Not supported in live preview mode
+
 ## [0.16.0] - Margin Marks
 
 ### Added

@@ -11,6 +11,7 @@
 - table of contents in right hand pane (with todos and synopsis included)
 - snippets system for reusable content blocks (stored within the document)
 - margin marks for script annotations (`[[@marker]]` syntax) that appear in the margin during reading view
+- fountain code blocks support for embedding fountain scripts in regular markdown notes (reading mode only -- *NOT* in live preview)
 - button in ribbon to create a new script (as scripts have .fountain extension)
 - boneyard support (content after "# boneyard" header can be hidden)
 
