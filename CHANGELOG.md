@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.18.0] - Page numbers
+
+- Page numbers in PDF exports.  Following standard screenplay convention neither title page nor the first page numbered.
+
 ## [0.17.0] - Basic Fountain Code Blocks Support
 
 ### Added

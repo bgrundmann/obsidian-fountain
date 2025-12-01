@@ -77,9 +77,9 @@ describe("PDF Instruction Generation", () => {
         (inst) => inst.type === "text",
       ) as TextInstruction[];
 
-      // Find action instructions (not italic)
+      // Find action instructions (not italic and not page numbers)
       const actionInstructions = textInstructions.filter(
-        (inst) => !inst.italic,
+        (inst) => !inst.italic && !inst.data.match(/^\d+\.$/),
       );
 
       // Actions use normal word wrapping, so leading spaces are trimmed from wrapped lines
@@ -800,6 +800,182 @@ MARY
         (inst) => inst.data === " ",
       );
       expect(spaceInstructions.length).toBeGreaterThan(10); // Should have many spaces around notes
+    });
+  });
+});
+
+describe("Page numbering", () => {
+  it("should not add page numbers to title page", () => {
+    const script = `Title: TEST TITLE
+Author: Test Author
+
+FADE IN:
+
+INT. ROOM - DAY
+
+John walks in.`;
+
+    const instructions = generateInstructions(parser.parse(script));
+    const pageNumberInstructions = instructions.filter(
+      (inst): inst is TextInstruction =>
+        inst.type === "text" && !!inst.data.match(/^\d+\.$/),
+    );
+
+    // Should have no page number on title page (first page)
+    expect(pageNumberInstructions).toHaveLength(0);
+  });
+
+  it("should not add page number to first script page", () => {
+    const script = `Title: TEST TITLE
+Author: Test Author
+
+FADE IN:
+
+INT. ROOM - DAY
+
+John walks in.`;
+
+    const instructions = generateInstructions(parser.parse(script));
+    const newPageInstructions = instructions.filter(
+      (inst): inst is NewPageInstruction => inst.type === "new-page",
+    );
+
+    // Should have 2 pages (title page + first script page)
+    expect(newPageInstructions).toHaveLength(2);
+
+    // Check that no page numbers are generated yet
+    const pageNumberInstructions = instructions.filter(
+      (inst): inst is TextInstruction =>
+        inst.type === "text" && !!inst.data.match(/^\d+\.$/),
+    );
+    expect(pageNumberInstructions).toHaveLength(0);
+  });
+
+  it("should add page number starting from second script page with title page", () => {
+    const longScript = `Title: TEST TITLE
+Author: Test Author
+
+FADE IN:
+
+INT. ROOM - DAY
+
+${"John walks around the room. ".repeat(100)}
+
+===
+
+INT. ANOTHER ROOM - DAY
+
+More content here.`;
+
+    const instructions = generateInstructions(parser.parse(longScript));
+    const newPageInstructions = instructions.filter(
+      (inst): inst is NewPageInstruction => inst.type === "new-page",
+    );
+
+    // Should have at least 3 pages
+    expect(newPageInstructions.length).toBeGreaterThanOrEqual(3);
+
+    const pageNumberInstructions = instructions.filter(
+      (inst): inst is TextInstruction =>
+        inst.type === "text" && !!inst.data.match(/^\d+\.$/),
+    );
+
+    // Should have page numbers starting from page 3 (second script page)
+    expect(pageNumberInstructions.length).toBeGreaterThan(0);
+    expect(pageNumberInstructions[0].data).toBe("2.");
+  });
+
+  it("should add page number starting from second page without title page", () => {
+    const longScript = `FADE IN:
+
+INT. ROOM - DAY
+
+${"John walks around the room. ".repeat(100)}
+
+===
+
+INT. ANOTHER ROOM - DAY
+
+More content here.`;
+
+    const instructions = generateInstructions(parser.parse(longScript));
+    const pageNumberInstructions = instructions.filter(
+      (inst): inst is TextInstruction =>
+        inst.type === "text" && !!inst.data.match(/^\d+\.$/),
+    );
+
+    // Should have page numbers starting from page 2
+    expect(pageNumberInstructions.length).toBeGreaterThan(0);
+    expect(pageNumberInstructions[0].data).toBe("2.");
+  });
+
+  it("should position page numbers in upper right margin", () => {
+    const longScript = `Title: TEST TITLE
+
+FADE IN:
+
+INT. ROOM - DAY
+
+${"Content to fill pages. ".repeat(200)}`;
+
+    const instructions = generateInstructions(parser.parse(longScript));
+    const pageNumberInstructions = instructions.filter(
+      (inst): inst is TextInstruction =>
+        inst.type === "text" && !!inst.data.match(/^\d+\.$/),
+    );
+
+    if (pageNumberInstructions.length > 0) {
+      const pageNumber = pageNumberInstructions[0];
+      const paperSize = { width: 612, height: 792 }; // Letter size
+      const topMargin = 36; // Expected top margin (calculated from LINES_PER_PAGE)
+      const rightMargin = 72; // Expected right margin
+
+      // Should be positioned at half the top margin height from top
+      const expectedY = paperSize.height - topMargin / 2;
+      expect(pageNumber.y).toBeCloseTo(expectedY, 1);
+
+      // Should be right-aligned in the right margin area
+      expect(pageNumber.x).toBeLessThan(paperSize.width - rightMargin);
+      expect(pageNumber.x).toBeGreaterThan(paperSize.width - rightMargin - 50);
+    }
+  });
+
+  it("should include period after page number", () => {
+    const longScript = `FADE IN:
+
+INT. ROOM - DAY
+
+${"Content to fill multiple pages. ".repeat(200)}`;
+
+    const instructions = generateInstructions(parser.parse(longScript));
+    const pageNumberInstructions = instructions.filter(
+      (inst): inst is TextInstruction =>
+        inst.type === "text" && !!inst.data.match(/^\d+\.$/),
+    );
+
+    // All page numbers should end with a period
+    pageNumberInstructions.forEach((instruction) => {
+      expect(instruction.data).toMatch(/^\d+\.$/);
+    });
+  });
+
+  it("should not bold, italicize, or underline page numbers", () => {
+    const longScript = `FADE IN:
+
+INT. ROOM - DAY
+
+${"Content to fill multiple pages. ".repeat(200)}`;
+
+    const instructions = generateInstructions(parser.parse(longScript));
+    const pageNumberInstructions = instructions.filter(
+      (inst): inst is TextInstruction =>
+        inst.type === "text" && !!inst.data.match(/^\d+\.$/),
+    );
+
+    pageNumberInstructions.forEach((instruction) => {
+      expect(instruction.bold).toBe(false);
+      expect(instruction.italic).toBe(false);
+      expect(instruction.underline).toBe(false);
     });
   });
 });

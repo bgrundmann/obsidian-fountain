@@ -149,6 +149,7 @@ type PageState = {
   pageWidth: number; // Current page width (including margins)
   pageHeight: number; // Current page height (including margins)
   isTitlePage: boolean; // Whether this is the title page
+  documentHasTitlePage: boolean; // Whether the document has a title page
 
   // Layout constraints
   margins: {
@@ -223,12 +224,51 @@ function emitNewPage(
     height: pageState.pageHeight,
   });
 
-  return {
+  const newPageState = {
     ...pageState,
     currentY: pageState.pageHeight - pageState.margins.top,
     pageNumber: pageState.pageNumber + 1,
     lastElementType: null, // Reset spacing for new page
   };
+
+  // Add page number according to screenplay rules
+  // Rule: Title page has no number, first script page has no number,
+  // second script page and beyond start with "2."
+  const shouldShowPageNumber =
+    (pageState.documentHasTitlePage && newPageState.pageNumber > 2) ||
+    (!pageState.documentHasTitlePage && newPageState.pageNumber > 1);
+
+  if (shouldShowPageNumber) {
+    // Calculate the display number (script pages start at 2)
+    const displayNumber = pageState.documentHasTitlePage
+      ? newPageState.pageNumber - 1
+      : newPageState.pageNumber;
+
+    // Position at upper right, vertically aligned at half the top margin
+    const pageNumberY = pageState.pageHeight - pageState.margins.top / 2;
+    const pageNumberText = `${displayNumber}.`;
+
+    // Calculate text width to right-align the page number
+    const charWidth = getCharacterWidth(pageState.fontSize);
+    const textWidth = pageNumberText.length * charWidth;
+    const pageNumberX =
+      pageState.pageWidth - pageState.margins.right - textWidth - 12;
+
+    instructions.push({
+      type: "text",
+      data: pageNumberText,
+      x: pageNumberX,
+      y: pageNumberY,
+      bold: false,
+      italic: false,
+      underline: false,
+      color: "black",
+      strikethrough: false,
+      backgroundColor: undefined,
+    });
+  }
+
+  return newPageState;
 }
 
 function hasSpaceForLines(pageState: PageState, numLines: number): boolean {
@@ -319,10 +359,11 @@ export function generateInstructions(
     currentY: paperSize.height - verticalMargins.top, // Start at calculated top margin
     remainingHeight:
       paperSize.height - verticalMargins.top - verticalMargins.bottom,
-    pageNumber: 1,
+    pageNumber: 0,
     pageWidth: paperSize.width,
     pageHeight: paperSize.height,
     isTitlePage: true,
+    documentHasTitlePage: fountainScript.titlePage.length > 0,
     margins: {
       top: verticalMargins.top,
       bottom: verticalMargins.bottom,
@@ -347,7 +388,12 @@ export function generateInstructions(
       options,
     );
   } else {
-    currentState = { ...currentState, isTitlePage: false, pageNumber: 1 };
+    currentState = {
+      ...currentState,
+      isTitlePage: false,
+      pageNumber: 1,
+      documentHasTitlePage: false,
+    };
   }
 
   // Filter out hidden elements for consistent behavior
