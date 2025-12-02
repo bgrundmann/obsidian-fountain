@@ -136,6 +136,7 @@ type SceneHeading = {
   kind: "scene";
   range: Range;
   heading: string;
+  number: Range | null;
 };
 
 type Transition = {

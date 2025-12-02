@@ -790,3 +790,120 @@ describe("extractTransitionText utility function", () => {
     }
   });
 });
+
+describe("Scene number parsing", () => {
+  test("parses scene without number", () => {
+    const script: FountainScript = parse("INT. HOUSE - DAY\n\n", {});
+    const scene = script.script[0];
+
+    expect(scene.kind).toBe("scene");
+    if (scene.kind === "scene") {
+      expect(scene.heading).toBe("INT. HOUSE - DAY");
+      expect(scene.number).toBe(null);
+    }
+  });
+
+  test("parses scene with simple numeric number", () => {
+    const script: FountainScript = parse("INT. HOUSE - DAY #1#\n\n", {});
+    const scene = script.script[0];
+
+    expect(scene.kind).toBe("scene");
+    if (scene.kind === "scene") {
+      expect(scene.heading).toBe("INT. HOUSE - DAY");
+      expect(scene.number).toEqual({
+        start: 17,
+        end: 20,
+      });
+      expect(script.document.substring(17, 20)).toBe("#1#");
+    }
+  });
+
+  test("parses scene with alphanumeric number", () => {
+    const script: FountainScript = parse("INT. HOUSE - DAY #1A#\n\n", {});
+    const scene = script.script[0];
+
+    expect(scene.kind).toBe("scene");
+    if (scene.kind === "scene") {
+      expect(scene.heading).toBe("INT. HOUSE - DAY");
+      expect(scene.number).toEqual({
+        start: 17,
+        end: 21,
+      });
+      expect(script.document.substring(17, 21)).toBe("#1A#");
+    }
+  });
+
+  test("parses scene with complex number with dashes and periods", () => {
+    const script: FountainScript = parse("INT. HOUSE - DAY #I-1-A#\n\n", {});
+    const scene = script.script[0];
+
+    expect(scene.kind).toBe("scene");
+    if (scene.kind === "scene") {
+      expect(scene.heading).toBe("INT. HOUSE - DAY");
+      expect(scene.number).toEqual({
+        start: 17,
+        end: 24,
+      });
+      expect(script.document.substring(17, 24)).toBe("#I-1-A#");
+    }
+  });
+
+  test("parses scene with number containing periods", () => {
+    const script: FountainScript = parse("INT. HOUSE - DAY #1.#\n\n", {});
+    const scene = script.script[0];
+
+    expect(scene.kind).toBe("scene");
+    if (scene.kind === "scene") {
+      expect(scene.heading).toBe("INT. HOUSE - DAY");
+      expect(scene.number).toEqual({
+        start: 17,
+        end: 21,
+      });
+      expect(script.document.substring(17, 21)).toBe("#1.#");
+    }
+  });
+
+  test("parses scene with flashback and number", () => {
+    const script: FountainScript = parse(
+      "INT. HOUSE - DAY - FLASHBACK (1944) #110A#\n\n",
+      {},
+    );
+    const scene = script.script[0];
+
+    expect(scene.kind).toBe("scene");
+    if (scene.kind === "scene") {
+      expect(scene.heading).toBe("INT. HOUSE - DAY - FLASHBACK (1944)");
+      expect(scene.number).toEqual({
+        start: 36,
+        end: 42,
+      });
+      expect(script.document.substring(36, 42)).toBe("#110A#");
+    }
+  });
+
+  test("handles scene number with spaces around it", () => {
+    const script: FountainScript = parse("INT. HOUSE - DAY  #1#  \n\n", {});
+    const scene = script.script[0];
+
+    expect(scene.kind).toBe("scene");
+    if (scene.kind === "scene") {
+      expect(scene.heading).toBe("INT. HOUSE - DAY");
+      expect(scene.number).toEqual({
+        start: 18,
+        end: 21,
+      });
+      expect(script.document.substring(18, 21)).toBe("#1#");
+    }
+  });
+
+  test("ignores text that looks like scene number but is not at end", () => {
+    const script: FountainScript = parse("INT. HOUSE #1# - DAY\n\n", {});
+    const scene = script.script[0];
+
+    expect(scene.kind).toBe("scene");
+    if (scene.kind === "scene") {
+      expect(scene.heading).toBe("INT. HOUSE #1# - DAY");
+      expect(scene.number).toBe(null);
+    }
+  });
+});
