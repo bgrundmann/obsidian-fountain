@@ -20,6 +20,7 @@ import { createCharacterCompletion } from "./character_completion";
 import {
   type FountainScript,
   type Range,
+  type SceneHeading,
   type ShowHideSettings,
   collapseRangeToStart,
 } from "./fountain";
@@ -1062,6 +1063,80 @@ export class FountainView extends TextFileView {
     }
 
     return true;
+  }
+
+  /**
+   * Adds scene numbers to all scenes that don't already have them.
+   * Numbers start at 1 and increment sequentially, but when encountering
+   * an existing purely numeric scene number, continues from that number + 1.
+   */
+  addSceneNumbers(): void {
+    const scenes = this.cachedScript.script.filter(
+      (element): element is SceneHeading => element.kind === "scene",
+    );
+
+    let nextSequentialNumber = 1;
+    const modifications: Array<{ range: Range; replacement: string }> = [];
+
+    // Process scenes in forward order to track numbering
+    for (const scene of scenes) {
+      if (scene.number === null) {
+        // No existing number, add the next sequential number
+        const insertPosition = scene.range.start + scene.heading.length;
+        modifications.push({
+          range: { start: insertPosition, end: insertPosition },
+          replacement: ` #${nextSequentialNumber}#`,
+        });
+        nextSequentialNumber++;
+      } else {
+        // Scene has a number, check if it's purely numeric
+        const existingNumberText = this.cachedScript.document.substring(
+          scene.number.start + 1,
+          scene.number.end - 1,
+        );
+        const parsedNumber = Number.parseInt(existingNumberText, 10);
+        // Only update counter if the number is purely numeric (parseInt matches the full string)
+        if (
+          !isNaN(parsedNumber) &&
+          parsedNumber.toString() === existingNumberText.trim()
+        ) {
+          // Continue numbering from this purely numeric scene number
+          nextSequentialNumber = parsedNumber + 1;
+        }
+        // Non-purely-numeric scene numbers (like "5A") don't affect the counter
+      }
+    }
+
+    // Apply modifications in reverse order to maintain correct positions
+    for (let i = modifications.length - 1; i >= 0; i--) {
+      const mod = modifications[i];
+      this.replaceText(mod.range, mod.replacement);
+    }
+  }
+
+  /**
+   * Removes all scene numbers from scenes.
+   */
+  removeSceneNumbers(): void {
+    const scenes = this.cachedScript.script.filter(
+      (element): element is SceneHeading => element.kind === "scene",
+    );
+
+    // Process scenes in reverse order to maintain correct positions when removing
+    for (let i = scenes.length - 1; i >= 0; i--) {
+      const scene = scenes[i];
+      if (scene.number !== null) {
+        // Remove the scene number including any spaces before it
+        const beforeNumber = this.cachedScript.document.substring(
+          scene.range.start + scene.heading.length,
+          scene.number.start,
+        );
+        const spacesToRemove = beforeNumber.match(/\s*$/)?.[0] ?? "";
+        const startPos = scene.number.start - spacesToRemove.length;
+
+        this.replaceText({ start: startPos, end: scene.number.end }, "");
+      }
+    }
   }
 
   /**

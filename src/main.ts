@@ -144,6 +144,24 @@ export default class FountainPlugin extends Plugin {
     return true;
   }
 
+  private addSceneNumbersCommand(checking: boolean): boolean {
+    const fv = this.app.workspace.getActiveViewOfType(FountainView);
+    if (checking) return fv !== null;
+    if (fv) {
+      fv.addSceneNumbers();
+    }
+    return true;
+  }
+
+  private removeSceneNumbersCommand(checking: boolean): boolean {
+    const fv = this.app.workspace.getActiveViewOfType(FountainView);
+    if (checking) return fv !== null;
+    if (fv) {
+      fv.removeSceneNumbers();
+    }
+    return true;
+  }
+
   private async executeGeneratePDF(activeFile: TFile): Promise<void> {
     try {
       // Read the fountain file content
@@ -240,6 +258,20 @@ export default class FountainPlugin extends Plugin {
       name: "Move selection to a new snippet.",
       checkCallback: (checking: boolean) => {
         return this.cutSelectionAsSnippetCommand(checking);
+      },
+    });
+    this.addCommand({
+      id: "add-scene-numbers",
+      name: "Add scene numbers",
+      checkCallback: (checking: boolean) => {
+        return this.addSceneNumbersCommand(checking);
+      },
+    });
+    this.addCommand({
+      id: "remove-scene-numbers",
+      name: "Remove scene numbers",
+      checkCallback: (checking: boolean) => {
+        return this.removeSceneNumbersCommand(checking);
       },
     });
   }

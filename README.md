@@ -5,7 +5,7 @@
 - Automatic screenplay formatting. As long as you follow the fountain syntax, the editor will in real-time format what you type.
 - close to print readonly view / preview (with ability to hide notes, synopsis, boneyard)
 - PDF export with configurable options (paper size, scene heading formatting, optionally include synopsis & notes)
-- **scene numbers** (`#1#`, `#1A#`, `#I-1-A#`, etc.) displayed in bold on left and right margins
+- **scene numbers** (`#1#`, `#1A#`, `#I-1-A#`, etc.) displayed in bold on left and right margins, with commands to automatically add or remove scene numbers
 - mark notes as todo `[[todo: This is a todo]]`
 - editable index card view to plan your script with drag & drop scene reordering and todo rendering
 - Rehearsal mode (blackout of a characters dialogue)
@@ -119,6 +119,22 @@ The plugin supports all Fountain specification scene number formats:
 ```
 
 **In PDF Export**: Scene numbers are positioned in the left and right margins with proper spacing to avoid text overlap
+
+### Scene Numbering Commands
+
+The plugin provides two commands to help manage scene numbers automatically:
+
+**Add Scene Numbers**
+- Adds sequential scene numbers starting from #1# to scenes that don't already have them
+- When encountering existing numeric scene numbers (like #6#), continues numbering from that number + 1
+- Preserves non-numeric scene numbers (like #5A#) but doesn't let them affect the sequential counter
+- Example: If you have scenes A, B #5A#, C, D #6#, E → becomes A #1#, B #5A#, C #2#, D #6#, E #7#
+
+**Remove Scene Numbers**
+- Removes all scene numbers from all scenes in the document
+- Processes scenes safely to maintain proper text formatting
+
+Access these commands through Obsidian's command palette (Cmd/Ctrl+P) when a fountain file is open.
 
 ### Notes
 

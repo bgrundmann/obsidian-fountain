@@ -8,6 +8,9 @@
   - Display scene numbers in bold on both left and right margins in reading view
   - Include scene numbers in PDF exports.
   - Scene numbers are optional - scenes without numbers continue to work exactly as before
+- **Scene Numbering Commands**: Two new commands for managing scene numbers
+  - **Add scene numbers**: Automatically adds sequential scene numbers to scenes that don't already have them. Starts at #1# and increments, but continues from existing numeric scene numbers (e.g., if a scene has #6#, the next unnumbered scene gets #7#). Non-numeric scene numbers like #5A# are preserved but don't affect the sequential counter.
+  - **Remove scene numbers**: Removes all scene numbers from all scenes in the document.
 
 ## [0.18.0] - Page numbers
 
