@@ -783,17 +783,76 @@ function generateSceneInstructions(
   let currentState = addElementSpacing(pageState);
   currentState = needLines(instructions, currentState, 1);
 
-  // Generate instruction for scene heading
-  emitText(instructions, currentState, {
-    data: sceneText,
-    x: SCENE_HEADING_INDENT,
-    bold: options.sceneHeadingBold,
-    italic: false,
-    underline: false,
-    color: "black",
-    strikethrough: false,
-    backgroundColor: undefined,
-  });
+  if (scene.number) {
+    // Extract scene number text (remove the # characters)
+    const numberText = fountainScript.document.substring(
+      scene.number.start + 1,
+      scene.number.end - 1,
+    );
+
+    // Calculate positions to avoid overlap
+    const leftNumberWidth =
+      `${numberText}.`.length * getCharacterWidth(pageState.fontSize);
+    const headingStartX =
+      pageState.margins.left +
+      leftNumberWidth +
+      getCharacterWidth(pageState.fontSize); // Add one space
+
+    // Adjust scene heading indent to avoid overlap with left number
+    const adjustedHeadingX = Math.max(SCENE_HEADING_INDENT, headingStartX);
+
+    // Left scene number
+    emitText(instructions, currentState, {
+      data: `${numberText}.`,
+      x: pageState.margins.left,
+      bold: true,
+      italic: false,
+      underline: false,
+      color: "black",
+      strikethrough: false,
+      backgroundColor: undefined,
+    });
+
+    // Scene heading (adjusted position to avoid overlap)
+    emitText(instructions, currentState, {
+      data: sceneText,
+      x: adjustedHeadingX,
+      bold: options.sceneHeadingBold,
+      italic: false,
+      underline: false,
+      color: "black",
+      strikethrough: false,
+      backgroundColor: undefined,
+    });
+
+    // Right scene number
+    const rightNumberX =
+      pageState.pageWidth -
+      pageState.margins.right -
+      numberText.length * getCharacterWidth(pageState.fontSize);
+    emitText(instructions, currentState, {
+      data: numberText,
+      x: rightNumberX,
+      bold: true,
+      italic: false,
+      underline: false,
+      color: "black",
+      strikethrough: false,
+      backgroundColor: undefined,
+    });
+  } else {
+    // No scene number, just the heading
+    emitText(instructions, currentState, {
+      data: sceneText,
+      x: SCENE_HEADING_INDENT,
+      bold: options.sceneHeadingBold,
+      italic: false,
+      underline: false,
+      color: "black",
+      strikethrough: false,
+      backgroundColor: undefined,
+    });
+  }
 
   // Update page state
   return {

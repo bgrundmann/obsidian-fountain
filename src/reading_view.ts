@@ -165,11 +165,43 @@ function renderElement(
       break;
     case "scene":
       {
-        parent.createEl("h3", {
-          cls: "scene-heading",
+        const sceneDiv = parent.createDiv({
+          cls: "scene-heading-container",
           attr: dataRange(el.range),
-          text: el.heading,
         });
+
+        if (el.number) {
+          // Extract scene number text (remove the # characters)
+          const numberText = script.document.substring(
+            el.number.start + 1,
+            el.number.end - 1,
+          );
+
+          // Left scene number
+          sceneDiv.createSpan({
+            cls: "scene-number-left",
+            text: `${numberText}.`,
+          });
+
+          // Scene heading
+          sceneDiv.createEl("h3", {
+            cls: "scene-heading",
+            text: el.heading,
+          });
+
+          // Right scene number
+          sceneDiv.createSpan({
+            cls: "scene-number-right",
+            text: numberText,
+          });
+        } else {
+          // No scene number, just the heading
+          sceneDiv.createEl("h3", {
+            cls: "scene-heading",
+            text: el.heading,
+          });
+        }
+
         renderBlankLine(parent, el.range);
       }
       break;

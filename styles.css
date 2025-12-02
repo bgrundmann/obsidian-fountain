@@ -205,6 +205,13 @@
 
 /****** scene headings */
 
+.screenplay .scene-heading-container {
+	position: relative;
+	display: flex;
+	align-items: center;
+	margin: 1em 0;
+}
+
 .screenplay .scene-heading,
 .screenplay-toc .scene-heading {
 	padding: 0px !important;
@@ -212,6 +219,20 @@
 	font-weight: var(--bold-weight);
 	font-size: inherit;
 	text-align: left;
+	color: var(--h1-color);
+	flex-grow: 1;
+	margin: 0;
+}
+
+.screenplay .scene-number-left {
+	font-weight: bold;
+	margin-right: 1em;
+	color: var(--h1-color);
+}
+
+.screenplay .scene-number-right {
+	font-weight: bold;
+	margin-left: 1em;
 	color: var(--h1-color);
 }
 

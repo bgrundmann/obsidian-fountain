@@ -907,3 +907,62 @@ describe("Scene number parsing", () => {
     }
   });
 });
+
+describe("Scene number rendering integration", () => {
+  test("scene without number renders correctly", () => {
+    const script: FountainScript = parse("INT. HOUSE - DAY\n\n", {});
+    const scene = script.script[0];
+
+    expect(scene.kind).toBe("scene");
+    if (scene.kind === "scene") {
+      expect(scene.heading).toBe("INT. HOUSE - DAY");
+      expect(scene.number).toBe(null);
+    }
+  });
+
+  test("scene with number provides correct number text extraction", () => {
+    const script: FountainScript = parse("INT. HOUSE - DAY #2A#\n\n", {});
+    const scene = script.script[0];
+
+    expect(scene.kind).toBe("scene");
+    if (scene.kind === "scene") {
+      expect(scene.heading).toBe("INT. HOUSE - DAY");
+      expect(scene.number).not.toBe(null);
+
+      if (scene.number) {
+        // Test that we can extract the number text correctly
+        const numberText = script.document.substring(
+          scene.number.start + 1,
+          scene.number.end - 1,
+        );
+        expect(numberText).toBe("2A");
+
+        // Test the full number with # characters
+        const fullNumber = script.document.substring(
+          scene.number.start,
+          scene.number.end,
+        );
+        expect(fullNumber).toBe("#2A#");
+      }
+    }
+  });
+
+  test("scene with complex number extracts correctly", () => {
+    const script: FountainScript = parse("EXT. PARK - NIGHT #I-1-A#\n\n", {});
+    const scene = script.script[0];
+
+    expect(scene.kind).toBe("scene");
+    if (scene.kind === "scene") {
+      expect(scene.heading).toBe("EXT. PARK - NIGHT");
+      expect(scene.number).not.toBe(null);
+
+      if (scene.number) {
+        const numberText = script.document.substring(
+          scene.number.start + 1,
+          scene.number.end - 1,
+        );
+        expect(numberText).toBe("I-1-A");
+      }
+    }
+  });
+});
