@@ -248,7 +248,7 @@ class TocSection extends SidebarSection {
                 const el_scene = el.scene;
                 const d = s.createDiv({
                   cls: "scene-heading",
-                  text: script.unsafeExtractRaw(el_scene.range),
+                  text: el_scene.heading,
                 });
                 d.addEventListener("click", (evt: Event) => {
                   this.callbacks.scrollToRange(el_scene.range);

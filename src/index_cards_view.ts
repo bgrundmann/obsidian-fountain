@@ -278,7 +278,7 @@ function renderIndexCard(
           {
             cls: "scene-heading",
             attr: dataRange(heading.range),
-            text: script.unsafeExtractRaw(heading.range),
+            text: heading.heading,
           },
           (headingEl) => {
             headingEl.addEventListener("click", (_evt) => {

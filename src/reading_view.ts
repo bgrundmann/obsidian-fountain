@@ -168,7 +168,7 @@ function renderElement(
         parent.createEl("h3", {
           cls: "scene-heading",
           attr: dataRange(el.range),
-          text: script.unsafeExtractRaw(el.range),
+          text: el.heading,
         });
         renderBlankLine(parent, el.range);
       }
