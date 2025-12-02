@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.19.0] - Scene Numbers
+
+### Added
+- **Scene Numbers**: Full Fountain standard conforming support for scene numbers
+  - Parse scene numbers in the format `#alphanumeric#` at the end of scene headings (e.g., `INT. HOUSE - DAY #2A#`)
+  - Display scene numbers in bold on both left and right margins in reading view
+  - Include scene numbers in PDF exports.
+  - Scene numbers are optional - scenes without numbers continue to work exactly as before
+
 ## [0.18.0] - Page numbers
 
 - Page numbers in PDF exports.  Following standard screenplay convention neither title page nor the first page numbered.

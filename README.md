@@ -5,6 +5,7 @@
 - Automatic screenplay formatting. As long as you follow the fountain syntax, the editor will in real-time format what you type.
 - close to print readonly view / preview (with ability to hide notes, synopsis, boneyard)
 - PDF export with configurable options (paper size, scene heading formatting, optionally include synopsis & notes)
+- **scene numbers** (`#1#`, `#1A#`, `#I-1-A#`, etc.) displayed in bold on left and right margins
 - mark notes as todo `[[todo: This is a todo]]`
 - editable index card view to plan your script with drag & drop scene reordering and todo rendering
 - Rehearsal mode (blackout of a characters dialogue)
@@ -82,6 +83,49 @@ The lights dim. [[@lights]]
 
 - In reading view: Margin marks appear as small labels in the right margin
 - In editor view: Margin marks are displayed inline with distinct styling
+
+## Using Scene Numbers
+
+Scene numbers follow the Fountain specification and allow you to number your scenes for production purposes. They appear in bold on both the left and right margins of your script.
+
+### Syntax
+
+Add scene numbers at the end of any scene heading using the format `#content#`:
+
+```fountain
+INT. HOUSE - DAY #1#
+
+EXT. PARK - NIGHT #2A#
+
+INT. OFFICE - MORNING #I-1-A#
+
+FLASHBACK - INT. CHILDHOOD HOME #110A#
+```
+
+### Supported Formats
+
+The plugin supports all Fountain specification scene number formats:
+
+- **Numeric**: `#1#`, `#42#`, `#999#`
+- **Alphanumeric**: `#1A#`, `#1a#`, `#2B#`, `#A1#`
+- **Complex**: `#I-1-A#`, `#1.5#`, `#1-2-3#`
+- **With periods**: `#1.#`, `#2.1#`
+
+### How It Renders
+
+**In Reading View**: Scene numbers appear in bold on both margins
+```
+2A.    INT. HOUSE - DAY    2A
+```
+
+**In PDF Export**: Scene numbers are positioned in the left and right margins with proper spacing to avoid text overlap
+
+### Notes
+
+- Scene numbers are completely optional - scenes without numbers work exactly as before
+- Scene numbers must appear at the very end of the scene heading line
+- Only alphanumeric characters, dashes, and periods are allowed inside the `#` markers
+- Whitespace around scene numbers is automatically handled
 
 ## Using Snippets
 
