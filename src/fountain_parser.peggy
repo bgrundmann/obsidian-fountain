@@ -199,9 +199,48 @@ LyricsLine
 
 
 Scene
- = OptionalBlanks headingStart:SceneStart headingRest:[^\n]* BlankLineOrEndOfInput {
-   const heading = headingStart + headingRest.join('');
-   return { kind: 'scene', range: range(), heading: heading };
+ = OptionalBlanks headingStart:SceneStart result:SceneHeadingAndNumber BlankLineOrEndOfInput {
+   return {
+     kind: 'scene',
+     range: range(),
+     heading: headingStart + result.heading,
+     number: result.number
+   };
+ }
+
+SceneHeadingAndNumber
+ = heading:SceneHeadingWithoutNumber sceneNumber:SceneNumber {
+   return {
+     heading: heading.trimEnd(),
+     number: sceneNumber
+   };
+ }
+ / heading:SceneHeadingPlain {
+   return {
+     heading: heading,
+     number: null
+   };
+ }
+
+SceneHeadingWithoutNumber
+ = chars:(!SceneNumber [^\n])+ {
+   return chars.map(c => c[1]).join('');
+ }
+
+SceneHeadingPlain
+ = chars:[^\n]* {
+   return chars.join('');
+ }
+
+SceneNumber
+ = [ \t]* number:SceneNumberPrime [ \t]* &("\n" / !.) {
+   return number;
+ }
+
+SceneNumberPrime
+ = "#" [a-zA-Z0-9\-\.]+ "#" {
+   const loc = location();
+   return { start: loc.start.offset, end: loc.end.offset };
  }
 
 SceneStart
