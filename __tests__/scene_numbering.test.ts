@@ -1,8 +1,4 @@
-import type {
-  FountainElement,
-  FountainScript,
-  SceneHeading,
-} from "../src/fountain";
+import type { FountainElement, SceneHeading } from "../src/fountain";
 import { parse } from "../src/fountain_parser";
 
 describe("Scene numbering functionality", () => {
@@ -92,7 +88,7 @@ describe("Scene numbering functionality", () => {
             scene.number.end - 1,
           );
           const parsedNumber = Number.parseInt(existingNumberText, 10);
-          if (!isNaN(parsedNumber)) {
+          if (!Number.isNaN(parsedNumber)) {
             currentNumber = parsedNumber + 1;
           }
         }
@@ -147,7 +143,7 @@ describe("Scene numbering functionality", () => {
           const parsedNumber = Number.parseInt(existingNumberText, 10);
           // Only update counter if the number is purely numeric
           if (
-            !isNaN(parsedNumber) &&
+            !Number.isNaN(parsedNumber) &&
             parsedNumber.toString() === existingNumberText.trim()
           ) {
             // Continue numbering from this purely numeric scene number
@@ -211,7 +207,7 @@ describe("Scene numbering functionality", () => {
           const parsedNumber = Number.parseInt(existingNumberText, 10);
           // Only update if purely numeric
           if (
-            !isNaN(parsedNumber) &&
+            !Number.isNaN(parsedNumber) &&
             parsedNumber.toString() === existingNumberText.trim()
           ) {
             currentNumber = parsedNumber + 1;

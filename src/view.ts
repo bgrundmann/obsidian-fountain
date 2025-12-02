@@ -1097,7 +1097,7 @@ export class FountainView extends TextFileView {
         const parsedNumber = Number.parseInt(existingNumberText, 10);
         // Only update counter if the number is purely numeric (parseInt matches the full string)
         if (
-          !isNaN(parsedNumber) &&
+          !Number.isNaN(parsedNumber) &&
           parsedNumber.toString() === existingNumberText.trim()
         ) {
           // Continue numbering from this purely numeric scene number
