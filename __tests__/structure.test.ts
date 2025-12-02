@@ -374,6 +374,7 @@ More action here.`;
                   start: 0,
                   end: 17,
                 },
+                heading: "EXT. PARK - DAY",
               },
               content: [
                 {

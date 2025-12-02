@@ -199,13 +199,11 @@ LyricsLine
 
 
 Scene
- = SceneStart RestOfLine BlankLineOrEndOfInput { return { kind: 'scene', range: range() }; }
+ = OptionalBlanks headingStart:SceneStart headingRest:[^\n]* BlankLineOrEndOfInput {
+   const heading = headingStart + headingRest.join('');
+   return { kind: 'scene', range: range(), heading: heading };
+ }
 
 SceneStart
- = OptionalBlanks ('.' &[a-zA-Z0-9]
- / ("INT./EXT"i
- / "INT/EXT"i
- / "EXT"i
- / "EST"i
- / "INT"i
- / "I/E"i ) (" " / "."))
+ = ('.' &[a-zA-Z0-9] { return '.'; }
+ / prefix:("INT./EXT"i / "INT/EXT"i / "EXT"i / "EST"i / "INT"i / "I/E"i) separator:(" " / ".") { return prefix + separator; })

@@ -20,7 +20,7 @@ export type {
   TextElementWithNotesAndBoneyard,
   Action,
   Dialogue,
-  Scene,
+  SceneHeading,
   Section,
   FountainElement,
   Note,
@@ -132,9 +132,10 @@ type Action = {
   lines: Line[];
 };
 
-type Scene = {
+type SceneHeading = {
   kind: "scene";
   range: Range;
+  heading: string;
 };
 
 type Transition = {
@@ -168,7 +169,7 @@ type FountainElement =
   | Synopsis
   | Transition
   | Action
-  | Scene
+  | SceneHeading
   | Dialogue
   | Section
   | Lyrics
@@ -361,10 +362,10 @@ export class StructureSection {
 
 export class StructureScene {
   readonly kind: "scene";
-  readonly content: Exclude<FountainElement, Scene>[];
+  readonly content: Exclude<FountainElement, SceneHeading>[];
 
   constructor(
-    public scene?: Scene,
+    public scene?: SceneHeading,
     public synopsis?: Synopsis,
   ) {
     this.content = [];

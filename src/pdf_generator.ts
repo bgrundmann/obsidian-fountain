@@ -4,7 +4,7 @@ import {
   type Dialogue,
   type FountainScript,
   type Lyrics,
-  type Scene,
+  type SceneHeading,
   type StyledText,
   type Synopsis,
   type TextElementWithNotesAndBoneyard,
@@ -772,15 +772,12 @@ function generateLowerRightTitleElementInstructions(
 function generateSceneInstructions(
   instructions: Instruction[],
   pageState: PageState,
-  scene: Scene,
+  scene: SceneHeading,
   fountainScript: FountainScript,
   options: PDFOptions,
 ): PageState {
-  // Extract the scene text from the document
-  const sceneText = fountainScript.document
-    .substring(scene.range.start, scene.range.end)
-    .trim()
-    .toUpperCase(); // Scene headings are typically uppercase
+  // Use the heading property directly
+  const sceneText = scene.heading.toUpperCase(); // Scene headings are typically uppercase
 
   // Add spacing before scene heading and ensure we have space
   let currentState = addElementSpacing(pageState);
