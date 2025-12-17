@@ -902,6 +902,10 @@ export class FountainView extends TextFileView {
     return script.document.slice(range.start, range.end);
   }
 
+  getScript(): FountainScript | null {
+    return this.getCachedScript();
+  }
+
   toggleEditMode() {
     const text = this.state.getViewData();
     if (this.state instanceof EditorViewState) {
@@ -961,6 +965,7 @@ export class FountainView extends TextFileView {
   }
 
   setViewData(data: string, clear: boolean): void {
+    console.log("setViewData", data, this.file?.path);
     const path = this.file?.path;
     if (path) {
       // Short circuit if data unchanged to avoid redundant parsing

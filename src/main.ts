@@ -5,10 +5,17 @@ import {
   type TFile,
   type WorkspaceLeaf,
 } from "obsidian";
+import type { FountainElement } from "./fountain";
 import { parse } from "./fountain_parser";
 import { generatePDF } from "./pdf_generator";
 import { type PDFOptions, PDFOptionsDialog } from "./pdf_options_dialog";
 import { renderContent } from "./reading_view";
+import {
+  RemoveDialogueModal,
+  RemoveElementTypesModal,
+  RemoveStructureModal,
+  removeElementsFromText,
+} from "./removal_commands";
 import { FountainSideBarView, VIEW_TYPE_SIDEBAR } from "./sidebar_view";
 import { FountainView, VIEW_TYPE_FOUNTAIN } from "./view";
 
@@ -274,5 +281,160 @@ export default class FountainPlugin extends Plugin {
         return this.removeSceneNumbersCommand(checking);
       },
     });
+    this.addCommand({
+      id: "remove-character-dialogue",
+      name: "Remove character dialogue",
+      checkCallback: (checking: boolean) => {
+        return this.removeCharacterDialogueCommand(checking);
+      },
+    });
+    this.addCommand({
+      id: "remove-scenes-sections",
+      name: "Remove scenes and sections",
+      checkCallback: (checking: boolean) => {
+        return this.removeScenesSectionsCommand(checking);
+      },
+    });
+    this.addCommand({
+      id: "remove-element-types",
+      name: "Remove element types",
+      checkCallback: (checking: boolean) => {
+        return this.removeElementTypesCommand(checking);
+      },
+    });
+  }
+
+  private removeCharacterDialogueCommand(checking: boolean): boolean {
+    const fv = this.app.workspace.getActiveViewOfType(FountainView);
+    if (checking) return fv !== null;
+    if (fv) {
+      this.executeRemovalCommand(fv, "dialogue");
+    }
+    return true;
+  }
+
+  private removeScenesSectionsCommand(checking: boolean): boolean {
+    const fv = this.app.workspace.getActiveViewOfType(FountainView);
+    if (checking) return fv !== null;
+    if (fv) {
+      this.executeRemovalCommand(fv, "structure");
+    }
+    return true;
+  }
+
+  private removeElementTypesCommand(checking: boolean): boolean {
+    const fv = this.app.workspace.getActiveViewOfType(FountainView);
+    if (checking) return fv !== null;
+    if (fv) {
+      this.executeRemovalCommand(fv, "types");
+    }
+    return true;
+  }
+
+  private executeRemovalCommand(
+    fountainView: FountainView,
+    modalType: "dialogue" | "structure" | "types",
+  ) {
+    const script = fountainView.getScript();
+    if (!script || "error" in script) {
+      new Notice("Unable to parse fountain script");
+      return;
+    }
+
+    const onConfirm = async (
+      elementsToRemove: FountainElement[],
+      duplicateFile: boolean,
+    ) => {
+      if (elementsToRemove.length === 0) {
+        new Notice("No elements selected for removal");
+        return;
+      }
+
+      try {
+        const currentText = fountainView.getViewData();
+        const newText = removeElementsFromText(currentText, elementsToRemove);
+
+        if (duplicateFile) {
+          // Create a duplicate file with the filtered content
+          const currentFile = fountainView.file;
+          if (!currentFile) {
+            new Notice("No file is currently open");
+            return;
+          }
+          await this.createFilteredDuplicate(
+            currentFile,
+            newText,
+            elementsToRemove.length,
+          );
+        } else {
+          // Apply directly to current file
+          fountainView.setViewData(newText, false);
+        }
+        new Notice(
+          `Removed ${elementsToRemove.length} element${elementsToRemove.length === 1 ? "" : "s"}`,
+        );
+      } catch (error) {
+        new Notice("Failed to remove elements");
+        console.error("Error removing elements:", error);
+      }
+    };
+
+    switch (modalType) {
+      case "dialogue":
+        new RemoveDialogueModal(this.app, script, onConfirm).open();
+        break;
+      case "structure":
+        new RemoveStructureModal(this.app, script, onConfirm).open();
+        break;
+      case "types":
+        new RemoveElementTypesModal(this.app, script, onConfirm).open();
+        break;
+    }
+  }
+
+  private async createFilteredDuplicate(
+    originalFile: TFile,
+    filteredContent: string,
+    removedCount: number,
+  ): Promise<void> {
+    try {
+      // Generate a unique filename for the duplicate
+      const baseName = originalFile.basename;
+      const extension = originalFile.extension;
+      const folder = originalFile.parent?.path || "";
+
+      let duplicateName = `${baseName} (filtered)`;
+      let counter = 1;
+      let duplicatePath = folder
+        ? `${folder}/${duplicateName}.${extension}`
+        : `${duplicateName}.${extension}`;
+
+      // Ensure the filename is unique
+      while (this.app.vault.getAbstractFileByPath(duplicatePath)) {
+        duplicateName = `${baseName} (filtered ${counter})`;
+        duplicatePath = folder
+          ? `${folder}/${duplicateName}.${extension}`
+          : `${duplicateName}.${extension}`;
+        counter++;
+      }
+
+      // Create the new file with filtered content
+      const newFile = await this.app.vault.create(
+        duplicatePath,
+        filteredContent,
+      );
+
+      // Open the new file
+      const leaf = this.app.workspace.getLeaf(false);
+      await leaf.openFile(newFile);
+      this.app.workspace.setActiveLeaf(leaf, { focus: true });
+
+      new Notice(
+        `Created filtered copy: ${duplicateName}.${extension} (removed ${removedCount} element${removedCount === 1 ? "" : "s"})`,
+      );
+    } catch (error) {
+      new Notice("Failed to create duplicate file");
+      console.error("Error creating duplicate:", error);
+    }
   }
 }
