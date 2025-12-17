@@ -279,5 +279,137 @@ END`;
 
       expect(result).toBe("");
     });
+
+    it("should remove complete scenes including their content", () => {
+      const fountainText = `INT. BEDROOM - NIGHT
+
+Character prepares for bed.
+
+She reads a book.
+
+EXT. PARK - DAY
+
+Character walks through the park.
+
+Birds are singing.
+
+INT. KITCHEN - MORNING
+
+Character makes breakfast.`;
+
+      const script = parse(fountainText, {});
+      if ("error" in script) {
+        throw new Error("Failed to parse test script");
+      }
+
+      // Get the structure to find complete scene ranges
+      const structure = script.structure();
+      interface SceneItem {
+        kind: string;
+        scene?: { heading: string };
+        range: { start: number; end: number };
+      }
+      const scenes: SceneItem[] = [];
+
+      const collectScenes = (
+        sections: Array<{ content: Array<{ kind: string }> }>,
+      ) => {
+        for (const section of sections) {
+          for (const item of section.content) {
+            if (item.kind === "scene") {
+              scenes.push(item as SceneItem);
+            }
+          }
+        }
+      };
+
+      collectScenes(structure.sections);
+
+      // Find the park scene with its full content
+      const parkScene = scenes.find((scene: SceneItem) =>
+        scene.scene?.heading.includes("PARK"),
+      );
+
+      if (!parkScene) {
+        throw new Error("Park scene not found");
+      }
+
+      // Create a mock element with the full scene range
+      const mockElement = {
+        kind: "scene" as const,
+        range: { start: parkScene.range.start, end: parkScene.range.end },
+        heading: parkScene.scene?.heading || "",
+        number: null,
+      };
+
+      const result = removeElementsFromText(fountainText, [mockElement]);
+
+      expect(result).toContain("INT. BEDROOM - NIGHT");
+      expect(result).toContain("Character prepares for bed.");
+      expect(result).toContain("She reads a book.");
+      expect(result).not.toContain("EXT. PARK - DAY");
+      expect(result).not.toContain("Character walks through the park.");
+      expect(result).not.toContain("Birds are singing.");
+      expect(result).toContain("INT. KITCHEN - MORNING");
+      expect(result).toContain("Character makes breakfast.");
+    });
+
+    it("should remove complete sections with proper structure", () => {
+      // Use a simpler structure that matches how the parser actually works
+      const fountainText = `# SECTION ONE
+
+INT. BEDROOM - NIGHT
+
+Character sleeps.
+
+INT. OFFICE - DAY
+
+Character works.
+
+# SECTION TWO
+
+INT. STREET - DAY
+
+Character walks.`;
+
+      const script = parse(fountainText, {});
+      if ("error" in script) {
+        throw new Error("Failed to parse test script");
+      }
+
+      // Get the structure
+      const structure = script.structure();
+
+      // Find SECTION ONE
+      const sectionOne = structure.sections.find(
+        (section: { section?: { range: Range } }) =>
+          section.section &&
+          script
+            .unsafeExtractRaw(section.section.range)
+            .includes("SECTION ONE"),
+      );
+
+      if (!sectionOne) {
+        throw new Error("SECTION ONE not found");
+      }
+
+      // Create a mock element with the full section range
+      const mockElement = {
+        kind: "section" as const,
+        range: sectionOne.range,
+        depth: 1,
+      };
+
+      const result = removeElementsFromText(fountainText, [mockElement]);
+
+      expect(result).not.toContain("# SECTION ONE");
+      expect(result).not.toContain("INT. BEDROOM - NIGHT");
+      expect(result).not.toContain("Character sleeps.");
+      expect(result).not.toContain("INT. OFFICE - DAY");
+      expect(result).not.toContain("Character works.");
+      expect(result).toContain("# SECTION TWO");
+      expect(result).toContain("INT. STREET - DAY");
+      expect(result).toContain("Character walks.");
+    });
   });
 });

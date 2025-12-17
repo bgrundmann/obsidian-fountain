@@ -1,5 +1,11 @@
 import { type App, Modal, Setting } from "obsidian";
-import type { FountainElement, FountainScript, Range } from "./fountain";
+import type {
+  FountainElement,
+  FountainScript,
+  Range,
+  StructureScene,
+  StructureSection,
+} from "./fountain";
 
 // Base class for all removal modals
 export abstract class RemovalModal extends Modal {
@@ -151,7 +157,9 @@ export class RemoveDialogueModal extends RemovalModal {
 
 // Modal for removing scenes and sections
 export class RemoveStructureModal extends RemovalModal {
-  private elementCheckboxes: Map<FountainElement, boolean> = new Map();
+  private structureCheckboxes: Map<StructureSection | StructureScene, boolean> =
+    new Map();
+  private structure: (StructureSection | StructureScene)[];
 
   constructor(
     app: App,
@@ -164,16 +172,47 @@ export class RemoveStructureModal extends RemovalModal {
     super(app, script, onConfirm);
     this.setTitle("Remove Scenes and Sections");
 
+    // Get the structured representation
+    const scriptStructure = this.script.structure();
+    this.structure = this.flattenStructure(scriptStructure.sections);
+
     // Initialize all structural elements as unselected
-    for (const element of this.availableElements) {
-      this.elementCheckboxes.set(element, false);
+    for (const item of this.structure) {
+      this.structureCheckboxes.set(item, false);
     }
   }
 
+  private flattenStructure(
+    sections: StructureSection[],
+  ): (StructureSection | StructureScene)[] {
+    const result: (StructureSection | StructureScene)[] = [];
+
+    const processSection = (section: StructureSection) => {
+      // Add the section itself if it has a header
+      if (section.section) {
+        result.push(section);
+      }
+
+      // Process nested content
+      for (const item of section.content) {
+        if (item.kind === "section") {
+          processSection(item);
+        } else if (item.kind === "scene") {
+          result.push(item);
+        }
+      }
+    };
+
+    for (const section of sections) {
+      processSection(section);
+    }
+
+    return result;
+  }
+
   protected getAvailableElements(): FountainElement[] {
-    return this.script.script.filter(
-      (el) => el.kind === "scene" || el.kind === "section",
-    );
+    // This is not used directly, but needed for base class
+    return [];
   }
 
   protected renderSelectionUI(contentEl: HTMLElement): void {
@@ -184,7 +223,7 @@ export class RemoveStructureModal extends RemovalModal {
     descEl.style.marginBottom = "1rem";
     descEl.style.color = "var(--text-muted)";
 
-    if (this.availableElements.length === 0) {
+    if (this.structure.length === 0) {
       const warningEl = contentEl.createEl("p", {
         text: "No scenes or sections found in this script.",
       });
@@ -193,31 +232,49 @@ export class RemoveStructureModal extends RemovalModal {
       return;
     }
 
-    for (const element of this.availableElements) {
+    for (const item of this.structure) {
       let displayName = "";
 
-      if (element.kind === "scene") {
-        displayName = `🎬 ${element.heading}`;
-      } else if (element.kind === "section") {
-        const sectionText = this.script.unsafeExtractRaw(element.range);
+      if (item.kind === "scene" && item.scene) {
+        displayName = `🎬 ${item.scene.heading}`;
+      } else if (item.kind === "section" && item.section) {
+        const sectionText = this.script.unsafeExtractRaw(item.section.range);
         const title = sectionText.split("\n")[0].replace(/^#+\s*/, "");
-        displayName = `${"#".repeat(element.depth)} ${title}`;
+        displayName = `${"#".repeat(item.section.depth)} ${title}`;
       }
 
-      new Setting(contentEl).setName(displayName).addToggle((toggle) => {
-        toggle
-          .setValue(this.elementCheckboxes.get(element) ?? false)
-          .onChange((value) => {
-            this.elementCheckboxes.set(element, value);
-          });
-      });
+      if (displayName) {
+        new Setting(contentEl).setName(displayName).addToggle((toggle) => {
+          toggle
+            .setValue(this.structureCheckboxes.get(item) ?? false)
+            .onChange((value) => {
+              this.structureCheckboxes.set(item, value);
+            });
+        });
+      }
     }
   }
 
   protected getSelectedElements(): FountainElement[] {
-    return Array.from(this.elementCheckboxes.entries())
+    // Convert selected structure items to pseudo-elements with their full ranges
+    const selectedStructureItems = Array.from(
+      this.structureCheckboxes.entries(),
+    )
       .filter(([_, selected]) => selected)
-      .map(([element, _]) => element);
+      .map(([item, _]) => item);
+
+    // Create pseudo-elements with the complete ranges from structure
+    return selectedStructureItems.map((item) => ({
+      kind: item.kind as "scene" | "section",
+      range: item.range,
+      // Add minimal fields to satisfy type checking
+      ...(item.kind === "scene" && item.scene
+        ? { heading: item.scene.heading, number: item.scene.number }
+        : {}),
+      ...(item.kind === "section" && item.section
+        ? { depth: item.section.depth }
+        : {}),
+    })) as FountainElement[];
   }
 }
 

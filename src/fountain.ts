@@ -349,10 +349,12 @@ export class StructureSection {
 
   get range(): Range {
     const starts: number[] = [
+      this.section?.range.start,
       this.synopsis?.range.start,
       this.content[0]?.range.start,
     ].filter((r): r is number => r !== undefined);
     const ends: number[] = [
+      this.section?.range.end,
       this.synopsis?.range.end,
       this.content[this.content.length - 1]?.range.end,
     ].filter((r): r is number => r !== undefined);
