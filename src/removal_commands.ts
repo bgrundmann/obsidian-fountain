@@ -159,11 +159,7 @@ export class RemoveDialogueModal extends RemovalModal {
 export class RemoveStructureModal extends RemovalModal {
   private structureCheckboxes: Map<StructureSection | StructureScene, boolean> =
     new Map();
-  private structureWithDepth: Array<{
-    item: StructureSection | StructureScene;
-    depth: number;
-    parent?: StructureSection;
-  }> = [];
+  private scriptStructure: ReturnType<FountainScript["structure"]>;
 
   constructor(
     app: App,
@@ -177,67 +173,76 @@ export class RemoveStructureModal extends RemovalModal {
     this.setTitle("Remove Scenes and Sections");
 
     // Get the structured representation
-    const scriptStructure = this.script.structure();
-    this.buildStructureWithDepth(scriptStructure.sections, 0);
+    this.scriptStructure = this.script.structure();
 
     // Initialize all structural elements as unselected
-    for (const { item } of this.structureWithDepth) {
-      this.structureCheckboxes.set(item, false);
-    }
+    this.initializeCheckboxes(this.scriptStructure.sections);
   }
 
-  private buildStructureWithDepth(
-    sections: StructureSection[],
-    baseDepth: number,
-  ): void {
-    const processSection = (
-      section: StructureSection,
-      depth: number,
-      parent?: StructureSection,
-    ) => {
-      // Add the section itself if it has a header
+  private initializeCheckboxes(sections: StructureSection[]): void {
+    for (const section of sections) {
+      // Initialize the section itself if it has a header
       if (section.section) {
-        this.structureWithDepth.push({ item: section, depth, parent });
+        this.structureCheckboxes.set(section, false);
       }
 
-      // Process nested content with increased depth
+      // Initialize nested content
       for (const item of section.content) {
         if (item.kind === "section") {
-          processSection(item, depth + 1, section);
+          this.initializeCheckboxes([item]);
         } else if (item.kind === "scene") {
-          this.structureWithDepth.push({
-            item,
-            depth: section.section ? depth + 1 : depth,
-            parent: section.section ? section : parent,
-          });
+          this.structureCheckboxes.set(item, false);
         }
       }
-    };
-
-    for (const section of sections) {
-      processSection(section, baseDepth);
     }
   }
 
-  private getChildrenOf(
+  private getAllDescendantsOf(
     parent: StructureSection,
   ): Array<StructureSection | StructureScene> {
-    return this.structureWithDepth
-      .filter(({ parent: p }) => p === parent)
-      .map(({ item }) => item);
+    const descendants: Array<StructureSection | StructureScene> = [];
+    for (const item of parent.content) {
+      if (item.kind === "section") {
+        descendants.push(item);
+        descendants.push(...this.getAllDescendantsOf(item));
+      } else if (item.kind === "scene") {
+        descendants.push(item);
+      }
+    }
+    return descendants;
   }
 
-  private updateChildrenSelection(
-    parent: StructureSection,
-    selected: boolean,
-  ): void {
-    const children = this.getChildrenOf(parent);
-    for (const child of children) {
-      this.structureCheckboxes.set(child, selected);
-      // Recursively update children if this is also a section
-      if (child.kind === "section") {
-        this.updateChildrenSelection(child, selected);
+  private handleCheck(item: StructureSection | StructureScene): void {
+    // Check the item itself
+    this.structureCheckboxes.set(item, true);
+
+    // If it's a section, check all descendants
+    if (item.kind === "section") {
+      const descendants = this.getAllDescendantsOf(item);
+      for (const descendant of descendants) {
+        this.structureCheckboxes.set(descendant, true);
       }
+    }
+  }
+
+  private handleUncheck(
+    item: StructureSection | StructureScene,
+    ancestors: StructureSection[],
+  ): void {
+    // Uncheck the item itself
+    this.structureCheckboxes.set(item, false);
+
+    // If it's a section, uncheck all descendants
+    if (item.kind === "section") {
+      const descendants = this.getAllDescendantsOf(item);
+      for (const descendant of descendants) {
+        this.structureCheckboxes.set(descendant, false);
+      }
+    }
+
+    // Uncheck all ancestors
+    for (const ancestor of ancestors) {
+      this.structureCheckboxes.set(ancestor, false);
     }
   }
 
@@ -260,14 +265,14 @@ export class RemoveStructureModal extends RemovalModal {
     const selectedCount = Array.from(this.structureCheckboxes.values()).filter(
       (checked) => checked,
     ).length;
-    const totalCount = this.structureWithDepth.length;
+    const totalCount = this.structureCheckboxes.size;
 
     const descEl = contentContainer.createEl("p");
     descEl.innerHTML = `Select scenes and sections to remove from the script:<br><strong>${selectedCount} of ${totalCount} items selected</strong>`;
     descEl.style.marginBottom = "var(--size-4-4)";
     descEl.style.color = "var(--text-muted)";
 
-    if (this.structureWithDepth.length === 0) {
+    if (totalCount === 0) {
       const warningEl = contentContainer.createEl("p", {
         text: "No scenes or sections found in this script.",
       });
@@ -290,89 +295,163 @@ export class RemoveStructureModal extends RemovalModal {
     treeContainer.style.backgroundColor = "var(--background-secondary)";
     treeContainer.style.position = "relative";
 
-    for (const { item, depth } of this.structureWithDepth) {
-      let displayName = "";
-      let isScene = false;
+    // Recursively render the structure tree
+    this.renderSections(
+      this.scriptStructure.sections,
+      treeContainer,
+      [],
+      contentEl,
+    );
+  }
 
-      if (item.kind === "scene" && item.scene) {
-        displayName = `🎬 ${item.scene.heading}`;
-        isScene = true;
-      } else if (item.kind === "section" && item.section) {
-        const sectionText = this.script.unsafeExtractRaw(item.section.range);
-        const title = sectionText.split("\n")[0].replace(/^#+\s*/, "");
-        displayName = `${"#".repeat(item.section.depth)} ${title}`;
-      }
-
-      if (displayName) {
-        const setting = new Setting(treeContainer);
-
-        // Apply indentation based on depth using calc() with CSS variables
-        setting.settingEl.style.marginLeft =
-          depth > 0 ? `calc(${depth} * var(--size-4-6))` : "0";
-        setting.settingEl.style.borderLeft =
-          depth > 0
-            ? "var(--border-width) solid var(--background-modifier-border-hover)"
-            : "none";
-        setting.settingEl.style.paddingLeft =
-          depth > 0 ? "var(--size-4-2)" : "0";
-        setting.settingEl.style.transition = "background-color 0.15s ease";
-
-        // Highlight selected items
-        const isSelected = this.structureCheckboxes.get(item) ?? false;
-        if (isSelected) {
-          setting.settingEl.style.backgroundColor =
-            "var(--background-modifier-hover)";
-        }
-
-        // Add tree connector line
-        if (depth > 0) {
-          setting.settingEl.style.position = "relative";
-          const connector = setting.settingEl.createDiv();
-          connector.style.position = "absolute";
-          connector.style.left = "calc(-1 * var(--border-width))";
-          connector.style.top = "50%";
-          connector.style.width = "var(--size-4-3)";
-          connector.style.height = "var(--border-width)";
-          connector.style.backgroundColor =
-            "var(--background-modifier-border-hover)";
-        }
-
-        // Style scenes differently from sections
-        if (isScene) {
-          setting.nameEl.style.fontStyle = "italic";
-          setting.nameEl.style.color = "var(--text-muted)";
-          setting.nameEl.style.fontSize = "0.95em";
-        } else {
-          // Sections get bolder styling
-          setting.nameEl.style.fontWeight = "500";
-        }
-
-        setting.setName(displayName).addToggle((toggle) => {
-          toggle
-            .setValue(this.structureCheckboxes.get(item) ?? false)
-            .onChange((value) => {
-              this.structureCheckboxes.set(item, value);
-
-              // If this is a section, also update all its children
-              if (item.kind === "section") {
-                this.updateChildrenSelection(item, value);
-              }
-              // Re-render to update child checkboxes and selection count
-              this.renderSelectionUI(contentEl);
-            });
-        });
+  private renderSections(
+    sections: StructureSection[],
+    container: HTMLElement,
+    ancestors: StructureSection[],
+    modalContentEl: HTMLElement,
+  ): void {
+    for (const section of sections) {
+      // Render the section itself if it has a header
+      if (section.section) {
+        this.renderItem(section, container, ancestors, modalContentEl);
+        // Process nested content with this section as parent
+        this.renderSectionContent(
+          section,
+          container,
+          [...ancestors, section],
+          modalContentEl,
+        );
+      } else {
+        // If section has no header, just render its content at same depth
+        this.renderSectionContent(
+          section,
+          container,
+          ancestors,
+          modalContentEl,
+        );
       }
     }
   }
 
+  private renderSectionContent(
+    section: StructureSection,
+    container: HTMLElement,
+    ancestors: StructureSection[],
+    modalContentEl: HTMLElement,
+  ): void {
+    for (const item of section.content) {
+      if (item.kind === "section") {
+        // Render nested section
+        if (item.section) {
+          this.renderItem(item, container, ancestors, modalContentEl);
+          // Recursively render its content
+          this.renderSectionContent(
+            item,
+            container,
+            [...ancestors, item],
+            modalContentEl,
+          );
+        } else {
+          // Section without header - just render its content
+          this.renderSectionContent(item, container, ancestors, modalContentEl);
+        }
+      } else if (item.kind === "scene") {
+        this.renderItem(item, container, ancestors, modalContentEl);
+      }
+    }
+  }
+
+  private renderItem(
+    item: StructureSection | StructureScene,
+    container: HTMLElement,
+    ancestors: StructureSection[],
+    modalContentEl: HTMLElement,
+  ): void {
+    const depth = ancestors.length;
+    let displayName = "";
+    let isScene = false;
+
+    if (item.kind === "scene" && item.scene) {
+      displayName = `🎬 ${item.scene.heading}`;
+      isScene = true;
+    } else if (item.kind === "section" && item.section) {
+      const sectionText = this.script.unsafeExtractRaw(item.section.range);
+      const title = sectionText.split("\n")[0].replace(/^#+\s*/, "");
+      displayName = `${"#".repeat(item.section.depth)} ${title}`;
+    }
+
+    if (!displayName) return;
+
+    const setting = new Setting(container);
+
+    // Apply indentation based on depth using calc() with CSS variables
+    setting.settingEl.style.marginLeft =
+      depth > 0 ? `calc(${depth} * var(--size-4-6))` : "0";
+    setting.settingEl.style.borderLeft =
+      depth > 0
+        ? "var(--border-width) solid var(--background-modifier-border-hover)"
+        : "none";
+    setting.settingEl.style.paddingLeft = depth > 0 ? "var(--size-4-2)" : "0";
+    setting.settingEl.style.transition = "background-color 0.15s ease";
+
+    // Highlight selected items
+    const isSelected = this.structureCheckboxes.get(item) ?? false;
+    if (isSelected) {
+      setting.settingEl.style.backgroundColor =
+        "var(--background-modifier-hover)";
+    }
+
+    // Add tree connector line
+    if (depth > 0) {
+      setting.settingEl.style.position = "relative";
+      const connector = setting.settingEl.createDiv();
+      connector.style.position = "absolute";
+      connector.style.left = "calc(-1 * var(--border-width))";
+      connector.style.top = "50%";
+      connector.style.width = "var(--size-4-3)";
+      connector.style.height = "var(--border-width)";
+      connector.style.backgroundColor =
+        "var(--background-modifier-border-hover)";
+    }
+
+    // Style scenes differently from sections
+    if (isScene) {
+      setting.nameEl.style.fontStyle = "italic";
+      setting.nameEl.style.color = "var(--text-muted)";
+      setting.nameEl.style.fontSize = "0.95em";
+    } else {
+      // Sections get bolder styling
+      setting.nameEl.style.fontWeight = "500";
+    }
+
+    setting.setName(displayName).addToggle((toggle) => {
+      toggle
+        .setValue(this.structureCheckboxes.get(item) ?? false)
+        .onChange((value) => {
+          if (value) {
+            this.handleCheck(item);
+          } else {
+            this.handleUncheck(item, ancestors);
+          }
+
+          // Re-render to update checkboxes and selection count
+          this.renderSelectionUI(modalContentEl);
+        });
+    });
+  }
+
   protected getSelectedElements(): FountainElement[] {
     // Convert selected structure items to pseudo-elements with their full ranges
-    const selectedStructureItems = this.structureWithDepth
-      .filter(({ item }) => this.structureCheckboxes.get(item))
-      .map(({ item }) => item);
+    const selectedItems: Array<StructureSection | StructureScene> = [];
+
+    for (const [item, selected] of this.structureCheckboxes.entries()) {
+      if (selected) {
+        selectedItems.push(item);
+      }
+    }
 
     // Create pseudo-elements with the complete ranges from structure
-    return selectedStructureItems.map((item) => ({
+    return selectedItems.map((item) => ({
       kind: item.kind as "scene" | "section",
       range: item.range,
       // Add minimal fields to satisfy type checking
