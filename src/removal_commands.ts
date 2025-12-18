@@ -107,31 +107,81 @@ export class RemoveDialogueModal extends RemovalModal {
   }
 
   protected renderSelectionUI(contentEl: HTMLElement): void {
-    // Add description
-    const descEl = contentEl.createEl("p", {
-      text: "Select characters whose dialogue should be removed from the script:",
-    });
-    descEl.style.marginBottom = "var(--size-4-4)";
-    descEl.style.color = "var(--text-muted)";
+    // Create or find description (stays outside container)
+    if (!contentEl.querySelector(".dialogue-description")) {
+      const descEl = contentEl.createEl("p", {
+        cls: "dialogue-description",
+        text: "Select characters whose dialogue should be removed from the script:",
+      });
+      descEl.style.marginBottom = "var(--size-4-4)";
+      descEl.style.color = "var(--text-muted)";
+    }
 
     // Show warning if no characters found
     if (this.script.allCharacters.size === 0) {
-      const warningEl = contentEl.createEl("p", {
-        text: "No characters found in this script.",
-      });
-      warningEl.style.color = "var(--text-warning)";
-      warningEl.style.fontStyle = "italic";
+      if (!contentEl.querySelector(".no-characters-warning")) {
+        const warningEl = contentEl.createEl("p", {
+          cls: "no-characters-warning",
+          text: "No characters found in this script.",
+        });
+        warningEl.style.color = "var(--text-warning)";
+        warningEl.style.fontStyle = "italic";
+      }
       return;
     }
 
-    // Create checkbox for each character
+    // Find or create the selection container
+    let selectionContainer = contentEl.querySelector(".selection-container");
+    if (!selectionContainer) {
+      selectionContainer = contentEl.createDiv({ cls: "selection-container" });
+    } else {
+      // Clear the container for re-rendering
+      selectionContainer.empty();
+    }
+
     const sortedCharacters = Array.from(this.script.allCharacters).sort();
+
+    // Create "Select All" toggle
+    new Setting(selectionContainer as HTMLElement)
+      .setName("Select All")
+      .setDesc(`Toggle all ${sortedCharacters.length} characters`)
+      .addToggle((toggle) => {
+        // Check if all are currently selected
+        const allSelected = sortedCharacters.every(
+          (char) => this.characterCheckboxes.get(char) ?? false,
+        );
+        toggle.setValue(allSelected).onChange((value) => {
+          // Set all character checkboxes to the same value
+          for (const character of sortedCharacters) {
+            this.characterCheckboxes.set(character, value);
+          }
+          // Re-render to update individual checkboxes
+          this.renderSelectionUI(contentEl);
+        });
+      });
+
+    // Create a scrollable container for the character list
+    const characterContainer = (selectionContainer as HTMLElement).createDiv({
+      cls: "character-list-container",
+    });
+    characterContainer.style.maxHeight = "400px";
+    characterContainer.style.overflowY = "auto";
+    characterContainer.style.border =
+      "var(--border-width) solid var(--background-modifier-border)";
+    characterContainer.style.borderRadius = "var(--radius-s)";
+    characterContainer.style.padding = "var(--size-4-3)";
+    characterContainer.style.marginBottom = "var(--size-4-4)";
+    characterContainer.style.backgroundColor = "var(--background-secondary)";
+
+    // Create checkbox for each character
     for (const character of sortedCharacters) {
-      new Setting(contentEl).setName(character).addToggle((toggle) => {
+      new Setting(characterContainer).setName(character).addToggle((toggle) => {
         toggle
           .setValue(this.characterCheckboxes.get(character) ?? false)
           .onChange((value) => {
             this.characterCheckboxes.set(character, value);
+            // Re-render to update Select All state
+            this.renderSelectionUI(contentEl);
           });
       });
     }
@@ -371,8 +421,13 @@ export class RemoveStructureModal extends RemovalModal {
     let displayName = "";
     let isScene = false;
 
-    if (item.kind === "scene" && item.scene) {
-      displayName = `🎬 ${item.scene.heading}`;
+    if (item.kind === "scene") {
+      if (item.scene) {
+        displayName = `🎬 ${item.scene.heading}`;
+      } else {
+        // Anonymous scene without a heading
+        displayName = `📄 (anonymous scene)`;
+      }
       isScene = true;
     } else if (item.kind === "section" && item.section) {
       const sectionText = this.script.unsafeExtractRaw(item.section.range);
