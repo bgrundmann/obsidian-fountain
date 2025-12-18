@@ -73,15 +73,20 @@ When characters are selected and removed:
 ### Remove Scenes and Sections
 
 Modal shows:
-- **"Duplicate file first"** checkbox (checked by default for safety)
-- List of all scenes with their headings (🎬 icon)
-- List of all sections with their titles (# depth indicators)
-- Checkbox for each structural element (initially unchecked)
+- **"Create filtered copy"** checkbox (checked by default for safety)
+- **Selection counter** showing "X of Y items selected"
+- **Scrollable tree view** (independently scrollable, max height 400px) containing:
+  - Hierarchical display with visual indentation (24px per level)
+  - Sections shown with bold text and depth indicators (# symbols)
+  - Scenes shown with 🎬 icon in italic, muted text
+  - Tree connector lines showing parent-child relationships
+  - Selected items highlighted with background color
+- **Parent-child selection**: When a section is selected, all its nested scenes and subsections are automatically selected
 
 When scenes/sections are selected and removed:
-- The entire scene heading or section header is removed
-- All content between the selected element and the next structural element is removed
-- Other scenes and sections remain untouched
+- Sections: The entire section including all nested content (subsections, scenes, action, dialogue) is removed
+- Scenes: The complete scene from heading through all content until the next scene/section is removed
+- The structure's calculated ranges ensure complete removal, not just headers
 
 ### Remove Element Types
 

@@ -111,7 +111,7 @@ export class RemoveDialogueModal extends RemovalModal {
     const descEl = contentEl.createEl("p", {
       text: "Select characters whose dialogue should be removed from the script:",
     });
-    descEl.style.marginBottom = "1rem";
+    descEl.style.marginBottom = "var(--size-4-4)";
     descEl.style.color = "var(--text-muted)";
 
     // Show warning if no characters found
@@ -159,7 +159,11 @@ export class RemoveDialogueModal extends RemovalModal {
 export class RemoveStructureModal extends RemovalModal {
   private structureCheckboxes: Map<StructureSection | StructureScene, boolean> =
     new Map();
-  private structure: (StructureSection | StructureScene)[];
+  private structureWithDepth: Array<{
+    item: StructureSection | StructureScene;
+    depth: number;
+    parent?: StructureSection;
+  }> = [];
 
   constructor(
     app: App,
@@ -174,40 +178,67 @@ export class RemoveStructureModal extends RemovalModal {
 
     // Get the structured representation
     const scriptStructure = this.script.structure();
-    this.structure = this.flattenStructure(scriptStructure.sections);
+    this.buildStructureWithDepth(scriptStructure.sections, 0);
 
     // Initialize all structural elements as unselected
-    for (const item of this.structure) {
+    for (const { item } of this.structureWithDepth) {
       this.structureCheckboxes.set(item, false);
     }
   }
 
-  private flattenStructure(
+  private buildStructureWithDepth(
     sections: StructureSection[],
-  ): (StructureSection | StructureScene)[] {
-    const result: (StructureSection | StructureScene)[] = [];
-
-    const processSection = (section: StructureSection) => {
+    baseDepth: number,
+  ): void {
+    const processSection = (
+      section: StructureSection,
+      depth: number,
+      parent?: StructureSection,
+    ) => {
       // Add the section itself if it has a header
       if (section.section) {
-        result.push(section);
+        this.structureWithDepth.push({ item: section, depth, parent });
       }
 
-      // Process nested content
+      // Process nested content with increased depth
       for (const item of section.content) {
         if (item.kind === "section") {
-          processSection(item);
+          processSection(item, depth + 1, section);
         } else if (item.kind === "scene") {
-          result.push(item);
+          this.structureWithDepth.push({
+            item,
+            depth: section.section ? depth + 1 : depth,
+            parent: section.section ? section : parent,
+          });
         }
       }
     };
 
     for (const section of sections) {
-      processSection(section);
+      processSection(section, baseDepth);
     }
+  }
 
-    return result;
+  private getChildrenOf(
+    parent: StructureSection,
+  ): Array<StructureSection | StructureScene> {
+    return this.structureWithDepth
+      .filter(({ parent: p }) => p === parent)
+      .map(({ item }) => item);
+  }
+
+  private updateChildrenSelection(
+    parent: StructureSection,
+    selected: boolean,
+  ): void {
+    const children = this.getChildrenOf(parent);
+    for (const child of children) {
+      this.structureCheckboxes.set(child, selected);
+      // Recursively update children if this is also a section
+      if (child.kind === "section") {
+        this.updateChildrenSelection(child, selected);
+      }
+    }
   }
 
   protected getAvailableElements(): FountainElement[] {
@@ -216,15 +247,28 @@ export class RemoveStructureModal extends RemovalModal {
   }
 
   protected renderSelectionUI(contentEl: HTMLElement): void {
-    // Add description
-    const descEl = contentEl.createEl("p", {
-      text: "Select scenes and sections to remove from the script:",
-    });
-    descEl.style.marginBottom = "1rem";
+    // Find or create the content container (everything after the hr separator)
+    let contentContainer = contentEl.querySelector(".structure-content");
+    if (!contentContainer) {
+      contentContainer = contentEl.createDiv({ cls: "structure-content" });
+    } else {
+      // Clear only the content container, not the whole modal
+      contentContainer.empty();
+    }
+
+    // Add description with selection count
+    const selectedCount = Array.from(this.structureCheckboxes.values()).filter(
+      (checked) => checked,
+    ).length;
+    const totalCount = this.structureWithDepth.length;
+
+    const descEl = contentContainer.createEl("p");
+    descEl.innerHTML = `Select scenes and sections to remove from the script:<br><strong>${selectedCount} of ${totalCount} items selected</strong>`;
+    descEl.style.marginBottom = "var(--size-4-4)";
     descEl.style.color = "var(--text-muted)";
 
-    if (this.structure.length === 0) {
-      const warningEl = contentEl.createEl("p", {
+    if (this.structureWithDepth.length === 0) {
+      const warningEl = contentContainer.createEl("p", {
         text: "No scenes or sections found in this script.",
       });
       warningEl.style.color = "var(--text-warning)";
@@ -232,11 +276,27 @@ export class RemoveStructureModal extends RemovalModal {
       return;
     }
 
-    for (const item of this.structure) {
+    // Create a scrollable container for the tree
+    const treeContainer = contentContainer.createDiv({
+      cls: "structure-tree-container",
+    });
+    treeContainer.style.maxHeight = "400px";
+    treeContainer.style.overflowY = "auto";
+    treeContainer.style.border =
+      "var(--border-width) solid var(--background-modifier-border)";
+    treeContainer.style.borderRadius = "var(--radius-s)";
+    treeContainer.style.padding = "var(--size-4-3)";
+    treeContainer.style.marginBottom = "var(--size-4-4)";
+    treeContainer.style.backgroundColor = "var(--background-secondary)";
+    treeContainer.style.position = "relative";
+
+    for (const { item, depth } of this.structureWithDepth) {
       let displayName = "";
+      let isScene = false;
 
       if (item.kind === "scene" && item.scene) {
         displayName = `🎬 ${item.scene.heading}`;
+        isScene = true;
       } else if (item.kind === "section" && item.section) {
         const sectionText = this.script.unsafeExtractRaw(item.section.range);
         const title = sectionText.split("\n")[0].replace(/^#+\s*/, "");
@@ -244,11 +304,61 @@ export class RemoveStructureModal extends RemovalModal {
       }
 
       if (displayName) {
-        new Setting(contentEl).setName(displayName).addToggle((toggle) => {
+        const setting = new Setting(treeContainer);
+
+        // Apply indentation based on depth using calc() with CSS variables
+        setting.settingEl.style.marginLeft =
+          depth > 0 ? `calc(${depth} * var(--size-4-6))` : "0";
+        setting.settingEl.style.borderLeft =
+          depth > 0
+            ? "var(--border-width) solid var(--background-modifier-border-hover)"
+            : "none";
+        setting.settingEl.style.paddingLeft =
+          depth > 0 ? "var(--size-4-2)" : "0";
+        setting.settingEl.style.transition = "background-color 0.15s ease";
+
+        // Highlight selected items
+        const isSelected = this.structureCheckboxes.get(item) ?? false;
+        if (isSelected) {
+          setting.settingEl.style.backgroundColor =
+            "var(--background-modifier-hover)";
+        }
+
+        // Add tree connector line
+        if (depth > 0) {
+          setting.settingEl.style.position = "relative";
+          const connector = setting.settingEl.createDiv();
+          connector.style.position = "absolute";
+          connector.style.left = "calc(-1 * var(--border-width))";
+          connector.style.top = "50%";
+          connector.style.width = "var(--size-4-3)";
+          connector.style.height = "var(--border-width)";
+          connector.style.backgroundColor =
+            "var(--background-modifier-border-hover)";
+        }
+
+        // Style scenes differently from sections
+        if (isScene) {
+          setting.nameEl.style.fontStyle = "italic";
+          setting.nameEl.style.color = "var(--text-muted)";
+          setting.nameEl.style.fontSize = "0.95em";
+        } else {
+          // Sections get bolder styling
+          setting.nameEl.style.fontWeight = "500";
+        }
+
+        setting.setName(displayName).addToggle((toggle) => {
           toggle
             .setValue(this.structureCheckboxes.get(item) ?? false)
             .onChange((value) => {
               this.structureCheckboxes.set(item, value);
+
+              // If this is a section, also update all its children
+              if (item.kind === "section") {
+                this.updateChildrenSelection(item, value);
+              }
+              // Re-render to update child checkboxes and selection count
+              this.renderSelectionUI(contentEl);
             });
         });
       }
@@ -257,11 +367,9 @@ export class RemoveStructureModal extends RemovalModal {
 
   protected getSelectedElements(): FountainElement[] {
     // Convert selected structure items to pseudo-elements with their full ranges
-    const selectedStructureItems = Array.from(
-      this.structureCheckboxes.entries(),
-    )
-      .filter(([_, selected]) => selected)
-      .map(([item, _]) => item);
+    const selectedStructureItems = this.structureWithDepth
+      .filter(({ item }) => this.structureCheckboxes.get(item))
+      .map(({ item }) => item);
 
     // Create pseudo-elements with the complete ranges from structure
     return selectedStructureItems.map((item) => ({
@@ -346,7 +454,7 @@ export class RemoveElementTypesModal extends RemovalModal {
     const descEl = contentEl.createEl("p", {
       text: "Select element types to remove from the script:",
     });
-    descEl.style.marginBottom = "1rem";
+    descEl.style.marginBottom = "var(--size-4-4)";
     descEl.style.color = "var(--text-muted)";
 
     if (this.typeElementsMap.size === 0) {
