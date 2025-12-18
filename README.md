@@ -6,6 +6,7 @@
 - close to print readonly view / preview (with ability to hide notes, synopsis, boneyard)
 - PDF export with configurable options (paper size, scene heading formatting, optionally include synopsis & notes)
 - **scene numbers** (`#1#`, `#1A#`, `#I-1-A#`, etc.) displayed in bold on left and right margins, with commands to automatically add or remove scene numbers
+- **content filtering/removal commands** to create filtered script versions (remove character dialogue, scenes/sections, or element types)
 - mark notes as todo `[[todo: This is a todo]]`
 - editable index card view to plan your script with drag & drop scene reordering and todo rendering
 - Rehearsal mode (blackout of a characters dialogue)
@@ -142,6 +143,36 @@ Access these commands through Obsidian's command palette (Cmd/Ctrl+P) when a fou
 - Scene numbers must appear at the very end of the scene heading line
 - Only alphanumeric characters, dashes, and periods are allowed inside the `#` markers
 - Whitespace around scene numbers is automatically handled
+
+## Content Filtering Commands
+
+The plugin provides three commands to create filtered versions of your scripts, perfect for creating actor sides, technical scripts, or focused drafts.
+
+### Remove Character Dialogue
+Create a version of your script with specific characters' dialogue removed:
+- Interactive modal with scrollable character list
+- "Select All" toggle for bulk operations
+- Creates a filtered copy by default (e.g., "Script (filtered).fountain")
+
+### Remove Scenes and Sections
+Selectively remove structural elements from your script:
+- Hierarchical tree view with visual indentation
+- Checking a section auto-selects all nested content
+- Unchecking any item automatically unchecks parent sections
+- Shows anonymous scenes (scenes without headings) as "(anonymous scene)"
+
+### Remove Element Types
+Filter out specific fountain element types:
+- Remove action lines, transitions, synopsis, notes, scene headers, etc.
+- Keep only the elements you need for your specific use case
+
+### Safety Features
+- **Default behavior**: Creates a new filtered copy, preserving your original
+- **Unique naming**: Automatically handles file naming (filtered, filtered 2, etc.)
+- **Optional direct editing**: Can modify the current file if explicitly chosen
+- **Warning**: Direct modification has no undo in readonly mode
+
+Access these commands through Obsidian's command palette (Cmd/Ctrl+P) when a fountain file is open.
 
 ## Using Snippets
 

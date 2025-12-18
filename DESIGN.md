@@ -24,6 +24,11 @@
   - Vertically aligned across different line types (action, dialogue)
 - Boneyard support (everything after "# boneyard" header is hidden when enabled)
 - Show/hide settings for synopsis, notes, and boneyard content
+- Removal/filter commands for selective content extraction
+  - Remove character dialogue from selected characters
+  - Remove scenes/sections with hierarchical tree selection UI
+  - Remove element types (action lines, transitions, etc.)
+  - Safety default: creates filtered copy instead of modifying original
 
 # Implementation
 
@@ -201,3 +206,7 @@ That means we will sometimes not get the standard margin sizes, but we will alwa
 - **`render_tools.ts`** - Shared HTML rendering utilities, including range-based element creation and blank line handling.
 
 - **`fuzzy_select_string.ts`** - Fuzzy search modal for string selection, used primarily for character selection in rehearsal mode.
+
+- **`removal_commands.ts`** - Base modal class and implementations for three removal commands (character dialogue, scenes/sections, element types). Features hierarchical checkbox selection, recursive tree rendering with ancestor tracking, and safe file duplication defaults.
+
+- **`removal_utilities.ts`** - Core removal logic for extracting wanted text ranges from fountain scripts. Implements O(n) algorithm for efficient element removal while preserving formatting.

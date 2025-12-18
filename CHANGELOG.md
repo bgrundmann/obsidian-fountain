@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.20.0] - Content Filtering Commands
+
+### Added
+- **Content Filtering/Removal Commands**: Three new commands for creating filtered versions of scripts
+  - **Remove Character Dialogue**: Select specific characters whose dialogue to remove
+    - "Select All" toggle for bulk selection
+    - Scrollable character list for scripts with many characters
+  - **Remove Scenes and Sections**: Hierarchical tree view for selecting structural elements
+  - **Remove Element Types**: Filter by fountain element types (action lines, transitions, synopsis, etc.)
+  - **Safety Features**: 
+    - Default creates a filtered copy with unique naming (e.g., "Script (filtered).fountain")
+    - Original file remains untouched
+    - Option to modify file directly (with warning about no undo in readonly mode)
+
 ## [0.19.0] - Scene Numbers
 
 ### Added
