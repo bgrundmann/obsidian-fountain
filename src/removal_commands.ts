@@ -426,7 +426,7 @@ export class RemoveStructureModal extends RemovalModal {
         displayName = `🎬 ${item.scene.heading}`;
       } else {
         // Anonymous scene without a heading
-        displayName = `📄 (anonymous scene)`;
+        displayName = "📄 (anonymous scene)";
       }
       isScene = true;
     } else if (item.kind === "section" && item.section) {
