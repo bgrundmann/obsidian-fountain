@@ -30,7 +30,7 @@ export default class FountainPlugin extends Plugin {
     );
     this.registerCommands();
     this.app.workspace.onLayoutReady(() => {
-      this.registerTocInSideBar();
+      this.openSideBar();
     });
     this.registerMarkdownPostProcessor(this.markdownPostProcessor);
   }
@@ -67,7 +67,7 @@ export default class FountainPlugin extends Plugin {
     }
   }
 
-  private async registerTocInSideBar() {
+  private async openSideBar() {
     const { workspace } = this.app;
     let leaf: WorkspaceLeaf | null = null;
     const leaves = workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR);
@@ -302,6 +302,21 @@ export default class FountainPlugin extends Plugin {
         return this.removeElementTypesCommand(checking);
       },
     });
+    this.addCommand({
+      id: "open-sidebar",
+      name: "Open sidebar",
+      checkCallback: (checking: boolean) => {
+        return this.openSidebarCommand(checking);
+      },
+    });
+  }
+
+  private openSidebarCommand(checking: boolean): boolean {
+    if (checking) {
+	return this.app.workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR).length === 0;
+    }
+    this.openSideBar();
+    return true;
   }
 
   private removeCharacterDialogueCommand(checking: boolean): boolean {
