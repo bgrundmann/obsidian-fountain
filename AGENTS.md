@@ -39,6 +39,14 @@ unit tests are used when possible and sensible, and are written using Jest.
 Note that unit tests never mock the parser. If a FountainScript instance is
 required, use `parse` to create a FountainScript instance.
 
+## How to build
+
+npm run build
+
+## How to tests
+
+npm run test
+
 ## Plugin Architecture
 
 The plugin registers two main view types:
