@@ -17,6 +17,10 @@
 - button in ribbon to create a new script (as scripts have .fountain extension)
 - boneyard support (content after "# boneyard" header can be hidden)
 
+## Command reference
+
+See here [Command Reference](https://github.com/obsidian-fountain/obsidian-fountain/blob/main/docs/COMMAND_REFERENCE.md).
+
 ## Known Issues
 
 ### Margin marks
