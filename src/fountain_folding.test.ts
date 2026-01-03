@@ -1,4 +1,4 @@
-import { buildFoldRanges, findFoldAtPosition } from "./fountain_folding";
+import { buildFoldRanges, findFoldAtPosition, findFoldableSceneAt } from "./fountain_folding";
 import { parse } from "./fountain_parser";
 
 describe("Fountain Folding", () => {
@@ -236,6 +236,121 @@ ALICE paces around her living room.
       }
 
       expect(foundRanges).toBeGreaterThan(0);
+    });
+  });
+
+  describe("foldService API behavior", () => {
+    it("should only return fold range when position is on scene heading", () => {
+      const script = parse(`
+INT. FIRST SCENE - DAY
+
+Some action in first scene.
+
+JOHN
+Hello world.
+
+INT. SECOND SCENE - NIGHT
+
+More action here.
+`, {});
+
+      const structure = script.structure();
+
+
+
+      // Helper function to simulate the foldService API
+      const testFoldAt = (position: number) => {
+        // This simulates what the foldService does internally
+        return findFoldableSceneAt(structure, position, script.document);
+      };
+
+      // Test position on first scene heading - should return fold range
+      const firstSceneHeadingPos = 1; // Position within "INT. FIRST SCENE - DAY"
+      const foldOnHeading = testFoldAt(firstSceneHeadingPos);
+      expect(foldOnHeading).not.toBeNull();
+      if (foldOnHeading) {
+        expect(foldOnHeading.from).toBeGreaterThan(firstSceneHeadingPos);
+      }
+
+      // Test position on action line - should return null
+      const actionPos = script.document.indexOf("Some action");
+      const foldOnAction = testFoldAt(actionPos);
+      expect(foldOnAction).toBeNull();
+
+      // Test position on dialogue character - should return null
+      const dialoguePos = script.document.indexOf("JOHN");
+      const foldOnDialogue = testFoldAt(dialoguePos);
+      expect(foldOnDialogue).toBeNull();
+
+      // Test position on second scene heading - should return fold range
+      const secondSceneHeadingPos = script.document.indexOf("INT. SECOND SCENE");
+      const foldOnSecondHeading = testFoldAt(secondSceneHeadingPos);
+      expect(foldOnSecondHeading).not.toBeNull();
+    });
+
+    it("should handle fold end position correctly when last line has no newline", () => {
+      // Create a script where the last scene doesn't end with a newline
+      const scriptWithoutFinalNewline = `INT. FIRST SCENE - DAY
+
+Some action here.
+
+JOHN
+Hello world.
+
+INT. SECOND SCENE - NIGHT
+
+Final action without newline`;
+
+      const script = parse(scriptWithoutFinalNewline, {});
+      const structure = script.structure();
+
+      // Test folding the first scene - should work normally
+      const firstScenePos = 1; // Position within "INT. FIRST SCENE - DAY"
+      const firstFold = findFoldableSceneAt(structure, firstScenePos, script.document);
+      expect(firstFold).not.toBeNull();
+      if (firstFold) {
+        expect(firstFold.from).toBeGreaterThan(firstScenePos);
+        expect(firstFold.to).toBeGreaterThan(firstFold.from);
+      }
+
+      // Test folding the second scene - should handle missing newline correctly
+      const secondScenePos = script.document.indexOf("INT. SECOND SCENE");
+      const secondFold = findFoldableSceneAt(structure, secondScenePos, script.document);
+      expect(secondFold).not.toBeNull();
+      if (secondFold) {
+        expect(secondFold.from).toBeGreaterThan(secondScenePos);
+        expect(secondFold.to).toBeGreaterThan(secondFold.from);
+        // The fold should end at the very end of the document since there's no newline
+        expect(secondFold.to).toBe(script.document.length);
+      }
+    });
+
+    it("should handle fold end position correctly when last line has newline", () => {
+      // Create a script where the last scene ends with a newline
+      const scriptWithFinalNewline = `INT. FIRST SCENE - DAY
+
+Some action here.
+
+INT. SECOND SCENE - NIGHT
+
+Final action with newline
+`;
+
+      const script = parse(scriptWithFinalNewline, {});
+      const structure = script.structure();
+
+      // Test folding the second scene - should subtract 1 from end position
+      const secondScenePos = script.document.indexOf("INT. SECOND SCENE");
+      const secondFold = findFoldableSceneAt(structure, secondScenePos, script.document);
+      expect(secondFold).not.toBeNull();
+      if (secondFold) {
+        expect(secondFold.from).toBeGreaterThan(secondScenePos);
+        expect(secondFold.to).toBeGreaterThan(secondFold.from);
+        // The fold should end one character before the final newline
+        expect(secondFold.to).toBe(script.document.length - 1);
+        // Verify the character at the original end position is indeed a newline
+        expect(script.document.charAt(script.document.length - 1)).toBe('\n');
+      }
     });
   });
 });

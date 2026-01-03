@@ -110,6 +110,17 @@ type Line = {
 // the range of the complete element (so if you wanted to
 // remove the complete element deleting all text of that
 // range would work).
+//
+// IMPORTANT: For scene headings, the range includes the trailing
+// newline characters required by the Fountain spec (a scene heading
+// must be followed by a blank line). This means scene heading ranges
+// include: heading text + line ending + blank line (two \n characters).
+// This is crucial for operations like folding, syntax highlighting,
+// and position-based queries.
+//
+// SPECIAL CASE: Scene headings at the end of the document may have
+// fewer trailing newlines (for interactive editing feedback), but
+// these incomplete headings typically have no content to fold anyway.
 type PageBreak = {
   kind: "page-break";
   range: Range;

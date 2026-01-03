@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.0] - Scene Folding
+
+### Added
+- **Scene Folding**: Code folding support for scenes in edit mode
+  - Fold/unfold scenes using the fold gutter or keyboard shortcuts
+  - Visual fold indicators in the editor gutter
+
 ## [0.20.0] - Content Filtering Commands
 
 ### Added
