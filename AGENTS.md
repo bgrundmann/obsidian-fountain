@@ -29,6 +29,15 @@
   - Remove scenes/sections with hierarchical tree selection UI
   - Remove element types (action lines, transitions, etc.)
   - Safety default: creates filtered copy instead of modifying original
+  
+# Guidelines for the LLM
+
+I strongly prefer to agree on a design before writing any code. 
+So unless explicitely asked to write the code, do not touch the source code, 
+just talk about the design, provide SMALL code snippets in the chat (but only
+if that is a shorter way to get the idea across than describing it in words
+-- don't do both! I can read code and understand it quickly), and or 
+create/modify the design documents.
 
 # Implementation
 
