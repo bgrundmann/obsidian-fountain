@@ -16,6 +16,7 @@
 - fountain code blocks support for embedding fountain scripts in regular markdown notes (reading mode only -- *NOT* in live preview)
 - button in ribbon to create a new script (as scripts have .fountain extension)
 - boneyard support (content after "# boneyard" header can be hidden)
+- folding of scenes
 
 ## Command reference
 

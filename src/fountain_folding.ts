@@ -23,52 +23,49 @@ export function createFountainFoldService(getScript: () => FountainScript) {
  * Finds if the given position is within a scene heading, and if so, returns the fold range for that scene
  */
 export function findFoldableSceneAt(structure: ScriptStructure, position: number, document: string): {from: number, to: number} | null {
-  // Recursively search all sections for a scene heading that contains the position
-  for (const section of structure.sections) {
-    const result = findSceneInSection(section, position, document);
-    if (result) {
-      return result;
-    }
-  }
-  return null;
+	// Sections are non-overlapping and ordered, so find the one section that contains the position
+	const containingSection = structure.sections.find(
+			section => position >= section.range.start && position < section.range.end
+	);
+
+	if (containingSection) {
+			return findSceneInSection(containingSection, position, document);
+	}
+	return null;
 }
+
 
 /**
  * Recursively searches a section for a scene heading at the given position
  */
 function findSceneInSection(section: StructureSection, position: number, document: string): {from: number, to: number} | null {
-  for (const item of section.content) {
-    if (item.kind === "scene" && item.scene) {
-
-      // Check if position is within the scene heading (excluding the two newline characters)
-      if (position >= item.scene.range.start && position < item.scene.range.end - 1) {
-        // Only return fold range if scene has content to fold
-        if (item.content.length > 0) {
-          const foldStart = item.scene.range.end - 2;
-
-          // Check if the last character is a newline before subtracting 1
-          let foldEnd = item.range.end;
-          if (foldEnd > 0) {
-            const lastChar = document.charAt(foldEnd - 1);
-            if (lastChar === '\n') {
-              foldEnd = foldEnd - 1;
-            }
-          }
-
-          if (foldEnd > foldStart) {
-            return { from: foldStart, to: foldEnd };
-          }
+	const item = section.content.find(item => position >= item.range.start && position < item.range.end);
+	if (!item) {
+		return null;
+	}
+	// We need to find out if position is on the scene heading (excluding the two newline characters)
+	// and there is actually content
+	if (item.kind === "scene" && item.scene && position >= item.scene.range.start
+		&& position < item.scene.range.end - 1 && item.content.length > 0) {
+			const foldStart = item.scene.range.end - 2;
+        // Check if the last character is a newline before subtracting 1
+        let foldEnd = item.range.end;
+        if (foldEnd > 0) {
+        const lastChar = document.charAt(foldEnd - 1);
+        if (lastChar === '\n') {
+            foldEnd = foldEnd - 1;
         }
-      }
+        }
+
+        if (foldEnd > foldStart) {
+        return { from: foldStart, to: foldEnd };
+        }
+        return null;
     } else if (item.kind === "section") {
-      // Recursively search nested sections
-      const result = findSceneInSection(item, position, document);
-      if (result) {
-        return result;
-      }
+		// Recursively search nested sections
+      return findSceneInSection(item, position, document);
     }
-  }
-  return null;
+    return null;
 }
 
 /**
