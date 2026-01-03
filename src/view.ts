@@ -1,4 +1,5 @@
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { foldGutter, foldKeymap } from "@codemirror/language";
 import { EditorSelection, EditorState, StateField } from "@codemirror/state";
 import {
   EditorView,
@@ -25,6 +26,7 @@ import {
   collapseRangeToStart,
 } from "./fountain";
 import { createFountainEditorPlugin } from "./fountain_editor";
+import { createFountainFoldService } from "./fountain_folding";
 import { parse } from "./fountain_parser";
 import { FuzzySelectString } from "./fuzzy_select_string";
 import { type Callbacks, renderIndexCards } from "./index_cards_view";
@@ -450,9 +452,11 @@ class EditorViewState {
         theme,
         history(),
         drawSelection(),
-        keymap.of([...defaultKeymap, ...historyKeymap]),
+        keymap.of([...defaultKeymap, ...historyKeymap, ...foldKeymap]),
         EditorView.editorAttributes.of({ class: "screenplay" }),
         EditorView.lineWrapping,
+        foldGutter(),
+        createFountainFoldService(() => parentView.getCachedScript() || parse("", {})),
         createFountainEditorPlugin(
           () => parentView.getCachedScript() || parse("", {}),
           (script: FountainScript) => parentView.updateScriptDirectly(script),

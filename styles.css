@@ -600,3 +600,32 @@
 	font-size: 0.9em;
 	margin-top: 0.25rem;
 }
+
+/* Folding support */
+.screenplay .cm-foldGutter {
+	width: 16px;
+	padding: 0 2px;
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.screenplay .cm-foldGutter:hover {
+	color: var(--text-normal);
+}
+
+.screenplay .cm-foldPlaceholder {
+	background: var(--background-modifier-border);
+	color: var(--text-muted);
+	border: 1px solid var(--background-modifier-border-hover);
+	border-radius: 3px;
+	padding: 0 4px;
+	margin: 0 2px;
+	font-size: 0.8em;
+	cursor: pointer;
+}
+
+.screenplay .cm-foldPlaceholder:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
