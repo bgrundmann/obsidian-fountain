@@ -18,6 +18,11 @@
   - Snip button for moving selected text to snippets
   - Drag and drop snippets from sidebar into script
   - Scaled preview rendering in TOC sidebar
+- Scene folding in edit mode
+  - Fold/unfold scenes with content using fold gutter or keyboard shortcuts
+  - Only scenes with meaningful content are foldable
+  - Integrates with CodeMirror 6's folding service
+  - Standard keyboard shortcuts (Ctrl+Shift+[ and Ctrl+Shift+])
 - Margin marks for script annotations (`[[@marker]]` syntax)
   - Render as single words in the margin during reading view
   - Common uses: effects, laughs, cues, beats
@@ -205,6 +210,8 @@ That means we will sometimes not get the standard margin sizes, but we will alwa
 - **`reading_view.ts`** - Renders formatted fountain content for readonly mode. Handles title page, scenes, dialogue, actions, and boneyard sections with show/hide settings.
 
 - **`fountain_editor.ts`** - CodeMirror integration providing syntax highlighting and decorations for edit mode. Handles bold, italic, underline, notes, and boneyard styling.
+
+- **`fountain_folding.ts`** - Scene folding functionality using CodeMirror 6's folding service. Creates fold ranges for scenes with content, integrates with existing script structure parsing, and provides position-based fold detection.
 
 - **`character_completion.ts`** - Character name autocompletion system for CodeMirror editor. Provides intelligent completion when typing character names using uppercase patterns or @ symbol prefix.
 
