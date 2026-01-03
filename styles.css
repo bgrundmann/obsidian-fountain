@@ -602,6 +602,12 @@
 }
 
 /* Folding support */
+
+.screenplay .cm-gutters {
+	background-color: transparent;
+	border-right-color: transparent;
+}
+
 .screenplay .cm-foldGutter {
 	width: 16px;
 	padding: 0 2px;
