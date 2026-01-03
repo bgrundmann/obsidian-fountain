@@ -616,6 +616,14 @@
 	cursor: pointer;
 }
 
+.screenplay .cm-foldGutter span {
+	color: var(--text-faint);
+}
+
+.screenplay .cm-foldGutter span:hover {
+	color: var(--text-normal);
+}
+
 .screenplay .cm-foldGutter:hover {
 	color: var(--text-normal);
 }
