@@ -4,11 +4,13 @@ import {
   type Dialogue,
   type FountainScript,
   type Lyrics,
+  type Note,
   type SceneHeading,
   type StyledText,
   type Synopsis,
   type TextElementWithNotesAndBoneyard,
   type Transition,
+  extractMarginMarker,
   extractTransitionText,
 } from "./fountain";
 import type { PDFOptions } from "./pdf_options_dialog";
@@ -63,7 +65,43 @@ type StyledTextSegment = {
   color?: Color;
   strikethrough?: boolean;
   backgroundColor?: Color;
+  marginMark?: boolean;
 };
+
+// A wrapped line with its associated margin marks
+type WrappedLine = {
+  segments: StyledTextSegment[];
+  marginMarks: string[];
+};
+
+/**
+ * Emits margin marks in the right margin at the current Y position.
+ * Multiple margin marks are separated by spaces.
+ */
+function emitMarginMarks(
+  instructions: Instruction[],
+  pageState: PageState,
+  marginMarks: string[],
+): void {
+  if (marginMarks.length === 0) return;
+
+  // Combine all margin marks with a space separator, uppercase to match reading view
+  const marginText = marginMarks.join(" ").toUpperCase();
+
+  // Position in the right margin area (past the text area)
+  const marginX = pageState.pageWidth - pageState.margins.right + 10;
+
+  emitText(instructions, pageState, {
+    data: marginText,
+    x: marginX,
+    bold: false,
+    italic: false,
+    underline: false,
+    color: "gray",
+    strikethrough: false,
+    backgroundColor: undefined,
+  });
+}
 
 // Page layout constants (all measurements in PDF points - 1/72 inch)
 const FONT_SIZE = 12;
@@ -604,7 +642,7 @@ function generateCenteredTitleElementInstructions(
       for (const line of wrappedLines) {
         // Calculate line width for centering
         let lineWidth = 0;
-        for (const segment of line) {
+        for (const segment of line.segments) {
           // Estimate width using average character width for Courier
           lineWidth +=
             segment.text.length * getCharacterWidth(pageState.fontSize);
@@ -613,7 +651,7 @@ function generateCenteredTitleElementInstructions(
         let x = getTitlePageCenterX(pageState.pageWidth) - lineWidth / 2;
 
         // Generate instruction for each segment with appropriate styling
-        for (const segment of line) {
+        for (const segment of line.segments) {
           if (segment.text.length > 0) {
             x = emitText(
               instructions,
@@ -672,7 +710,7 @@ function generateLowerLeftTitleElementInstructions(
       for (const line of wrappedLines) {
         let x = pageState.margins.left;
 
-        for (const segment of line) {
+        for (const segment of line.segments) {
           if (segment.text.length > 0) {
             x = emitText(
               instructions,
@@ -730,14 +768,15 @@ function generateLowerRightTitleElementInstructions(
       for (const line of wrappedLines) {
         // Calculate line width for right alignment
         let lineWidth = 0;
-        for (const segment of line) {
+        for (const segment of line.segments) {
           lineWidth +=
             segment.text.length * getCharacterWidth(pageState.fontSize);
         }
 
-        let x = pageState.pageWidth - pageState.margins.right - lineWidth;
+        let x =
+          pageState.pageWidth - pageState.margins.right - lineWidth;
 
-        for (const segment of line) {
+        for (const segment of line.segments) {
           if (segment.text.length > 0) {
             x = emitText(
               instructions,
@@ -926,10 +965,7 @@ function generateActionInstructions(
   options: PDFOptions,
 ): PageState {
   // Extract styled text from all lines in the action block, preserving centering info
-  type ActionLineInfo = {
-    segments: StyledTextSegment[];
-    centered: boolean;
-  };
+  type ActionLineInfo = WrappedLine & { centered: boolean };
 
   const actionLines: ActionLineInfo[] = [];
 
@@ -940,6 +976,7 @@ function generateActionInstructions(
         fountainScript.document,
         options,
       );
+
       const wrappedLines = wrapStyledText(
         styledSegments,
         pageState.charactersPerLine.action,
@@ -949,13 +986,14 @@ function generateActionInstructions(
       // Add each wrapped line with the original centering information
       for (const wrappedLine of wrappedLines) {
         actionLines.push({
-          segments: wrappedLine,
+          ...wrappedLine,
           centered: line.centered,
         });
       }
     } else {
       actionLines.push({
         segments: [],
+        marginMarks: [],
         centered: line.centered,
       });
     }
@@ -1003,6 +1041,11 @@ function generateActionInstructions(
           });
         }
       }
+
+      // Render margin marks in the right margin
+      if (lineInfo.marginMarks.length > 0) {
+        emitMarginMarks(instructions, currentState, lineInfo.marginMarks);
+      }
     }
 
     currentState = advanceLine(currentState);
@@ -1023,10 +1066,7 @@ function generateLyricsInstructions(
 ): PageState {
   // Extract styled text from all lines in the lyrics block, preserving centering info
   // Lyrics are rendered like action lines but with italic styling
-  type LyricsLineInfo = {
-    segments: StyledTextSegment[];
-    centered: boolean;
-  };
+  type LyricsLineInfo = WrappedLine & { centered: boolean };
 
   const lyricsLines: LyricsLineInfo[] = [];
 
@@ -1037,6 +1077,7 @@ function generateLyricsInstructions(
         fountainScript.document,
         options,
       );
+
       const wrappedLines = wrapStyledText(
         styledSegments,
         pageState.charactersPerLine.action,
@@ -1046,18 +1087,20 @@ function generateLyricsInstructions(
       // Add each wrapped line with the original centering information
       // Force italic styling for all segments in lyrics
       for (const wrappedLine of wrappedLines) {
-        const italicSegments = wrappedLine.map((segment) => ({
+        const italicSegments = wrappedLine.segments.map((segment) => ({
           ...segment,
           italic: true, // Force italics for lyrics
         }));
         lyricsLines.push({
           segments: italicSegments,
+          marginMarks: wrappedLine.marginMarks,
           centered: line.centered,
         });
       }
     } else {
       lyricsLines.push({
         segments: [],
+        marginMarks: [],
         centered: line.centered,
       });
     }
@@ -1105,6 +1148,11 @@ function generateLyricsInstructions(
           });
         }
       }
+
+      // Render margin marks in the right margin
+      if (lineInfo.marginMarks.length > 0) {
+        emitMarginMarks(instructions, currentState, lineInfo.marginMarks);
+      }
     }
 
     currentState = advanceLine(currentState);
@@ -1119,7 +1167,7 @@ function generateLyricsInstructions(
 type PreparedDialogue = {
   characterLine: string;
   parentheticalLines: string[];
-  dialogueLines: StyledTextSegment[][];
+  dialogueLines: WrappedLine[];
   contd: boolean;
 };
 
@@ -1174,7 +1222,7 @@ function prepareDialogueData(
   }
 
   // Prepare dialogue lines
-  const dialogueLines: StyledTextSegment[][] = [];
+  const dialogueLines: WrappedLine[] = [];
   for (const line of dialogue.lines) {
     if (line.elements.length > 0) {
       const styledSegments = extractStyledSegments(
@@ -1182,15 +1230,17 @@ function prepareDialogueData(
         fountainScript.document,
         options,
       );
+
       const wrappedLines = wrapStyledText(
         styledSegments,
         pageState.charactersPerLine.dialogue,
         false,
       );
+
       dialogueLines.push(...wrappedLines);
     } else {
       // Empty line
-      dialogueLines.push([]);
+      dialogueLines.push({ segments: [], marginMarks: [] });
     }
   }
 
@@ -1219,7 +1269,7 @@ function splitDialogue(
   const linesForFirstPart =
     availableLines - 1 - preparedDialogue.parentheticalLines.length - 1;
 
-  // Split dialogue lines
+  // Split dialogue lines (PreparedDialogueLine[] now)
   const dialogueLinesPartA = preparedDialogue.dialogueLines.slice(
     0,
     linesForFirstPart,
@@ -1350,10 +1400,10 @@ function emitDialogueOnCurrentPage(
   }
 
   // Emit dialogue lines
-  for (const wrappedLine of preparedDialogue.dialogueLines) {
-    if (wrappedLine.length > 0) {
+  for (const dialogueLine of preparedDialogue.dialogueLines) {
+    if (dialogueLine.segments.length > 0) {
       let currentX = DIALOGUE_INDENT;
-      for (const segment of wrappedLine) {
+      for (const segment of dialogueLine.segments) {
         if (segment.text.length > 0) {
           currentX = emitText(instructions, currentState, {
             data: segment.text,
@@ -1366,6 +1416,11 @@ function emitDialogueOnCurrentPage(
             backgroundColor: segment.backgroundColor,
           });
         }
+      }
+
+      // Render margin marks in the right margin
+      if (dialogueLine.marginMarks.length > 0) {
+        emitMarginMarks(instructions, currentState, dialogueLine.marginMarks);
       }
     }
     currentState = advanceLine(currentState);
@@ -1603,6 +1658,17 @@ function extractStyledSegments(
           !element.noteKind.startsWith("[[") &&
           !element.noteKind.startsWith("/*")
         ) {
+          // Check if this is a margin mark
+          const markerWord = extractMarginMarker(element as Note);
+          if (markerWord !== null) {
+            // Margin marks are rendered in the margin, not inline
+            segments.push({
+              text: markerWord,
+              marginMark: true,
+            });
+            break;
+          }
+
           // Add leading space
           segments.push({
             text: " ",
@@ -1672,22 +1738,40 @@ function extractStyledSegments(
 }
 
 /**
- * Wraps styled text segments to fit within specified character limit while preserving styling
+ * Wraps styled text segments to fit within specified character limit while preserving styling.
+ * Margin marks are tracked and associated with the line where they appear in the source.
  */
 function wrapStyledText(
   segments: StyledTextSegment[],
   maxChars: number,
   preserveWhitespace: boolean,
-): StyledTextSegment[][] {
+): WrappedLine[] {
   if (segments.length === 0) {
-    return [[]];
+    return [{ segments: [], marginMarks: [] }];
   }
 
-  const lines: StyledTextSegment[][] = [];
-  let currentLine: StyledTextSegment[] = [];
+  const lines: WrappedLine[] = [];
+  let currentLineSegments: StyledTextSegment[] = [];
+  let currentLineMarginMarks: string[] = [];
   let currentLineLength = 0;
 
+  const finishCurrentLine = () => {
+    lines.push({
+      segments: currentLineSegments,
+      marginMarks: currentLineMarginMarks,
+    });
+    currentLineSegments = [];
+    currentLineMarginMarks = [];
+    currentLineLength = 0;
+  };
+
   for (const segment of segments) {
+    // Handle margin marks: associate with current line, don't add to text
+    if (segment.marginMark) {
+      currentLineMarginMarks.push(segment.text);
+      continue;
+    }
+
     const words = segment.text.split(/(\s+)/); // Split on whitespace but keep separators
 
     for (const word of words) {
@@ -1696,16 +1780,14 @@ function wrapStyledText(
       // Handle very long words
       if (word.length > maxChars) {
         // Finish current line if it has content
-        if (currentLine.length > 0) {
-          lines.push(currentLine);
-          currentLine = [];
-          currentLineLength = 0;
+        if (currentLineSegments.length > 0) {
+          finishCurrentLine();
         }
 
         // Split long word into chunks
         for (let i = 0; i < word.length; i += maxChars) {
           const chunk = word.substring(i, i + maxChars);
-          lines.push([{ ...segment, text: chunk }]);
+          lines.push({ segments: [{ ...segment, text: chunk }], marginMarks: [] });
         }
         continue;
       }
@@ -1713,33 +1795,31 @@ function wrapStyledText(
       // Check if adding this word would exceed the limit
       if (
         currentLineLength + word.length > maxChars &&
-        currentLine.length > 0
+        currentLineSegments.length > 0
       ) {
         // Start new line
-        lines.push(currentLine);
-        currentLine = [];
-        currentLineLength = 0;
+        finishCurrentLine();
       }
 
       // Add word to current line
       if (
         preserveWhitespace ||
         word.trim().length > 0 ||
-        currentLine.length > 0
+        currentLineSegments.length > 0
       ) {
         // Don't start lines with whitespace unless preserveWhitespace is true
-        currentLine.push({ ...segment, text: word });
+        currentLineSegments.push({ ...segment, text: word });
         currentLineLength += word.length;
       }
     }
   }
 
-  // Add the last line if it has content
-  if (currentLine.length > 0) {
-    lines.push(currentLine);
+  // Add the last line if it has content or margin marks
+  if (currentLineSegments.length > 0 || currentLineMarginMarks.length > 0) {
+    finishCurrentLine();
   }
 
-  return lines.length > 0 ? lines : [[]];
+  return lines.length > 0 ? lines : [{ segments: [], marginMarks: [] }];
 }
 
 /**

@@ -801,6 +801,82 @@ MARY
       );
       expect(spaceInstructions.length).toBeGreaterThan(10); // Should have many spaces around notes
     });
+
+    test("should render margin marks in the right margin", () => {
+      const script = parser.parse(
+        "Bene turns over the card. [[@effect]]\n\nJOHN\nHello there. [[@laugh]]",
+      );
+
+      const instructions = generateInstructions(script, {
+        sceneHeadingBold: false,
+        paperSize: "letter",
+        hideNotes: false,
+        hideSynopsis: false,
+      });
+
+      const textInstructions = instructions.filter(
+        (inst) => inst.type === "text",
+      ) as TextInstruction[];
+
+      // Find the margin mark instructions (uppercase to match reading view)
+      const effectMargin = textInstructions.find(
+        (inst) => inst.data === "EFFECT",
+      );
+      const laughMargin = textInstructions.find(
+        (inst) => inst.data === "LAUGH",
+      );
+
+      expect(effectMargin).toBeDefined();
+      expect(laughMargin).toBeDefined();
+
+      // Margin marks should be positioned in the right margin (past the text area)
+      // The right margin starts at pageWidth - margins.right, plus some offset
+      const pageWidth = 612; // letter width
+      expect(effectMargin!.x).toBeGreaterThan(pageWidth - 100); // Should be in right margin area
+      expect(laughMargin!.x).toBeGreaterThan(pageWidth - 100);
+
+      // Margin marks should be rendered in gray
+      expect(effectMargin!.color).toBe("gray");
+      expect(laughMargin!.color).toBe("gray");
+
+      // Margin marks should not be bold or italic
+      expect(effectMargin!.bold).toBe(false);
+      expect(effectMargin!.italic).toBe(false);
+      expect(laughMargin!.bold).toBe(false);
+      expect(laughMargin!.italic).toBe(false);
+    });
+
+    test("should not render margin marks inline with text", () => {
+      const script = parser.parse("The magician waves his hand. [[@magic]]");
+
+      const instructions = generateInstructions(script, {
+        sceneHeadingBold: false,
+        paperSize: "letter",
+        hideNotes: false,
+        hideSynopsis: false,
+      });
+
+      const textInstructions = instructions.filter(
+        (inst) => inst.type === "text",
+      ) as TextInstruction[];
+
+      // The action text should not contain the margin mark syntax
+      const actionInstruction = textInstructions.find((inst) =>
+        inst.data.includes("magician"),
+      );
+      expect(actionInstruction).toBeDefined();
+      expect(actionInstruction!.data).not.toContain("[[@magic]]");
+      expect(actionInstruction!.data).not.toContain("@magic");
+
+      // The margin mark should be a separate instruction (uppercase)
+      const marginInstruction = textInstructions.find(
+        (inst) => inst.data === "MAGIC",
+      );
+      expect(marginInstruction).toBeDefined();
+
+      // And they should be at different x positions
+      expect(marginInstruction!.x).toBeGreaterThan(actionInstruction!.x + 100);
+    });
   });
 });
 
