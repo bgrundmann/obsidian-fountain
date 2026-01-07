@@ -1656,7 +1656,7 @@ function extractStyledSegments(
         );
         break;
       }
-      case "note":
+      case "note": {
         // Include notes if they should be shown
         // Check if this is a margin mark (handled independently of hideNotes)
         const markerWord = extractMarginMarker(element as Note);
@@ -1676,7 +1676,6 @@ function extractStyledSegments(
           !element.noteKind.startsWith("[[") &&
           !element.noteKind.startsWith("/*")
         ) {
-
           // Add leading space
           segments.push({
             text: " ",
@@ -1736,6 +1735,7 @@ function extractStyledSegments(
           });
         }
         break;
+      }
       case "boneyard":
         // Skip boneyard content for PDF output
         break;
