@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.22.0] - Margin Marks in PDF
+
+### Added
+- **Margin Marks in PDF Export**: Margin marks (`[[@word]]`) now render in the right margin of generated PDFs, matching their appearance in reading view
+  - Displayed in uppercase, gray text in the right margin
+  - Positioned on the same line where they appear in the source text
+- **Hide Margin Marks Toggle**: New option in PDF export dialog to show/hide margin marks independently of regular notes
+  - Defaults to showing margin marks (unchecked)
+  - Margin marks are controlled separately from the existing "Hide notes" option
+
 ## [0.21.0] - Scene Folding
 
 ### Added
