@@ -5,6 +5,7 @@ export interface PDFOptions {
   paperSize: "letter" | "a4";
   hideNotes: boolean;
   hideSynopsis: boolean;
+  hideMarginMarks: boolean;
 }
 
 export class PDFOptionsDialog extends Modal {
@@ -13,6 +14,7 @@ export class PDFOptionsDialog extends Modal {
     paperSize: "letter",
     hideNotes: true,
     hideSynopsis: true,
+    hideMarginMarks: false,
   };
 
   constructor(
@@ -94,6 +96,16 @@ export class PDFOptionsDialog extends Modal {
       .addToggle((toggle) => {
         toggle.setValue(this.options.hideNotes).onChange((value) => {
           this.options.hideNotes = value;
+        });
+      });
+
+    // Hide margin marks checkbox (disabled by default - margin marks are shown)
+    new Setting(contentEl)
+      .setName("Hide margin marks")
+      .setDesc("Exclude margin marks ([[@word]]) from the generated PDF")
+      .addToggle((toggle) => {
+        toggle.setValue(this.options.hideMarginMarks).onChange((value) => {
+          this.options.hideMarginMarks = value;
         });
       });
 

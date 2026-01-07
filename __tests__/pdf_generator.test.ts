@@ -303,8 +303,8 @@ describe("PDF Instruction Generation", () => {
         sceneHeadingBold: false,
         paperSize: "letter",
         hideNotes: true,
-
         hideSynopsis: false,
+        hideMarginMarks: false,
       });
 
       // Generate instructions for A4 paper
@@ -312,8 +312,8 @@ describe("PDF Instruction Generation", () => {
         sceneHeadingBold: false,
         paperSize: "a4",
         hideNotes: true,
-
         hideSynopsis: false,
+        hideMarginMarks: false,
       });
 
       // Both should have the same number of instructions (same character limits)
@@ -653,6 +653,7 @@ describe("PDF Instruction Generation", () => {
         paperSize: "letter",
         hideNotes: false,
         hideSynopsis: false,
+        hideMarginMarks: false,
       });
 
       // Find synopsis instruction
@@ -693,6 +694,7 @@ describe("PDF Instruction Generation", () => {
         paperSize: "letter",
         hideNotes: false,
         hideSynopsis: false,
+        hideMarginMarks: false,
       });
 
       const textInstructions = instructions.filter(
@@ -747,6 +749,7 @@ MARY
         paperSize: "letter",
         hideNotes: false,
         hideSynopsis: false,
+        hideMarginMarks: false,
       });
 
       const textInstructions = instructions.filter(
@@ -812,6 +815,7 @@ MARY
         paperSize: "letter",
         hideNotes: false,
         hideSynopsis: false,
+        hideMarginMarks: false,
       });
 
       const textInstructions = instructions.filter(
@@ -854,6 +858,7 @@ MARY
         paperSize: "letter",
         hideNotes: false,
         hideSynopsis: false,
+        hideMarginMarks: false,
       });
 
       const textInstructions = instructions.filter(
@@ -876,6 +881,66 @@ MARY
 
       // And they should be at different x positions
       expect(marginInstruction!.x).toBeGreaterThan(actionInstruction!.x + 100);
+    });
+
+    test("should hide margin marks when hideMarginMarks is true", () => {
+      const script = parser.parse(
+        "The magician waves his hand. [[@magic]]",
+      );
+
+      const instructions = generateInstructions(script, {
+        sceneHeadingBold: false,
+        paperSize: "letter",
+        hideNotes: false,
+        hideSynopsis: false,
+        hideMarginMarks: true,
+      });
+
+      const textInstructions = instructions.filter(
+        (inst) => inst.type === "text",
+      ) as TextInstruction[];
+
+      // The action text should still be present
+      const actionInstruction = textInstructions.find((inst) =>
+        inst.data.includes("magician"),
+      );
+      expect(actionInstruction).toBeDefined();
+
+      // But the margin mark should NOT be present
+      const marginInstruction = textInstructions.find(
+        (inst) => inst.data === "MAGIC",
+      );
+      expect(marginInstruction).toBeUndefined();
+    });
+
+    test("should show margin marks even when hideNotes is true", () => {
+      const script = parser.parse(
+        "Action with note [[a note]] and margin mark [[@cue]]",
+      );
+
+      const instructions = generateInstructions(script, {
+        sceneHeadingBold: false,
+        paperSize: "letter",
+        hideNotes: true,
+        hideSynopsis: false,
+        hideMarginMarks: false,
+      });
+
+      const textInstructions = instructions.filter(
+        (inst) => inst.type === "text",
+      ) as TextInstruction[];
+
+      // The regular note should NOT be present (hideNotes: true)
+      const noteInstruction = textInstructions.find((inst) =>
+        inst.data.includes("a note"),
+      );
+      expect(noteInstruction).toBeUndefined();
+
+      // But the margin mark SHOULD be present (hideMarginMarks: false)
+      const marginInstruction = textInstructions.find(
+        (inst) => inst.data === "CUE",
+      );
+      expect(marginInstruction).toBeDefined();
     });
   });
 });

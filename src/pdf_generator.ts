@@ -360,6 +360,7 @@ export async function generatePDF(
     paperSize: "letter",
     hideNotes: true,
     hideSynopsis: false,
+    hideMarginMarks: false,
   },
 ): Promise<PDFDocument> {
   // Generate instructions
@@ -379,6 +380,7 @@ export function generateInstructions(
     paperSize: "letter",
     hideNotes: true,
     hideSynopsis: false,
+    hideMarginMarks: false,
   },
 ): Instruction[] {
   const instructions: Instruction[] = [];
@@ -435,9 +437,11 @@ export function generateInstructions(
   }
 
   // Filter out hidden elements for consistent behavior
+  // Note: hideNotes is always false here - note visibility (including margin marks)
+  // is handled in extractStyledSegments to allow independent control of margin marks
   const filteredScript = fountainScript.withHiddenElementsRemoved({
     hideBoneyard: true,
-    hideNotes: options.hideNotes,
+    hideNotes: false,
     hideSynopsis: options.hideSynopsis,
   });
 
@@ -1504,6 +1508,7 @@ export async function renderInstructionsToPDF(
     paperSize: "letter",
     hideNotes: true,
     hideSynopsis: false,
+    hideMarginMarks: false,
   },
 ): Promise<PDFDocument> {
   const pdfDoc = await PDFDocument.create();
@@ -1653,21 +1658,24 @@ function extractStyledSegments(
       }
       case "note":
         // Include notes if they should be shown
+        // Check if this is a margin mark (handled independently of hideNotes)
+        const markerWord = extractMarginMarker(element as Note);
+        if (markerWord !== null) {
+          // Margin marks are rendered in the margin, not inline
+          if (!options.hideMarginMarks) {
+            segments.push({
+              text: markerWord,
+              marginMark: true,
+            });
+          }
+          break;
+        }
+
         if (
           !options.hideNotes &&
           !element.noteKind.startsWith("[[") &&
           !element.noteKind.startsWith("/*")
         ) {
-          // Check if this is a margin mark
-          const markerWord = extractMarginMarker(element as Note);
-          if (markerWord !== null) {
-            // Margin marks are rendered in the margin, not inline
-            segments.push({
-              text: markerWord,
-              marginMark: true,
-            });
-            break;
-          }
 
           // Add leading space
           segments.push({
