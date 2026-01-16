@@ -7,7 +7,7 @@ import {
 } from "obsidian";
 import type { FountainElement } from "./fountain";
 import { parse } from "./fountain_parser";
-import { generatePDF } from "./pdf_generator";
+import { generatePDF, UnsupportedCharacterError } from "./pdf_generator";
 import { type PDFOptions, PDFOptionsDialog } from "./pdf_options_dialog";
 import { renderContent } from "./reading_view";
 import {
@@ -215,7 +215,11 @@ export default class FountainPlugin extends Plugin {
 
             new Notice(`PDF generated: ${outputPath}`);
           } catch (error) {
-            new Notice("Failed to generate PDF");
+            if (error instanceof UnsupportedCharacterError) {
+              new Notice(error.message);
+            } else {
+              new Notice("Failed to generate PDF");
+            }
             console.error("Error generating PDF:", error);
           }
         },

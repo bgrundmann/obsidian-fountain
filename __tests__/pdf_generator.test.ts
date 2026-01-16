@@ -5,9 +5,76 @@ import {
   type TextInstruction,
   generateInstructions,
   renderInstructionsToPDF,
+  findFirstNonWin1252Char,
+  UnsupportedCharacterError,
+  generatePDF,
 } from "../src/pdf_generator";
 
 import * as parser from "../src/fountain_parser";
+
+describe("findFirstNonWin1252Char", () => {
+  it("should return null for ASCII text", () => {
+    expect(findFirstNonWin1252Char("Hello, World!")).toBeNull();
+  });
+
+  it("should return null for Latin-1 supplement characters", () => {
+    expect(findFirstNonWin1252Char("Café résumé naïve")).toBeNull();
+  });
+
+  it("should return null for Windows-1252 specific characters", () => {
+    // Curly quotes, em-dash, euro sign, etc.
+    expect(findFirstNonWin1252Char("\u201CHello\u201D \u2014 \u20AC100 \u2122")).toBeNull();
+  });
+
+  it("should return the first emoji character", () => {
+    expect(findFirstNonWin1252Char("Hello 😱 World")).toBe("😱");
+  });
+
+  it("should return the first invalid character in a string with multiple", () => {
+    expect(findFirstNonWin1252Char("Test 🎭 and 😱")).toBe("🎭");
+  });
+
+  it("should detect Chinese characters as invalid", () => {
+    expect(findFirstNonWin1252Char("Hello 你好")).toBe("你");
+  });
+
+  it("should detect Arabic characters as invalid", () => {
+    expect(findFirstNonWin1252Char("Hello مرحبا")).toBe("م");
+  });
+});
+
+describe("UnsupportedCharacterError", () => {
+  it("should create error with correct message", () => {
+    const error = new UnsupportedCharacterError("😱", 0x1f631);
+    expect(error.message).toBe(
+      "The script contains at least one character that we cannot render in the PDF: '😱' (unicode code point: U+1F631). Please remove it to proceed."
+    );
+    expect(error.char).toBe("😱");
+    expect(error.codePoint).toBe(0x1f631);
+    expect(error.name).toBe("UnsupportedCharacterError");
+  });
+
+  it("should pad short code points with zeros", () => {
+    const error = new UnsupportedCharacterError("你", 0x4f60);
+    expect(error.message).toContain("U+4F60");
+  });
+});
+
+describe("generatePDF with unsupported characters", () => {
+  it("should throw UnsupportedCharacterError for emoji in script", async () => {
+    const script = parser.parse("INT. OFFICE - DAY\n\nJohn reacts with fear 😱");
+
+    await expect(generatePDF(script)).rejects.toThrow(UnsupportedCharacterError);
+  });
+
+  it("should not throw for valid Windows-1252 text", async () => {
+    const script = parser.parse("INT. OFFICE - DAY\n\nJohn says \u201CHello\u201D \u2014 caf\u00E9");
+
+    // Should not throw
+    const pdfDoc = await generatePDF(script);
+    expect(pdfDoc).toBeDefined();
+  });
+});
 
 describe("PDF Instruction Generation", () => {
   describe("generateInstructions", () => {

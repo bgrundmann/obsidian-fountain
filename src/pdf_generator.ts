@@ -1,4 +1,39 @@
 import { PDFDocument, type PDFPage, StandardFonts, rgb } from "pdf-lib";
+
+/**
+ * Error thrown when the script contains characters that cannot be encoded in Windows-1252.
+ */
+export class UnsupportedCharacterError extends Error {
+  constructor(
+    public readonly char: string,
+    public readonly codePoint: number,
+  ) {
+    const hex = codePoint.toString(16).toUpperCase().padStart(4, "0");
+    super(
+      `The script contains at least one character that we cannot render in the PDF: '${char}' (unicode code point: U+${hex}). Please remove it to proceed.`,
+    );
+    this.name = "UnsupportedCharacterError";
+  }
+}
+
+/**
+ * Regex matching characters NOT in Windows-1252 encoding.
+ * Windows-1252 covers:
+ * - ASCII (U+0000–U+007F)
+ * - Latin-1 supplement (U+00A0–U+00FF)
+ * - Specific characters in 0x80–0x9F range (curly quotes, em-dash, euro, etc.)
+ */
+const WIN1252_INVALID =
+  /[^\x00-\x7F\xA0-\xFF\u20AC\u201A\u0192\u201E\u2026\u2020\u2021\u02C6\u2030\u0160\u2039\u0152\u017D\u2018\u2019\u201C\u201D\u2022\u2013\u2014\u02DC\u2122\u0161\u203A\u0153\u017E\u0178]/u;
+
+/**
+ * Finds the first character in the text that cannot be encoded in Windows-1252.
+ * Returns null if all characters are valid.
+ */
+export function findFirstNonWin1252Char(text: string): string | null {
+  const match = text.match(WIN1252_INVALID);
+  return match ? match[0] : null;
+}
 import {
   type Action,
   type Dialogue,
@@ -363,6 +398,12 @@ export async function generatePDF(
     hideMarginMarks: false,
   },
 ): Promise<PDFDocument> {
+  // Check for unsupported characters before generating any instructions
+  const invalidChar = findFirstNonWin1252Char(fountainScript.document);
+  if (invalidChar) {
+    throw new UnsupportedCharacterError(invalidChar, invalidChar.codePointAt(0)!);
+  }
+
   // Generate instructions
   const instructions = generateInstructions(fountainScript, options);
 
