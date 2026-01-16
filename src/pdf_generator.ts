@@ -144,8 +144,8 @@ const LINE_HEIGHT = 12; // Single spacing
 
 // Character limits for text wrapping (Phase 1: extracted from hardcoded values)
 const DEFAULT_CHARACTERS_PER_LINE = {
-  action: 62,
-  dialogue: 35,
+  action: 61,
+  dialogue: 34,
   parenthetical: 25,
   titlePageCenter: 60,
   titlePageSides: 55,

@@ -354,10 +354,10 @@ describe("PDF Instruction Generation", () => {
         (inst): inst is TextInstruction => inst.type === "text",
       );
 
-      // Should have multiple text instructions due to wrapping at character limit (62 for actions)
+      // Should have multiple text instructions due to wrapping at character limit (61 for actions)
       expect(textInstructions.length).toBeGreaterThan(1);
 
-      // Each line should respect the action character limit (62 characters)
+      // Each line should respect the action character limit (61 characters)
       // Since we're using 100 A's, it should wrap into at least 2 lines
       expect(textInstructions.length).toBeGreaterThanOrEqual(2);
     });

@@ -36,7 +36,7 @@
 .screenplay-toc {
 	--screenplay-font: "Courier Prime";
 	--bold-weight: 600;
-	--max-width: 62ch;
+	--max-width: 61ch;
 	--synopsis-margin: 2ch;
 	font-family:
 		var(--screenplay-font), "Courier Final Draft", "Courier",
@@ -395,7 +395,7 @@
 }
 
 /* Align dialogue margin marks with action margin marks */
-/* Action is 62ch wide, dialogue-words is 34ch wide + 1.5in margin (≈15ch),
+/* Action is 61ch wide, dialogue-words is 34ch wide + 1.5in margin (≈15ch),
    in the end we experimentally determined that 16ch + 3pt works out just right */
 .screenplay .dialogue-words .note-margin {
 	left: calc(100% + 16ch + 3pt);
