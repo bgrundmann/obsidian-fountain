@@ -1,236 +1,71 @@
-# Functionality provided by the plugin
+# Obsidian Fountain Plugin
 
-- Distinct Fountain readonly & edit view with seamless toggling
-- PDF export with configurable options (paper size, bold scene headers)
-- Character-based rehearsal mode with blackout functionality
-- TOC in sidebar with clickable navigation
-	- click to scroll active readonly view / editor
-	- inline toggles for:
-		- show synopsis
-		- show TODO notes
-- Index card view (one index card per scene)
-  - Each card shows title, synopsis and todos
-  - Duplicate / delete scene / reorder scenes with drag & drop
-  - Edit synopsis directly on index cards
-  - Cross-file scene moving capabilities
-- Snippets system for reusable content blocks
-  - Store snippets in "# Snippets" section within the document
-  - Snip button for moving selected text to snippets
-  - Drag and drop snippets from sidebar into script
-  - Scaled preview rendering in TOC sidebar
-- Scene folding in edit mode
-  - Fold/unfold scenes with content using fold gutter or keyboard shortcuts
-  - Only scenes with meaningful content are foldable
-  - Integrates with CodeMirror 6's folding service
-  - Standard keyboard shortcuts (Ctrl+Shift+[ and Ctrl+Shift+])
-- Margin marks for script annotations (`[[@marker]]` syntax)
-  - Render as single words in the margin during reading view
-  - Common uses: effects, laughs, cues, beats
-  - Vertically aligned across different line types (action, dialogue)
-- Boneyard support (everything after "# boneyard" header is hidden when enabled)
-- Show/hide settings for synopsis, notes, and boneyard content
-- Removal/filter commands for selective content extraction
-  - Remove character dialogue from selected characters
-  - Remove scenes/sections with hierarchical tree selection UI
-  - Remove element types (action lines, transitions, etc.)
-  - Safety default: creates filtered copy instead of modifying original
-  
-# Guidelines for the LLM
+## Features
 
-I strongly prefer to agree on a design before writing any code. 
-So unless explicitely asked to write the code, do not touch the source code, 
-just talk about the design, provide SMALL code snippets in the chat (but only
-if that is a shorter way to get the idea across than describing it in words
--- don't do both! I can read code and understand it quickly), and or 
-create/modify the design documents.
+- **Views**: Readonly/edit modes with seamless toggling, PDF export, rehearsal mode with blackout
+- **Sidebar**: TOC with navigation, synopsis/notes toggles, snippets with drag-and-drop
+- **Index Cards**: Scene cards with drag-drop reordering, synopsis editing, cross-file moves
+- **Snippets**: Store in `# Snippets` section, snip button moves selection, drag into script
+- **Editor**: Scene folding (Ctrl+Shift+[ ]), character name completion
+- **Margin Marks**: `[[@marker]]` syntax renders in margin
+- **Boneyard**: Content after `# boneyard` hidden when enabled
+- **Removal Commands**: Filter by character, scenes, or element types (creates copy by default)
 
-# Implementation
+## LLM Guidelines
 
-Use typescript with functional programming style. Types are used extensively
-to improve readability and maintainability.
+**Discuss design before coding.** Unless explicitly asked to implement, only discuss design and provide small code snippets when clearer than prose.
 
-unit tests are used when possible and sensible, and are written using Jest.
-Note that unit tests never mock the parser. If a FountainScript instance is
-required, use `parse` to create a FountainScript instance.
+## Implementation
 
-## How to build
+TypeScript with functional style. Jest for testing (never mock the parser—use `parse()`).
 
-npm run build
-
-## How to tests
-
-npm run test
-
-## Plugin Architecture
-
-The plugin registers two main view types:
-- `FountainView` - handles fountain files with readonly/edit modes
-- `FountainSideBarView` - provides the sidebar
-	- table of contents with `TocSection`
-	- snippets with `SnippetsSection`
-
-## Custom Parser
-
-Written using peggy.js (see `fountain_parser.peggy`). Produces a parse tree represented by the `FountainScript` class. Text in the parse tree is represented by character ranges in the original source document, enabling efficient highlighting, editing operations, and cross-references.
-
-Key parser outputs:
-- `FountainScript` object containing:
-  - `document`: original source text
-  - `titlePage`: key-value pairs from title page
-  - `script`: array of fountain elements (scenes, dialogue, actions, etc.)
-  - `allCharacters`: extracted character names
-
-Supports various note types including margin marks (`[[@marker]]`), which are parsed as notes with a noteKind starting with "@".
-
-## View State Management
-
-`FountainView` manages two distinct states:
-- `ReadonlyViewState` - renders formatted fountain content, handles rehearsal mode
-- `EditorViewState` - integrates CodeMirror for editing with syntax highlighting
-
-The view seamlessly switches between states while maintaining scroll position and other UI state.
-
-## Per-View Script Caching
-
-Each view caches its parsed `FountainScript` to avoid re-parsing on every update. The cache is updated:
-- On file changes
-- On explicit edit operations
-- When switching between views
-
-This approach is efficient for typical use (few open views) while keeping the code simple compared to centralized caching.
-
-## Text Range System
-
-All fountain elements track their position in the source document via `Range` objects (`{start, end}`). This enables:
-- Efficient text extraction and HTML generation
-- Precise scroll-to-position functionality
-- Safe editing operations (replace, move, duplicate scenes)
-- Syntax highlighting in editor mode
-
-## Snippets Architecture
-
-The snippets feature allows reusable blocks of fountain content to be stored and managed within the same document. To handle the complexity of page breaks that separate snippets, we use an explicit interface design.
-
-### Snippet Interface
-
-Instead of treating snippets as simple arrays of fountain elements, we use an explicit interface that separates content from separators:
-
-```typescript
-interface Snippet {
-  content: FountainElement[];
-  pageBreak?: PageBreak;
-}
-
-type Snippets = Snippet[];
-
-interface ScriptStructure {
-  sections: StructureSection[];
-  snippets: Snippets;
-}
+```sh
+npm run build   # Build
+npm run test    # Test
 ```
 
-### Page Break Handling
+## Architecture
 
-- Page breaks (`===`) serve as separators between snippets and are NOT part of snippet content
-- Each snippet may optionally have an associated page break that followed it in the original document
-- The last snippet in a document may not have a page break
-- Empty snippets (ending with a page break but no content) are ignored during parsing
-- This explicit design prevents subtle bugs where page breaks are accidentally treated as snippet content
-
-### Implementation Notes
-
-- `FountainScript.structure()` parses everything after `# Snippets` as snippet content
-- Page breaks are captured and associated with the preceding snippet
-- When snippets are inserted via drag-and-drop, appropriate page breaks are automatically added
-- Instead of trying to modify a ScriptStructure in place after a modification we re-parse the document.
-
-### Snip Button Implementation
-
-The "snip" functionality is implemented through CodeMirror tooltips and position detection:
-
-- **Position Detection**: `getSnippetsStartPosition()` helper function finds the start of the "# Snippets" section by iterating through parsed fountain elements
-- **Tooltip Filtering**: `getSnipTooltips()` only creates snip button tooltips for text selections that occur before the snippets section
-- **Command Integration**: The "Save Selection as Snippet" command uses `hasValidSelectionForSnipping()` to determine availability
-- **Text Movement**: Selected text is removed from its original location and appended to the snippets section with appropriate page break separators
-
-### TOC View Integration
-
-The sidebar shows snippets in the lower half.
-
-- **Snippet Rendering**: Reuses existing fountain rendering logic with CSS scaling for compact display
-- **Drag & Drop**: Snippets can be dragged into the main document using CodeMirror's built-in drag-and-drop
-- **Preview Scaling**: CSS transforms scale snippet previews to fit sidebar width while maintaining formatting fidelity
-
-### Future Development Notes
-
-- **Parser Independence**: The core fountain parser is unchanged - all snippets logic is in `FountainScript.structure()`
-- **Re-parsing Strategy**: After any document modification, the entire document is re-parsed rather than attempting in-place modifications to `ScriptStructure`
-- **Position Tracking**: All snippet functionality relies on character position ranges (`Range` objects) for precise text operations
-- **Extension Points**: The snippet system can be extended by modifying `ScriptStructure` parsing and the TOC view rendering
-
-## PDF Generation
-
-Uses `pdf-lib` to generate formatted PDFs directly in the browser. Supports:
-- Multiple paper sizes (Letter, A4)
-- Standard screenplay formatting
-- Styled text (bold, italic, underline)
-
-Done in two steps:
-1. Generate a list of instructions from the parse tree (FountainScript)
-	- Each instruction is either new-page or draw text at position
-	- Positions are specified in points from lower-left corner of the page (as typical per PDF specification)
-2. Render instructions to a PDF
-
-### Note on layout
-
-Standard screenplay layout has a left margin of 1.5 inches for binding purposes. To deal with slightly different paper sizes (A4, letter) but maintain the same number of characters per line, and same number of lines per page (so that page per minute is consistent), we compute the remaining margins.
-
-That means we will sometimes not get the standard margin sizes, but we will always have the lines wrapped at the same place.
-
-## Source File Overview
-
-### Core Files
-
-- **`main.ts`** - Plugin entry point. Registers view types, commands, and handles plugin lifecycle. Manages PDF export workflow and file creation.
-
-- **`view.ts`** - Main FountainView class that handles fountain files. Contains ReadonlyViewState and EditorViewState classes for seamless mode switching, plus all editing operations (scene move/duplicate, text replacement).
-
-- **`fountain.ts`** - Core types and FountainScript class. Defines all fountain element types (Scene, Dialogue, Action, etc.) and provides text processing utilities, HTML escaping, character extraction, and margin mark detection (`extractMarginMarker`).
+### Views
+- `FountainView` — main view with `ReadonlyViewState` / `EditorViewState`
+- `FountainSideBarView` — TOC + snippets sections
 
 ### Parser
+Peggy.js grammar (`fountain_parser.peggy`) → `FountainScript` with:
+- `document`, `titlePage`, `script[]`, `allCharacters`
+- All elements have `Range` (`{start, end}`) for position tracking
+- Margin marks parsed as notes with `noteKind` starting with "@"
 
-- **`fountain_parser.peggy`** - Peggy.js grammar file defining fountain syntax parsing rules. Generates the actual parser from this declarative grammar.
+### Snippets
+```typescript
+interface Snippet { content: FountainElement[]; pageBreak?: PageBreak; }
+interface ScriptStructure { sections: StructureSection[]; snippets: Snippet[]; }
+```
+- Page breaks (`===`) separate snippets, not part of content
+- `FountainScript.structure()` parses snippets section
+- Re-parse document after modifications rather than in-place edits
 
-- **`fountain_parser.js`** - Generated JavaScript parser code from the peggy file. Contains the actual parsing logic.
+### PDF Generation
+Uses `pdf-lib`. Two-phase: generate draw instructions → render to PDF.
+Left margin fixed at 1.5" for binding; other margins computed to maintain consistent characters/line across paper sizes.
 
-- **`fountain_parser.d.ts`** - TypeScript type definitions for the generated parser.
+## Source Files
 
-### Views and Rendering
-
-- **`reading_view.ts`** - Renders formatted fountain content for readonly mode. Handles title page, scenes, dialogue, actions, and boneyard sections with show/hide settings.
-
-- **`fountain_editor.ts`** - CodeMirror integration providing syntax highlighting and decorations for edit mode. Handles bold, italic, underline, notes, and boneyard styling.
-
-- **`fountain_folding.ts`** - Scene folding functionality using CodeMirror 6's folding service. Creates fold ranges for scenes with content, integrates with existing script structure parsing, and provides position-based fold detection.
-
-- **`character_completion.ts`** - Character name autocompletion system for CodeMirror editor. Provides intelligent completion when typing character names using uppercase patterns or @ symbol prefix.
-
-- **`sidebar_view.ts`** - Table of contents and Snippets sidebar view. Provides clickable navigation and toggles for synopsis/notes display.
-
-- **`index_cards_view.ts`** - Index card view implementation with drag-and-drop scene reordering, synopsis editing, and cross-file scene moving capabilities.
-
-### PDF Export
-
-- **`pdf_generator.ts`** - PDF generation using pdf-lib. Converts fountain scripts to properly formatted screenplay PDFs with industry-standard layout and typography.
-
-- **`pdf_options_dialog.ts`** - Modal dialog for PDF export options (paper size, scene heading formatting, file overwrite handling).
-
-### Utilities
-
-- **`render_tools.ts`** - Shared HTML rendering utilities, including range-based element creation and blank line handling.
-
-- **`fuzzy_select_string.ts`** - Fuzzy search modal for string selection, used primarily for character selection in rehearsal mode.
-
-- **`removal_commands.ts`** - Base modal class and implementations for three removal commands (character dialogue, scenes/sections, element types). Features hierarchical checkbox selection, recursive tree rendering with ancestor tracking, and safe file duplication defaults.
-
-- **`removal_utilities.ts`** - Core removal logic for extracting wanted text ranges from fountain scripts. Implements O(n) algorithm for efficient element removal while preserving formatting.
+| File | Purpose |
+|------|---------|
+| `main.ts` | Plugin entry, commands, lifecycle |
+| `view.ts` | FountainView with readonly/edit states, editing ops |
+| `fountain.ts` | Core types, FountainScript, text utilities |
+| `fountain_parser.peggy` | Peggy grammar |
+| `reading_view.ts` | Readonly rendering |
+| `fountain_editor.ts` | CodeMirror syntax highlighting |
+| `fountain_folding.ts` | Scene folding service |
+| `character_completion.ts` | Character name autocompletion |
+| `sidebar_view.ts` | TOC + snippets sidebar |
+| `index_cards_view.ts` | Index card view |
+| `pdf_generator.ts` | PDF generation |
+| `pdf_options_dialog.ts` | PDF export options modal |
+| `render_tools.ts` | Shared HTML rendering |
+| `fuzzy_select_string.ts` | Fuzzy search modal |
+| `removal_commands.ts` | Removal command modals |
+| `removal_utilities.ts` | Range extraction for removals |
