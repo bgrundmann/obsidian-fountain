@@ -15,6 +15,8 @@
 
 **Discuss design before coding.** Unless explicitly asked to implement, only discuss design and provide small code snippets when clearer than prose.
 
+**DO NOT READ fonts.css.`** It only contains font-face declarations and wastes precious tokens.
+
 ## Implementation
 
 TypeScript with functional style. Jest for testing (never mock the parser—use `parse()`).
@@ -51,6 +53,8 @@ Left margin fixed at 1.5" for binding; other margins computed to maintain consis
 
 ## Source Files
 
+In the `src` folder:
+
 | File | Purpose |
 |------|---------|
 | `main.ts` | Plugin entry, commands, lifecycle |
@@ -69,3 +73,8 @@ Left margin fixed at 1.5" for binding; other margins computed to maintain consis
 | `fuzzy_select_string.ts` | Fuzzy search modal |
 | `removal_commands.ts` | Removal command modals |
 | `removal_utilities.ts` | Range extraction for removals |
+
+tests are in the `__tests__` folder.
+
+Styling is in `core_styles.css`. As part of the build process `esbuild.config.mjs` concatenates 
+`fonts.css` and `core_styles.css` into `styles.css`.
