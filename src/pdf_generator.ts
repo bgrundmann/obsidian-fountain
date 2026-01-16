@@ -23,8 +23,8 @@ export class UnsupportedCharacterError extends Error {
  * - Latin-1 supplement (U+00A0–U+00FF)
  * - Specific characters in 0x80–0x9F range (curly quotes, em-dash, euro, etc.)
  */
-const WIN1252_INVALID =
-  /[^\x00-\x7F\xA0-\xFF\u20AC\u201A\u0192\u201E\u2026\u2020\u2021\u02C6\u2030\u0160\u2039\u0152\u017D\u2018\u2019\u201C\u201D\u2022\u2013\u2014\u02DC\u2122\u0161\u203A\u0153\u017E\u0178]/u;
+// eslint-disable-next-line no-control-regex
+const WIN1252_INVALID = /[^\x00-\x7F\xA0-\xFF\u20AC\u201A\u0192\u201E\u2026\u2020\u2021\u02C6\u2030\u0160\u2039\u0152\u017D\u2018\u2019\u201C\u201D\u2022\u2013\u2014\u02DC\u2122\u0161\u203A\u0153\u017E\u0178]/u;
 
 /**
  * Finds the first character in the text that cannot be encoded in Windows-1252.
@@ -401,6 +401,7 @@ export async function generatePDF(
   // Check for unsupported characters before generating any instructions
   const invalidChar = findFirstNonWin1252Char(fountainScript.document);
   if (invalidChar) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     throw new UnsupportedCharacterError(invalidChar, invalidChar.codePointAt(0)!);
   }
 
