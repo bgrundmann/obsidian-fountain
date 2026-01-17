@@ -110,7 +110,8 @@ type WrappedLine = {
 };
 
 /**
- * Emits margin marks in the right margin at the current Y position.
+ * Emits margin marks in the left margin at the current Y position.
+ * Marks are right-aligned to sit near the text area.
  * Multiple margin marks are separated by spaces.
  */
 function emitMarginMarks(
@@ -123,8 +124,12 @@ function emitMarginMarks(
   // Combine all margin marks with a space separator, uppercase to match reading view
   const marginText = marginMarks.join(" ").toUpperCase();
 
-  // Position in the right margin area (past the text area)
-  const marginX = pageState.pageWidth - pageState.margins.right + 10;
+  // Calculate text width for right-alignment in left margin
+  const charWidth = getCharacterWidth(pageState.fontSize);
+  const textWidth = marginText.length * charWidth;
+
+  // Right-align in left margin (end 10pt before text area starts)
+  const marginX = pageState.margins.left - textWidth - 10;
 
   emitText(instructions, pageState, {
     data: marginText,
@@ -1088,7 +1093,7 @@ function generateActionInstructions(
         }
       }
 
-      // Render margin marks in the right margin
+      // Render margin marks in the left margin
       if (lineInfo.marginMarks.length > 0) {
         emitMarginMarks(instructions, currentState, lineInfo.marginMarks);
       }
@@ -1195,7 +1200,7 @@ function generateLyricsInstructions(
         }
       }
 
-      // Render margin marks in the right margin
+      // Render margin marks in the left margin
       if (lineInfo.marginMarks.length > 0) {
         emitMarginMarks(instructions, currentState, lineInfo.marginMarks);
       }
@@ -1464,7 +1469,7 @@ function emitDialogueOnCurrentPage(
         }
       }
 
-      // Render margin marks in the right margin
+      // Render margin marks in the left margin
       if (dialogueLine.marginMarks.length > 0) {
         emitMarginMarks(instructions, currentState, dialogueLine.marginMarks);
       }
