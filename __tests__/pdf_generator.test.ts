@@ -802,7 +802,7 @@ EXT. PARK - DAY
 Action text [[regular note]] more text.
 
 JOHN
-Hello [[+add emphasis]] there [[- remove uncertainty]]!
+Hello [[+add emphasis]] there [[-remove uncertainty]]!
 
 MARY
 [[todo: Mary needs motivation]] Hi John.
@@ -849,7 +849,7 @@ MARY
       const removalInstructions = textInstructions.filter(
         (inst) => inst.color === "red" && !inst.italic && inst.strikethrough,
       );
-      expect(removalInstructions.length).toBe(3);
+      expect(removalInstructions.length).toBe(2);
 
       // Test todo notes (gray with TODO prefix)
       const todoInstructions = textInstructions.filter(
@@ -872,7 +872,7 @@ MARY
       expect(spaceInstructions.length).toBeGreaterThan(10); // Should have many spaces around notes
     });
 
-    test("should render margin marks in the right margin", () => {
+    test("should render margin marks in the left margin", () => {
       const script = parser.parse(
         "Bene turns over the card. [[@effect]]\n\nJOHN\nHello there. [[@laugh]]",
       );
@@ -900,11 +900,11 @@ MARY
       expect(effectMargin).toBeDefined();
       expect(laughMargin).toBeDefined();
 
-      // Margin marks should be positioned in the right margin (past the text area)
-      // The right margin starts at pageWidth - margins.right, plus some offset
-      const pageWidth = 612; // letter width
-      expect(effectMargin!.x).toBeGreaterThan(pageWidth - 100); // Should be in right margin area
-      expect(laughMargin!.x).toBeGreaterThan(pageWidth - 100);
+      // Margin marks should be positioned in the left margin (before the text area)
+      // The left margin is 108pt (1.5"), marks should be right-aligned within it
+      const leftMargin = 108;
+      expect(effectMargin!.x).toBeLessThan(leftMargin); // Should be in left margin area
+      expect(laughMargin!.x).toBeLessThan(leftMargin);
 
       // Margin marks should be rendered in gray
       expect(effectMargin!.color).toBe("gray");
@@ -946,8 +946,8 @@ MARY
       );
       expect(marginInstruction).toBeDefined();
 
-      // And they should be at different x positions
-      expect(marginInstruction!.x).toBeGreaterThan(actionInstruction!.x + 100);
+      // Margin mark should be in the left margin (before the action text)
+      expect(marginInstruction!.x).toBeLessThan(actionInstruction!.x);
     });
 
     test("should hide margin marks when hideMarginMarks is true", () => {
