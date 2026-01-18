@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.22.1] - Margin Marks on the left
+
+- **Margin Marks on the left**: Margin marks (`[[@word]]`) now render on the left margin (as that tends to be larger than the right margin)
+
 ## [0.22.0] - Margin Marks in PDF
 
 ### Added
