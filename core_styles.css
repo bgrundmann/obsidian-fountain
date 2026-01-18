@@ -339,7 +339,7 @@
 
 .screenplay .note-margin {
 	position: absolute;
-	left: calc(100% + 2ch);
+	right: calc(100% + 1ch);
 	width: 8ch;
 	color: var(--text-muted);
 	font-size: 0.9em;
@@ -349,6 +349,7 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	text-transform: uppercase;
+	text-align: right;
 }
 
 /* Parent needs relative positioning for margin notes */
@@ -362,11 +363,9 @@
 	position: relative;
 }
 
-/* Align dialogue margin marks with action margin marks */
-/* Action is 61ch wide, dialogue-words is 34ch wide + 1.5in margin (≈15ch),
-   in the end we experimentally determined that 16ch + 3pt works out just right */
+/* Align dialogue margin marks with action margin marks - position in left margin */
 .screenplay .dialogue-words .note-margin {
-	left: calc(100% + 16ch + 3pt);
+	right: calc(100% + 16ch + 1ch);
 }
 
 .screenplay .blackout {
