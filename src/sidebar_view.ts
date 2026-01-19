@@ -3,6 +3,7 @@ import {
   type FountainScript,
   type Range,
   type Snippet,
+  type StructureScene,
   type StructureSection,
   type Synopsis,
   dataRange,
@@ -184,7 +185,7 @@ class TocSection extends SidebarSection {
           );
           tocControls.createEl("label", {
             attr: { for: "synopsis" },
-            text: "synopsis?",
+            text: "preview?",
           });
         });
 
@@ -199,6 +200,49 @@ class TocSection extends SidebarSection {
         }
       });
     });
+  }
+
+  private getScenePreview(
+    script: FountainScript,
+    scene: StructureScene,
+  ): string | null {
+    const parts: string[] = [];
+    let totalLength = 0;
+    const maxLength = 100;
+
+    for (const el of scene.content) {
+      if (totalLength >= maxLength) break;
+
+      if (el.kind === "action") {
+        // Skip blank lines (actions where all lines have no elements)
+        if (el.lines.every((l) => l.elements.length === 0)) continue;
+        const text = script.unsafeExtractRaw(el.range, true).trim();
+        if (text) {
+          parts.push(text);
+          totalLength += text.length;
+        }
+      } else if (el.kind === "dialogue") {
+        // Format as "CHARACTER: dialogue"
+        const charName = script.unsafeExtractRaw(el.characterRange, true).trim();
+        if (el.lines.length > 0) {
+          const firstLine = el.lines[0];
+          const dialogueText = script
+            .unsafeExtractRaw(firstLine.range, true)
+            .trim();
+          const formatted = `${charName}: ${dialogueText}`;
+          parts.push(formatted);
+          totalLength += formatted.length;
+        }
+      }
+    }
+
+    if (parts.length === 0) return null;
+
+    let preview = parts.join(" ");
+    if (preview.length > maxLength) {
+      preview = preview.substring(0, maxLength).trim() + "...";
+    }
+    return preview;
   }
 
   private renderSynopsis(
@@ -254,7 +298,20 @@ class TocSection extends SidebarSection {
                   this.callbacks.scrollToRange(el_scene.range);
                 });
               }
-              this.renderSynopsis(s, script, el.synopsis);
+              if (el.synopsis) {
+                this.renderSynopsis(s, script, el.synopsis);
+              } else {
+                const preview = this.getScenePreview(script, el);
+                if (preview) {
+                  const d = s.createDiv({
+                    cls: "synopsis",
+                    text: preview,
+                  });
+                  if (!this.showSynopsis) {
+                    d.hide();
+                  }
+                }
+              }
               const todos = extractNotes(el.content).filter(
                 (n) => n.noteKind === "todo",
               );

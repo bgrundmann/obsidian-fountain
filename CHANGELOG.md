@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.23.0] - Scene Preview in TOC
+
+### Added
+- **Scene Preview**: When a scene has no synopsis, the sidebar TOC now shows the first lines of content (action or dialogue) as a preview
+  - Makes it easier to navigate screenplays with many similar scene headings
+  - Previews are truncated to ~100 characters
+  - Dialogue shown as "CHARACTER: first line..."
+  - Controlled by the "preview?" toggle (renamed from "synopsis?")
+
 ## [0.22.1] - Margin Marks on the left
 
 - **Margin Marks on the left**: Margin marks (`[[@word]]`) now render on the left margin (as that tends to be larger than the right margin)
