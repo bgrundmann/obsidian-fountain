@@ -67,7 +67,10 @@ In the `src` folder:
 | `character_completion.ts` | Character name autocompletion |
 | `sidebar_view.ts` | TOC + snippets sidebar |
 | `index_cards_view.ts` | Index card view |
-| `pdf_generator.ts` | PDF generation |
+| `pdf_generator.ts` | PDF generation entry point and facade |
+| `pdf_types.ts` | PDF shared types, constants, utilities |
+| `pdf_instruction_generator.ts` | PDF instruction generation from AST |
+| `pdf_renderer.ts` | PDF rendering using pdf-lib |
 | `pdf_options_dialog.ts` | PDF export options modal |
 | `render_tools.ts` | Shared HTML rendering |
 | `fuzzy_select_string.ts` | Fuzzy search modal |
