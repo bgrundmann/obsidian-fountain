@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-fountain-plugin",
-	"version": "0.22.1",
+	"version": "0.23.0",
 	"description": "This is a fountain plugin for obsidian",
 	"main": "main.js",
 	"scripts": {
