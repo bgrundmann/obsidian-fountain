@@ -9,6 +9,13 @@
   - Dialogue shown as "CHARACTER: first line..."
   - Controlled by the "preview?" toggle (renamed from "synopsis?")
 
+### Improved
+- **TOC Styling**: Refreshed sidebar TOC appearance
+  - Uses UI font for better readability (previews still use Courier Prime)
+  - Added hover highlighting for clickable items
+  - Better spacing between scenes
+  - Content indented under section headings (only when sections are present)
+
 ## [0.22.1] - Margin Marks on the left
 
 - **Margin Marks on the left**: Margin marks (`[[@word]]`) now render on the left margin (as that tends to be larger than the right margin)

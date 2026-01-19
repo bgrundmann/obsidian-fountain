@@ -31,6 +31,15 @@
 	word-break: normal;
 }
 
+/* TOC uses UI font for better readability in sidebar */
+.screenplay-toc {
+	font-family: var(--font-interface);
+	font-size: var(--font-ui-small);
+	line-height: 1.4;
+	max-width: none;
+	padding: 4px;
+}
+
 .screenplay-snippets .snippet {
 	border: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-m);
@@ -180,8 +189,7 @@
 	margin: 1em 0;
 }
 
-.screenplay .scene-heading,
-.screenplay-toc .scene-heading {
+.screenplay .scene-heading {
 	padding: 0px !important;
 	text-transform: uppercase;
 	font-weight: var(--bold-weight);
@@ -190,6 +198,28 @@
 	color: var(--h1-color);
 	flex-grow: 1;
 	margin: 0;
+}
+
+.screenplay-toc .scene-heading {
+	text-transform: uppercase;
+	font-weight: var(--bold-weight);
+	font-size: var(--font-ui-small);
+	text-align: left;
+	color: var(--text-normal);
+	margin: 0;
+	margin-top: 4px;
+	padding: 2px 4px;
+	border-radius: 3px;
+	cursor: pointer;
+}
+
+.screenplay-toc .scene-heading:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+/* First scene heading after a section doesn't need extra top margin */
+.screenplay-toc .section + .scene-heading {
+	margin-top: 2px;
 }
 
 .screenplay .scene-number-left {
@@ -218,13 +248,20 @@
 .screenplay h2,
 .screenplay h3,
 .screenplay h4,
-.screenplay h5,
+.screenplay h5 {
+	font-size: inherit;
+	text-align: left;
+	text-transform: uppercase;
+	font-weight: var(--bold-weight);
+	margin: 0;
+}
+
 .screenplay-toc h1,
 .screenplay-toc h2,
 .screenplay-toc h3,
 .screenplay-toc h4,
 .screenplay-toc h5 {
-	font-size: inherit;
+	font-size: var(--font-ui-small);
 	text-align: left;
 	text-transform: uppercase;
 	font-weight: var(--bold-weight);
@@ -233,11 +270,35 @@
 
 /********* sections */
 
-.screenplay .section,
+.screenplay .section {
+	text-transform: uppercase;
+	font-weight: var(--bold-weight);
+	text-align: left;
+}
+
 .screenplay-toc .section {
 	text-transform: uppercase;
 	font-weight: var(--bold-weight);
 	text-align: left;
+	font-size: var(--font-ui-small);
+	color: var(--text-normal);
+	margin-top: 8px;
+	padding: 2px 4px;
+	border-radius: 3px;
+	cursor: pointer;
+}
+
+.screenplay-toc .section:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+/* Indent scenes and nested content when inside a section that has a heading */
+.screenplay-toc section:has(> .section) > .scene-heading,
+.screenplay-toc section:has(> .section) > .synopsis,
+.screenplay-toc section:has(> .section) > .preview,
+.screenplay-toc section:has(> .section) > .todo,
+.screenplay-toc section:has(> .section) > section {
+	margin-left: 12px;
 }
 
 /********* synopsis and notes */
@@ -257,10 +318,25 @@
 .screenplay-toc .synopsis {
 	color: var(--text-muted);
 	font-style: italic;
-	margin-left: var(--synopsis-margin);
-	margin-right: var(--synopsis-margin);
-	background-color: var(--background-primary-alt);
-	font-size: 11px;
+	font-size: var(--font-ui-smaller);
+	margin-left: 8px;
+	padding: 2px 4px;
+	cursor: pointer;
+	border-radius: 3px;
+}
+
+.screenplay-toc .synopsis:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.screenplay-toc .preview {
+	color: var(--text-faint);
+	font-family:
+		var(--screenplay-font), "Courier Final Draft", "Courier",
+		var(--font-monospace);
+	font-size: var(--font-ui-smaller);
+	margin-left: 8px;
+	padding: 2px 4px;
 }
 
 .screenplay .boneyard {
@@ -308,9 +384,16 @@
 	);
 }
 
-.screenplay-toc .note-todo {
-	font-size: 10pt;
-	margin-left: 20px;
+.screenplay-toc .todo {
+	font-size: var(--font-ui-smaller);
+	margin-left: 16px;
+	padding: 2px 4px;
+	border-radius: 3px;
+	cursor: pointer;
+}
+
+.screenplay-toc .todo:hover {
+	background-color: var(--background-modifier-hover);
 }
 
 .screenplay-toc .toc-controls {

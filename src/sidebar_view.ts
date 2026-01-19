@@ -176,7 +176,7 @@ class TocSection extends SidebarSection {
               checkbox.addEventListener("change", (event: Event) => {
                 this.showSynopsis = checkbox.checked;
                 for (const el of container.querySelectorAll<HTMLElement>(
-                  ".synopsis",
+                  ".synopsis, .preview",
                 )) {
                   el.toggle(this.showSynopsis);
                 }
@@ -194,7 +194,9 @@ class TocSection extends SidebarSection {
         }
 
         if (!this.showSynopsis) {
-          for (const el of div.querySelectorAll<HTMLElement>(".synopsis")) {
+          for (const el of div.querySelectorAll<HTMLElement>(
+            ".synopsis, .preview",
+          )) {
             el.hide();
           }
         }
@@ -304,7 +306,7 @@ class TocSection extends SidebarSection {
                 const preview = this.getScenePreview(script, el);
                 if (preview) {
                   const d = s.createDiv({
-                    cls: "synopsis",
+                    cls: "preview",
                     text: preview,
                   });
                   if (!this.showSynopsis) {
