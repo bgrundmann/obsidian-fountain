@@ -8,7 +8,7 @@ import type {
 } from "./fountain";
 import { dataRange, extractNotes } from "./fountain";
 
-import { endOfRange } from "./render_tools";
+import { endOfRange, getScenePreview } from "./render_tools";
 
 export type Callbacks = {
   reRender: () => void;
@@ -215,6 +215,7 @@ function renderSynopsis(
   synopsis: Synopsis | undefined,
   startPosIfEmpty: number,
   callbacks: Callbacks,
+  scene?: StructureScene,
 ): void {
   const synopsisRange = synopsis?.range || {
     start: startPosIfEmpty,
@@ -242,6 +243,13 @@ function renderSynopsis(
         });
       }
       if (!synopsis) {
+        const preview = scene ? getScenePreview(script, scene) : null;
+        if (preview) {
+          div2.createDiv({
+            cls: "preview",
+            text: preview,
+          });
+        }
         div2.createDiv({
           cls: ["synopsis", "show-on-hover"],
           text: "Click to edit",
@@ -335,6 +343,7 @@ function renderIndexCard(
           scene.synopsis,
           heading.range.end,
           callbacks,
+          scene,
         );
         const todos = extractNotes(content).filter(
           (n) => n.noteKind === "todo",
