@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.24.0] - Index Card Previews
+
+### Added
+- **Index Card Previews**: Scenes without a synopsis now show a content preview in the index card view
+  - Uses the same preview logic as the sidebar TOC
+  - Previews show up to 220 characters of action/dialogue content (more than in the sidebar TOC)
+  - Clicking on a preview still opens the synopsis editor
+
+### Fixed
+- **Empty Synopsis Handling**: Clearing a synopsis in the index card editor now removes it entirely instead of leaving an empty `= ` line
+
+### Improved
+- **Code Cleanup**: Refactored text extraction methods for clarity
+  - Renamed `unsafeExtractRaw` to `sliceDocument` and `sliceDocumentForDisplay`
+  - Removed unused HTML escaping code
+
 ## [0.23.0] - Scene Preview in TOC
 
 ### Added
