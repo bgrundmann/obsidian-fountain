@@ -26,7 +26,7 @@ Reusable dialogue.`;
     let snippetsStart: number | null = null;
     for (const element of script.script) {
       if (element.kind === "section") {
-        const sectionText = script.unsafeExtractRaw(element.range);
+        const sectionText = script.sliceDocument(element.range);
         if (sectionText.toLowerCase().includes("snippets")) {
           snippetsStart = element.range.start;
           break;
@@ -62,7 +62,7 @@ Some boneyard content.`;
     let snippetsStart: number | null = null;
     for (const element of script.script) {
       if (element.kind === "section") {
-        const sectionText = script.unsafeExtractRaw(element.range);
+        const sectionText = script.sliceDocument(element.range);
         if (sectionText.toLowerCase().includes("snippets")) {
           snippetsStart = element.range.start;
           break;
@@ -96,7 +96,7 @@ Snippet content here.`;
 
     for (const element of script.script) {
       if (element.kind === "section") {
-        const sectionText = script.unsafeExtractRaw(element.range);
+        const sectionText = script.sliceDocument(element.range);
         if (sectionText.toLowerCase().includes("boneyard")) {
           boneyardStart = element.range.start;
         } else if (sectionText.toLowerCase().includes("snippets")) {
@@ -130,7 +130,7 @@ This text is in snippets.`;
     let snippetsStart: number | null = null;
     for (const element of script.script) {
       if (element.kind === "section") {
-        const sectionText = script.unsafeExtractRaw(element.range);
+        const sectionText = script.sliceDocument(element.range);
         if (sectionText.toLowerCase().includes("snippets")) {
           snippetsStart = element.range.start;
           break;
@@ -168,7 +168,7 @@ Content in uppercase snippets section.`;
     let snippetsStart: number | null = null;
     for (const element of script.script) {
       if (element.kind === "section") {
-        const sectionText = script.unsafeExtractRaw(element.range);
+        const sectionText = script.sliceDocument(element.range);
         if (sectionText.toLowerCase().includes("snippets")) {
           snippetsStart = element.range.start;
           break;
@@ -197,7 +197,7 @@ Main content.
     let snippetsStart: number | null = null;
     for (const element of script.script) {
       if (element.kind === "section") {
-        const sectionText = script.unsafeExtractRaw(element.range);
+        const sectionText = script.sliceDocument(element.range);
         if (sectionText.toLowerCase().includes("snippets")) {
           snippetsStart = element.range.start;
           break;

@@ -317,8 +317,13 @@ export class RemoveStructureModal extends RemovalModal {
     ).length;
     const totalCount = this.structureCheckboxes.size;
 
-    const descEl = contentContainer.createEl("p");
-    descEl.innerHTML = `Select scenes and sections to remove from the script:<br><strong>${selectedCount} of ${totalCount} items selected</strong>`;
+    const descEl = contentContainer.createEl("p", {}, (p) => {
+      p.appendText("Select scenes and sections to remove from the script:");
+      p.createEl("br");
+      p.createEl("strong", {
+        text: `${selectedCount} of ${totalCount} items selected`,
+      });
+    });
     descEl.style.marginBottom = "var(--size-4-4)";
     descEl.style.color = "var(--text-muted)";
 
@@ -430,7 +435,7 @@ export class RemoveStructureModal extends RemovalModal {
       }
       isScene = true;
     } else if (item.kind === "section" && item.section) {
-      const sectionText = this.script.unsafeExtractRaw(item.section.range);
+      const sectionText = this.script.sliceDocument(item.section.range);
       const title = sectionText.split("\n")[0].replace(/^#+\s*/, "");
       displayName = `${"#".repeat(item.section.depth)} ${title}`;
     }

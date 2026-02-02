@@ -1,7 +1,6 @@
 export {
   FountainScript,
   mergeText,
-  escapeHtml,
   intersect,
   extractNotes,
   extractTransitionText,
@@ -254,15 +253,6 @@ function extractMarginMarker(note: Note): string | null {
   return note.noteKind.startsWith("@") ? note.noteKind.substring(1) : null;
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
 /** Escape leading spaces (that is spaces at beginning of the string or after newlines) if cond is true. */
 function maybeEscapeLeadingSpaces(cond: boolean, s: string): string {
   return cond
@@ -277,7 +267,7 @@ function extractTransitionText(
   transition: Transition,
   script: FountainScript,
 ): string {
-  const rawText = script.unsafeExtractRaw(transition.range).trim();
+  const rawText = script.sliceDocument(transition.range).trim();
 
   if (transition.forced && rawText.startsWith(">")) {
     return rawText.substring(1).trim();
@@ -435,22 +425,15 @@ class FountainScript {
     this.allCharacters = characters;
   }
 
-  /**  Extract some text from the fountain document safe to be used
-   as HTML source.
-   */
-  extractAsHtml(r: Range, escapeLeadingSpaces = false): string {
-    const safe = escapeHtml(this.unsafeExtractRaw(r));
-    return maybeEscapeLeadingSpaces(escapeLeadingSpaces, safe);
+  /** Extract text from the fountain document. */
+  sliceDocument(r: Range): string {
+    return this.document.slice(r.start, r.end);
   }
 
-  /** Extract some text from the fountain document. CAREFUL this
-    text is NOT html escaped!
-    @param escapeLeadingSpaces if true leading spaces are replaced by non breaking space */
-  unsafeExtractRaw(r: Range, escapeLeadingSpaces = false): string {
-    return maybeEscapeLeadingSpaces(
-      escapeLeadingSpaces,
-      this.document.slice(r.start, r.end),
-    );
+  /** Extract text from the fountain document for display.
+      Leading spaces are replaced with non-breaking spaces. */
+  sliceDocumentForDisplay(r: Range): string {
+    return maybeEscapeLeadingSpaces(true, this.document.slice(r.start, r.end));
   }
 
   /**
@@ -516,7 +499,7 @@ class FountainScript {
         parent.appendText(
           maybeEscapeLeadingSpaces(
             escapeLeadingSpaces,
-            this.unsafeExtractRaw(el.range),
+            this.sliceDocument(el.range),
           ),
         );
         return true;
@@ -570,7 +553,7 @@ class FountainScript {
               span.appendText(
                 maybeEscapeLeadingSpaces(
                   true,
-                  this.unsafeExtractRaw(el.textRange),
+                  this.sliceDocument(el.textRange),
                 ),
               );
             },
@@ -628,7 +611,7 @@ class FountainScript {
       const fe = this.script[i];
       if (fe.kind === "section" && fe.depth <= 3) {
         // Check if this is a "Snippets" section
-        const sectionText = this.unsafeExtractRaw(fe.range).trim();
+        const sectionText = this.sliceDocument(fe.range).trim();
         if (sectionText.toLowerCase().includes("snippets")) {
           snippetsStartIndex = i;
           break;
@@ -765,7 +748,7 @@ class FountainScript {
     for (const element of this.script) {
       // Check for boneyard section - if found and hideBoneyard is true, stop processing
       if (element.kind === "section" && settings.hideBoneyard) {
-        const title = this.unsafeExtractRaw(element.range);
+        const title = this.sliceDocument(element.range);
         if (
           title
             .toLowerCase()

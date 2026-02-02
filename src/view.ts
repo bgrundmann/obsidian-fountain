@@ -262,10 +262,6 @@ class ReadonlyViewState {
     const mainblock = this.contentEl.createDiv(
       this.showMode === ShowMode.IndexCards ? undefined : "screenplay",
     );
-    // We are using innerHTML here. Which is not ideal and states back
-    // from when we were using the fountain library.  Now that we are
-    // using our own parser we could in theory rewrite this to use
-    // the recommended obsidian create... calls.
     switch (this.showMode) {
       case ShowMode.IndexCards:
         renderIndexCards(mainblock, this.path, fp, callbacks);
@@ -357,7 +353,7 @@ function getSnippetsStartPosition(parentView: FountainView): number | null {
   // Find the "# Snippets" header position
   for (const element of script.script) {
     if (element.kind === "section") {
-      const sectionText = script.unsafeExtractRaw(element.range);
+      const sectionText = script.sliceDocument(element.range);
       if (sectionText.toLowerCase().includes("snippets")) {
         return element.range.start;
       }

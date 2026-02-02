@@ -218,18 +218,18 @@ class TocSection extends SidebarSection {
       if (el.kind === "action") {
         // Skip blank lines (actions where all lines have no elements)
         if (el.lines.every((l) => l.elements.length === 0)) continue;
-        const text = script.unsafeExtractRaw(el.range, true).trim();
+        const text = script.sliceDocumentForDisplay(el.range).trim();
         if (text) {
           parts.push(text);
           totalLength += text.length;
         }
       } else if (el.kind === "dialogue") {
         // Format as "CHARACTER: dialogue"
-        const charName = script.unsafeExtractRaw(el.characterRange, true).trim();
+        const charName = script.sliceDocumentForDisplay(el.characterRange).trim();
         if (el.lines.length > 0) {
           const firstLine = el.lines[0];
           const dialogueText = script
-            .unsafeExtractRaw(firstLine.range, true)
+            .sliceDocumentForDisplay(firstLine.range)
             .trim();
           const formatted = `${charName}: ${dialogueText}`;
           parts.push(formatted);
@@ -257,7 +257,7 @@ class TocSection extends SidebarSection {
         const d = s.createDiv({
           cls: "synopsis",
           attr: dataRange(l),
-          text: script.unsafeExtractRaw(l, true),
+          text: script.sliceDocumentForDisplay(l),
         });
         d.addEventListener("click", (evt: Event) => {
           this.callbacks.scrollToRange(l);
@@ -276,7 +276,7 @@ class TocSection extends SidebarSection {
         const sect = section.section;
         const d = s.createEl("h1", {
           cls: "section",
-          text: script.unsafeExtractRaw(sect.range),
+          text: script.sliceDocument(sect.range),
         });
         d.addEventListener("click", (evt: Event) => {
           this.callbacks.scrollToRange(sect.range);

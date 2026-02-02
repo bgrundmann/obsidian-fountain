@@ -56,7 +56,7 @@ function renderDialogue(
     (div) => {
       div.createEl("h4", {
         cls: "dialogue-character",
-        text: script.unsafeExtractRaw({
+        text: script.sliceDocument({
           start: dialogue.characterRange.start,
           end: dialogue.characterExtensionsRange.end,
         }),
@@ -72,7 +72,7 @@ function renderDialogue(
       (div) => {
         div.createDiv({
           cls: "dialogue-parenthetical",
-          text: script.unsafeExtractRaw(p),
+          text: script.sliceDocument(p),
         });
       },
     );
@@ -143,7 +143,7 @@ function renderSynopsis(
     parent.createDiv({
       cls: "synopsis",
       attr: dataRange(l),
-      text: script.unsafeExtractRaw(l, true),
+      text: script.sliceDocumentForDisplay(l),
     });
   }
   renderBlankLine(parent, synopsis.range);
@@ -212,7 +212,7 @@ function renderElement(
 
     case "section":
       {
-        const title = script.unsafeExtractRaw(el.range);
+        const title = script.sliceDocument(el.range);
         if (
           title
             .toLowerCase()

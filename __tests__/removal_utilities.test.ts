@@ -385,7 +385,7 @@ Character walks.`;
         (section: { section?: { range: Range } }) =>
           section.section &&
           script
-            .unsafeExtractRaw(section.section.range)
+            .sliceDocument(section.section.range)
             .includes("SECTION ONE"),
       );
 

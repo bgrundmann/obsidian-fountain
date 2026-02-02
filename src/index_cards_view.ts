@@ -178,7 +178,7 @@ function editSceneHeadingHandler(
   callbacks: Callbacks,
 ): void {
   const heading = indexCardDiv.querySelector(".scene-heading");
-  const headingTextWithNewlines = script.unsafeExtractRaw(headingRange);
+  const headingTextWithNewlines = script.sliceDocument(headingRange);
   const headingText = headingTextWithNewlines.replace(/\n{1,2}/, "");
   const numNewlines = headingTextWithNewlines.length - headingText.length;
 
@@ -238,7 +238,7 @@ function renderSynopsis(
         div2.createDiv({
           cls: "synopsis",
           attr: dataRange(l),
-          text: script.unsafeExtractRaw(l, true),
+          text: script.sliceDocumentForDisplay(l),
         });
       }
       if (!synopsis) {
@@ -363,7 +363,7 @@ function renderSection(
   callbacks: Callbacks,
 ): void {
   if (section.section) {
-    const title = script.unsafeExtractRaw(section.section.range);
+    const title = script.sliceDocument(section.section.range);
     const hTag =
       `h${section.section.depth ?? 1}` as keyof HTMLElementTagNameMap;
     if (

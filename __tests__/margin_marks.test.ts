@@ -113,7 +113,7 @@ describe("Margin Marks", () => {
 
       expect(notes[0].noteKind).toBe("@effect");
       // The text after the marker word is part of textRange
-      const noteText = script.unsafeExtractRaw(notes[0].textRange);
+      const noteText = script.sliceDocument(notes[0].textRange);
       expect(noteText).toBe(" with some text");
     });
 
