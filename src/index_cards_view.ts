@@ -160,11 +160,17 @@ function editSynopsisHandler(
     callbacks.reRender();
   });
   okButton.addEventListener("click", () => {
-    const synopsified = textarea.value
-      .split("\n")
-      .map((l) => `= ${l}`)
-      .join("\n");
-    callbacks.replaceText(range, `${synopsified}\n`);
+    const trimmed = textarea.value.trim();
+    if (trimmed === "") {
+      // Empty synopsis - remove it entirely
+      callbacks.replaceText(range, "");
+    } else {
+      const synopsified = textarea.value
+        .split("\n")
+        .map((l) => `= ${l}`)
+        .join("\n");
+      callbacks.replaceText(range, `${synopsified}\n`);
+    }
     callbacks.requestSave();
     callbacks.reRender();
   });
@@ -243,7 +249,7 @@ function renderSynopsis(
         });
       }
       if (!synopsis) {
-        const preview = scene ? getScenePreview(script, scene) : null;
+        const preview = scene ? getScenePreview(script, scene, 220) : null;
         if (preview) {
           div2.createDiv({
             cls: "preview",

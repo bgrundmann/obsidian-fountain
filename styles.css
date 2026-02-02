@@ -593,6 +593,14 @@
 	/* padding: 8px; */
 }
 
+.screenplay-index-card .preview {
+	color: var(--text-faint);
+	font-family:
+		var(--screenplay-font), "Courier Final Draft", "Courier",
+		var(--font-monospace);
+	font-size: 11px;
+}
+
 .screenplay-index-card textarea {
 	font-size: 11px;
 	flex: 1;
