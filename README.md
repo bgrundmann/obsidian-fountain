@@ -21,7 +21,7 @@
 
 ## Command reference
 
-See here [Command Reference](https://github.com/obsidian-fountain/obsidian-fountain/blob/main/docs/COMMAND_REFERENCE.md).
+See here [Command Reference](https://github.com/bgrundmann/obsidian-fountain/blob/main/COMMAND_REFERENCE.md).
 
 ## Known Issues
 
