@@ -17,6 +17,7 @@
 - button in ribbon to create a new script (as scripts have .fountain extension)
 - boneyard support (content after "# boneyard" header can be hidden)
 - folding of scenes
+- toggle spell check command (off by default to avoid distraction during creative writing)
 
 ## Command reference
 

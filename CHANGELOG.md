@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.25.0] - Spelling Woes
+
+- **Toggle Spell Check**: New command to enable/disable spell checking in the editor
+  - Spell check is off by default to avoid distraction during creative writing
+  - Toggles the browser's built-in spell checker
+  - Shows a notification when toggled ("Spell check enabled" / "Spell check disabled")
+  - Setting persists while the file is open but resets when closed
+
 ## [0.24.0] - Index Card Previews
 
 ### Added

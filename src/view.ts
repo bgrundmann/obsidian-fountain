@@ -421,6 +421,7 @@ class EditorViewState {
     text: string,
     requestSave: () => void,
     private parentView: FountainView,
+    spellCheckEnabled: boolean,
   ) {
     contentEl.empty();
     const editorContainer = contentEl.createDiv("custom-editor-component");
@@ -475,6 +476,7 @@ class EditorViewState {
       state: state,
       parent: editorContainer,
     });
+    this.cmEditor.contentDOM.spellcheck = spellCheckEnabled;
   }
 
   script(): FountainScript {
@@ -552,6 +554,10 @@ class EditorViewState {
   focus(): void {
     this.cmEditor.focus();
   }
+
+  setSpellCheck(enabled: boolean): void {
+    this.cmEditor.contentDOM.spellcheck = enabled;
+  }
 }
 
 /** Stored in persistent state (workspace.json under the fountain key) */
@@ -566,6 +572,7 @@ export class FountainView extends TextFileView {
   private showViewMenuAction: HTMLElement;
   private stopRehearsalModeAction: HTMLElement;
   private cachedScript: FountainScript;
+  private spellCheckEnabled = false;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
@@ -717,6 +724,14 @@ export class FountainView extends TextFileView {
         editorState.focus();
       });
     }
+  }
+
+  toggleSpellCheck(): boolean {
+    this.spellCheckEnabled = !this.spellCheckEnabled;
+    if (this.state instanceof EditorViewState) {
+      this.state.setSpellCheck(this.spellCheckEnabled);
+    }
+    return this.spellCheckEnabled;
   }
 
   /// Switch to readonly mode (no-op if already in readonly mode)
@@ -937,6 +952,7 @@ export class FountainView extends TextFileView {
         text,
         this.requestSave,
         this,
+        this.spellCheckEnabled,
       );
       if (r !== null) this.state.scrollToHere(collapseRangeToStart(r));
     }

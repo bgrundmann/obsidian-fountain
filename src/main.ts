@@ -313,6 +313,13 @@ export default class FountainPlugin extends Plugin {
         return this.openSidebarCommand(checking);
       },
     });
+    this.addCommand({
+      id: "toggle-spell-check",
+      name: "Toggle spell check",
+      checkCallback: (checking: boolean) => {
+        return this.toggleSpellCheckCommand(checking);
+      },
+    });
   }
 
   private openSidebarCommand(checking: boolean): boolean {
@@ -320,6 +327,16 @@ export default class FountainPlugin extends Plugin {
 	return this.app.workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR).length === 0;
     }
     this.openSideBar();
+    return true;
+  }
+
+  private toggleSpellCheckCommand(checking: boolean): boolean {
+    const fv = this.app.workspace.getActiveViewOfType(FountainView);
+    if (checking) return fv !== null;
+    if (fv) {
+      const enabled = fv.toggleSpellCheck();
+      new Notice(enabled ? "Spell check enabled" : "Spell check disabled");
+    }
     return true;
   }
 

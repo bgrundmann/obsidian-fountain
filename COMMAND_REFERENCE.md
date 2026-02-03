@@ -30,6 +30,14 @@ Opens the fountain sidebar with table of contents and snippets.
 - **Availability**: Only when the sidebar is not already open
 - **Description**: Opens the fountain-specific sidebar that displays the table of contents, synopsis toggles, and snippets section.
 
+## Editor
+
+### Toggle spell check
+Enables or disables spell checking in the editor.
+- **Command ID**: `toggle-spell-check`
+- **Availability**: Only when a fountain file is active
+- **Description**: Toggles the browser's built-in spell checker for the current fountain view. Spell check is off by default to avoid distraction during creative writing. The setting persists while the file is open but resets when the file is closed.
+
 ## Scene Management
 
 ### Add scene numbers
