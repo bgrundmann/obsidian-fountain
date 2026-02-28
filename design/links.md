@@ -93,6 +93,23 @@ integration. The core value — clickable navigation between fountain and other
 files — works without it. Backlinks can be revisited if Obsidian adds a public
 API for non-Markdown file types.
 
+## Unresolved questions
+
+1. **Where can links appear?** With the current design, links can only appear
+   where notes can appear — inline within action, dialogue, etc. But two
+   obviously useful places for links don't support notes in standard Fountain:
+   - **Character names** — linking a character name to a character notes file
+     would be very natural, but character lines are parsed as a single uppercase
+     token, not as rich text that can contain notes.
+   - **Scene headings** — linking a scene heading to a location research file
+     would be useful, but scene headings also have limited inline formatting.
+
+   Options: (a) allow links only where notes already work and accept the
+   limitation, (b) extend the grammar to allow notes/links in character names
+   and scene headings, (c) provide a different mechanism for these cases
+   (e.g. a convention where a link note on the line immediately following a
+   character or scene heading is treated as associated with it).
+
 ## Parser changes
 
 One new `NoteKind` variant in the Peggy grammar:
