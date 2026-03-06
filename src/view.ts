@@ -805,58 +805,28 @@ export class FountainView extends TextFileView {
     });
   }
 
-  replaceText(range: Range, replacement: string): string {
+  private applyTextTransform(transform: (text: string) => string): string {
     const path = this.file?.path;
     if (!path) throw new Error("No file path available");
-
-    // Use utility function instead of global cache
-    const currentText = this.cachedScript.document;
-    const newText = replaceTextInString(currentText, range, replacement);
+    const newText = transform(this.cachedScript.document);
     const newScript = parse(newText, {});
     this.updateAllViewsForFile(path, newScript);
-
-    // Trigger file save
     if (this.file) {
       this.app.vault.modify(this.file, newText);
     }
-
     return newText;
+  }
+
+  replaceText(range: Range, replacement: string): string {
+    return this.applyTextTransform((t) => replaceTextInString(t, range, replacement));
   }
 
   moveScene(range: Range, newPos: number): string {
-    const path = this.file?.path;
-    if (!path) throw new Error("No file path available");
-
-    // Use utility function instead of global cache
-    const currentText = this.cachedScript.document;
-    const newText = moveSceneInString(currentText, range, newPos);
-    const newScript = parse(newText, {});
-    this.updateAllViewsForFile(path, newScript);
-
-    // Trigger file save
-    if (this.file) {
-      this.app.vault.modify(this.file, newText);
-    }
-
-    return newText;
+    return this.applyTextTransform((t) => moveSceneInString(t, range, newPos));
   }
 
   duplicateScene(range: Range): string {
-    const path = this.file?.path;
-    if (!path) throw new Error("No file path available");
-
-    // Use utility function instead of global cache
-    const currentText = this.cachedScript.document;
-    const newText = duplicateSceneInString(currentText, range);
-    const newScript = parse(newText, {});
-    this.updateAllViewsForFile(path, newScript);
-
-    // Trigger file save
-    if (this.file) {
-      this.app.vault.modify(this.file, newText);
-    }
-
-    return newText;
+    return this.applyTextTransform((t) => duplicateSceneInString(t, range));
   }
 
   moveSceneCrossFile(
