@@ -55,6 +55,16 @@ function collapseRangeToStart(r: Range): Range {
   return { start: r.start, end: r.start };
 }
 
+function computeRange(...optionalRanges: (Range | undefined)[]): Range {
+  const starts = optionalRanges
+    .map((r) => r?.start)
+    .filter((s): s is number => s !== undefined);
+  const ends = optionalRanges
+    .map((r) => r?.end)
+    .filter((e): e is number => e !== undefined);
+  return { start: Math.min(...starts), end: Math.max(...ends) };
+}
+
 // ============================================================================
 // Text Element Types
 // ============================================================================
@@ -349,18 +359,12 @@ export class StructureSection {
   }
 
   get range(): Range {
-    const starts: number[] = [
-      this.section?.range.start,
-      this.synopsis?.range.start,
-      this.content[0]?.range.start,
-    ].filter((r): r is number => r !== undefined);
-    const ends: number[] = [
-      this.section?.range.end,
-      this.synopsis?.range.end,
-      this.content[this.content.length - 1]?.range.end,
-    ].filter((r): r is number => r !== undefined);
-
-    return { start: Math.min(...starts), end: Math.max(...ends) };
+    return computeRange(
+      this.section?.range,
+      this.synopsis?.range,
+      this.content[0]?.range,
+      this.content[this.content.length - 1]?.range,
+    );
   }
 }
 
@@ -377,18 +381,12 @@ export class StructureScene {
   }
 
   get range(): Range {
-    const starts: number[] = [
-      this.scene?.range.start,
-      this.synopsis?.range.start,
-      this.content[0]?.range.start,
-    ].filter((r): r is number => r !== undefined);
-    const ends: number[] = [
-      this.scene?.range.end,
-      this.synopsis?.range.end,
-      this.content[this.content.length - 1]?.range.end,
-    ].filter((r): r is number => r !== undefined);
-
-    return { start: Math.min(...starts), end: Math.max(...ends) };
+    return computeRange(
+      this.scene?.range,
+      this.synopsis?.range,
+      this.content[0]?.range,
+      this.content[this.content.length - 1]?.range,
+    );
   }
 }
 
@@ -459,17 +457,13 @@ class FountainScript {
     settings: ShowHideSettings,
     escapeLeadingSpaces: boolean,
   ): boolean {
-    let allHidden = true;
+    let someVisible = false;
     for (const el of st) {
-      const thisElementWasHidden = !this.renderTextElement(
-        parent,
-        el,
-        settings,
-        escapeLeadingSpaces,
-      );
-      allHidden = thisElementWasHidden && allHidden;
+      if (this.renderTextElement(parent, el, settings, escapeLeadingSpaces)) {
+        someVisible = true;
+      }
     }
-    return !allHidden || st.length > 0;
+    return someVisible || st.length > 0;
   }
 
   private renderStyledTextElement(
@@ -528,21 +522,12 @@ class FountainScript {
             return true;
           }
 
-          let noteKindClass = "";
-          switch (el.noteKind) {
-            case "+":
-              noteKindClass = "note-symbol-plus";
-              break;
-            case "-":
-              noteKindClass = "note-symbol-minus";
-              break;
-            case "todo":
-              noteKindClass = "note-todo";
-              break;
-            default:
-              noteKindClass = "note";
-              break;
-          }
+          const noteKindClasses: Record<string, string> = {
+            "+": "note-symbol-plus",
+            "-": "note-symbol-minus",
+            "todo": "note-todo",
+          };
+          const noteKindClass = noteKindClasses[el.noteKind] ?? "note";
           parent.createEl(
             "span",
             { cls: noteKindClass, attr: dataRange(el.range) },
@@ -769,6 +754,15 @@ class FountainScript {
     return new FountainScript(this.document, this.titlePage, filteredScript);
   }
 
+  private filterLines(
+    lines: Line[],
+    settings: { hideBoneyard?: boolean; hideNotes?: boolean },
+  ): Line[] {
+    return lines
+      .map((line) => this.filterLine(line, settings))
+      .filter((line): line is Line => line !== null);
+  }
+
   private filterFountainElement(
     element: FountainElement,
     settings: {
@@ -782,29 +776,16 @@ class FountainScript {
         return settings.hideSynopsis ? null : element;
 
       case "action": {
-        const filteredLines = element.lines
-          .map((line) => this.filterLine(line, settings))
-          .filter((line): line is Line => line !== null);
-
+        const filteredLines = this.filterLines(element.lines, settings);
         if (filteredLines.length === 0) {
           return null;
         }
-
-        return {
-          ...element,
-          lines: filteredLines,
-        };
+        return { ...element, lines: filteredLines };
       }
 
       case "dialogue": {
-        const filteredLines = element.lines
-          .map((line) => this.filterLine(line, settings))
-          .filter((line): line is Line => line !== null);
-
-        return {
-          ...element,
-          lines: filteredLines,
-        };
+        const filteredLines = this.filterLines(element.lines, settings);
+        return { ...element, lines: filteredLines };
       }
 
       default:
