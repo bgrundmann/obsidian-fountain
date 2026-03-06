@@ -680,42 +680,38 @@ class FountainScript {
       res.push(currentSection);
     }
 
-    // Parse snippets
-    const snippets: Snippets = [];
-    if (
+    const snippets =
       snippetsStartIndex !== null &&
       snippetsStartIndex < this.script.length - 1
-    ) {
-      const snippetElements = this.script.slice(snippetsStartIndex + 1);
-      let currentSnippetContent: FountainElement[] = [];
-
-      for (const fe of snippetElements) {
-        if (fe.kind === "page-break") {
-          // End current snippet if it has content
-          if (currentSnippetContent.length > 0) {
-            snippets.push({
-              content: currentSnippetContent,
-              pageBreak: fe as PageBreak,
-            });
-            currentSnippetContent = [];
-          }
-        } else {
-          currentSnippetContent.push(fe);
-        }
-      }
-
-      // Add the last snippet if it has content
-      if (currentSnippetContent.length > 0) {
-        snippets.push({
-          content: currentSnippetContent,
-        });
-      }
-    }
+        ? this.parseSnippets(this.script.slice(snippetsStartIndex + 1))
+        : [];
 
     return {
       sections: res,
       snippets: snippets,
     };
+  }
+
+  private parseSnippets(elements: FountainElement[]): Snippets {
+    const snippets: Snippets = [];
+    let currentContent: FountainElement[] = [];
+
+    for (const fe of elements) {
+      if (fe.kind === "page-break") {
+        if (currentContent.length > 0) {
+          snippets.push({ content: currentContent, pageBreak: fe });
+          currentContent = [];
+        }
+      } else {
+        currentContent.push(fe);
+      }
+    }
+
+    if (currentContent.length > 0) {
+      snippets.push({ content: currentContent });
+    }
+
+    return snippets;
   }
 
   /**
