@@ -48,10 +48,6 @@ export class ReadonlyViewState implements ViewState {
     return this.pstate.rehearsal?.character ?? null;
   }
 
-  script(): FountainScript {
-    return this.callbacks.getScript();
-  }
-
   public stopRehearsalMode() {
     if (this.pstate.rehearsal) {
       this.pstate = {
@@ -119,7 +115,7 @@ export class ReadonlyViewState implements ViewState {
       ) => this.callbacks.moveSceneCrossFile(srcRange, dstPath, dstNewPos),
       getText: (range: Range) => this.callbacks.getText(range),
     };
-    const fp = this.script();
+    const fp = this.callbacks.getScript();
     if ("error" in fp) {
       // The parser should not fail but handle bad inputs as action lines
       // if you managed to construct a script for which that is not true

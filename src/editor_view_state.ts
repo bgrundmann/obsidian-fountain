@@ -147,10 +147,6 @@ export class EditorViewState implements ViewState {
     this.cmEditor.contentDOM.spellcheck = spellCheckEnabled;
   }
 
-  script(): FountainScript {
-    return this.callbacks.getScript();
-  }
-
   setViewData(path: string, text: string, _clear: boolean) {
     this.path = path;
     this.cmEditor.dispatch({

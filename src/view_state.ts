@@ -28,7 +28,6 @@ export interface ViewState {
   clear(): void;
   destroy(): void;
   scrollToHere(r: Range): void;
-  script(): FountainScript;
   render(): void;
   focus(): void;
   setSpellCheck(enabled: boolean): void;
