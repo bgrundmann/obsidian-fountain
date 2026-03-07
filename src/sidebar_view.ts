@@ -371,7 +371,7 @@ export class FountainSideBarView extends ItemView {
     const ft = this.theFountainView();
     if (!ft) return;
 
-    const script = ft.script();
+    const script = ft.getScript();
     if ("error" in script) return;
 
     // Find the "# Snippets" header position
@@ -411,7 +411,7 @@ export class FountainSideBarView extends ItemView {
     // Create the main sidebar container
     container.createDiv({ cls: "sidebar-container" }, (sidebarDiv) => {
       if (ft) {
-        const script = ft.script();
+        const script = ft.getScript();
         if (!("error" in script)) {
           for (const section of this.sections) {
             section.render(sidebarDiv, script);

@@ -262,7 +262,7 @@ export class FountainView extends TextFileView {
   }
 
   private rehearsalModeClicked(): void {
-    const script = this.script();
+    const script = this.getScript();
     if (!("error" in script)) {
       new FuzzySelectString(
         this.app,
@@ -341,10 +341,6 @@ export class FountainView extends TextFileView {
       this.stopRehearsalModeAction.hide();
       this.app.workspace.requestSaveLayout();
     }
-  }
-
-  script(): FountainScript {
-    return this.state.script();
   }
 
   updateScript(newScript: FountainScript) {
