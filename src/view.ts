@@ -1,14 +1,3 @@
-import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
-import { foldGutter, foldKeymap } from "@codemirror/language";
-import { EditorSelection, EditorState, StateField } from "@codemirror/state";
-import {
-  EditorView,
-  type Tooltip,
-  type ViewUpdate,
-  drawSelection,
-  keymap,
-  showTooltip,
-} from "@codemirror/view";
 import {
   Menu,
   type TFile,
@@ -17,7 +6,6 @@ import {
   type WorkspaceLeaf,
   setIcon,
 } from "obsidian";
-import { createCharacterCompletion } from "./character_completion";
 import {
   type FountainScript,
   type Range,
@@ -25,12 +13,23 @@ import {
   type ShowHideSettings,
   collapseRangeToStart,
 } from "./fountain";
-import { createFountainEditorPlugin } from "./fountain_editor";
-import { createFountainFoldService } from "./fountain_folding";
 import { parse } from "./fountain_parser";
 import { FuzzySelectString } from "./fuzzy_select_string";
-import { type Callbacks, renderIndexCards } from "./index_cards_view";
-import { rangeOfFirstVisibleLine, renderFountain } from "./reading_view";
+import {
+  type EditorCallbacks,
+  EditorViewState,
+} from "./editor_view_state";
+import {
+  type ReadonlyViewCallbacks,
+  ReadonlyViewState,
+} from "./readonly_view_state";
+import {
+  type FountainViewPersistedState,
+  type ReadonlyViewPersistedState,
+  ShowMode,
+  type ViewState,
+  getSnippetsStartPosition,
+} from "./view_state";
 
 /** Move the range of text to a new position. The newStart position is required
 to not be within range.
@@ -121,476 +120,6 @@ function duplicateSceneInString(text: string, range: Range): string {
 
 export const VIEW_TYPE_FOUNTAIN = "fountain";
 
-enum ShowMode {
-  Script = "script",
-  IndexCards = "index-cards",
-}
-
-type Rehearsal = {
-  character: string;
-  previousShowHideSettings: ShowHideSettings;
-};
-
-type ReadonlyViewPersistedState = {
-  mode: ShowMode;
-  rehearsal?: Rehearsal; // This misses which dialogue(s) have been revealed, but is cheap and good enough
-} & ShowHideSettings;
-
-interface ViewState {
-  readonly isEditMode: boolean;
-  getViewData(): string;
-  setViewData(path: string, text: string, clear: boolean): void;
-  clear(): void;
-  destroy(): void;
-  scrollToHere(r: Range): void;
-  script(): FountainScript;
-  render(): void;
-  focus(): void;
-  setSpellCheck(enabled: boolean): void;
-  hasSelection(): boolean;
-  blackoutCharacter(): string | null;
-  rangeOfFirstVisibleLine(): Range | null;
-}
-
-class ReadonlyViewState implements ViewState {
-  readonly isEditMode = false;
-  public pstate: ReadonlyViewPersistedState;
-  private contentEl: HTMLElement;
-  private startEditModeHere: (range: Range) => void;
-  private path: string;
-
-  constructor(
-    contentEl: HTMLElement,
-    pstate: ReadonlyViewPersistedState,
-    path: string,
-    startEditModeHere: (range: Range) => void,
-    readonly requestSave: () => void,
-    private parentView: FountainView,
-  ) {
-    this.contentEl = contentEl;
-    this.startEditModeHere = startEditModeHere;
-    this.path = path;
-    this.pstate = pstate;
-  }
-
-  public get showMode(): ShowMode {
-    return this.pstate.mode;
-  }
-
-  private get blackout(): string | null {
-    return this.pstate.rehearsal?.character ?? null;
-  }
-
-  script(): FountainScript {
-    return this.parentView.getCachedScript() || parse("", {});
-  }
-
-  public stopRehearsalMode() {
-    if (this.pstate.rehearsal) {
-      this.pstate = {
-        ...this.pstate,
-        ...this.pstate.rehearsal.previousShowHideSettings,
-      };
-      this.pstate.rehearsal = undefined;
-      this.render();
-    }
-  }
-
-  startRehearsalMode(character: string) {
-    this.pstate.rehearsal = {
-      character,
-      // We have to explicitely save all 3 settings otherwise
-      // they might be undefined instead of false and then not
-      // be set by the spread operator
-      previousShowHideSettings: {
-        hideBoneyard: this.pstate.hideBoneyard || false,
-        hideSynopsis: this.pstate.hideSynopsis || false,
-        hideNotes: this.pstate.hideNotes || false,
-      },
-    };
-    this.pstate.hideBoneyard = true;
-    this.pstate.hideNotes = true;
-    this.pstate.hideSynopsis = true;
-    this.render();
-  }
-
-  /** Is blackout mode active and for which character? */
-  public blackoutCharacter(): string | null {
-    return this.blackout;
-  }
-
-  private toggleBlackoutHandler(evt: Event) {
-    const target = evt.target as HTMLElement;
-    target.classList.toggle("blackout");
-  }
-
-  private installToggleBlackoutHandlers() {
-    const blackouts = this.contentEl.querySelectorAll(".blackout");
-    for (const bl of blackouts) {
-      bl.addEventListener("click", (evt: Event) => {
-        this.toggleBlackoutHandler(evt);
-      });
-    }
-  }
-
-  render() {
-    this.contentEl.empty();
-    const callbacks: Callbacks = {
-      requestSave: (): void => {
-        this.requestSave();
-      },
-      reRender: (): void => {
-        this.render();
-      },
-      startEditModeHere: (r: Range): void => {
-        this.startEditModeHere(r);
-      },
-      startReadingModeHere: (r: Range): void => {
-        this.scrollToHere(r);
-      },
-      replaceText: (range: Range, replacement: string): void => {
-        this.parentView.replaceText(range, replacement);
-      },
-      moveScene: (range: Range, newPos: number): void => {
-        this.parentView.moveScene(range, newPos);
-      },
-      duplicateScene: (range: Range): void => {
-        this.parentView.duplicateScene(range);
-      },
-      moveSceneCrossFile: (
-        srcRange: Range,
-        dstPath: string,
-        dstNewPos: number,
-      ): void => {
-        this.parentView.moveSceneCrossFile(srcRange, dstPath, dstNewPos);
-      },
-      getText: (range: Range): string => {
-        return this.parentView.getText(range);
-      },
-    };
-    const fp = this.script();
-    if ("error" in fp) {
-      // The parser should not fail but handle bad inputs as action lines
-      // if you managed to construct a script for which that is not true
-      // please report this as a bug.
-      console.error("error parsing script", fp);
-      return;
-    }
-    const mainblock = this.contentEl.createDiv(
-      this.showMode === ShowMode.IndexCards ? undefined : "screenplay",
-    );
-    switch (this.showMode) {
-      case ShowMode.IndexCards:
-        renderIndexCards(mainblock, this.path, fp, callbacks);
-        break;
-
-      case ShowMode.Script:
-        renderFountain(mainblock, fp, this.pstate, this.blackout ?? undefined);
-        break;
-    }
-
-    if (this.blackout) {
-      this.installToggleBlackoutHandlers();
-    }
-  }
-
-  scrollToHere(r: Range) {
-    const scroll = () => {
-      const targetElement = document.querySelector(
-        `[data-range^="${r.start},"]`,
-      );
-      targetElement?.scrollIntoView();
-    };
-    if (this.pstate.mode !== ShowMode.Script) {
-      this.toggleIndexCards();
-      requestAnimationFrame(() => {
-        scroll();
-      });
-    } else {
-      scroll();
-    }
-  }
-
-  public setPersistentState(pstate: ReadonlyViewPersistedState) {
-    this.pstate = pstate;
-    this.render();
-  }
-
-  public setShowHideSettings(sh: ShowHideSettings) {
-    this.pstate = { ...this.pstate, ...sh };
-    this.render();
-  }
-
-  toggleIndexCards() {
-    this.pstate.mode =
-      this.pstate.mode === ShowMode.IndexCards
-        ? ShowMode.Script
-        : ShowMode.IndexCards;
-    this.render();
-  }
-
-  getViewData(): string {
-    return this.parentView.getCachedScript()?.document || "";
-  }
-
-  setViewData(path: string, text: string, _clear: boolean): void {
-    this.path = path;
-    // Parsing and updating is handled by parent view's setViewData
-    this.render();
-  }
-
-  clear(): void {
-    //TODO: When do I need this?
-  }
-
-  destroy(): void {}
-  focus(): void {}
-  setSpellCheck(_enabled: boolean): void {}
-  hasSelection(): boolean { return false; }
-
-  rangeOfFirstVisibleLine(): Range | null {
-    const screenplay = this.contentEl.querySelector(".screenplay");
-    if (screenplay === null) return null;
-    return rangeOfFirstVisibleLine(screenplay as HTMLElement);
-  }
-}
-
-/// Returns the first scrollable element starting at the current element up to the DOM tree.
-function firstScrollableElement(node: HTMLElement): HTMLElement | null {
-  let current: HTMLElement | null = node;
-  while (current !== null) {
-    if (current.scrollHeight > current.clientHeight) {
-      return current;
-    }
-    current = current.parentNode as HTMLElement;
-  }
-  return (document.scrollingElement as HTMLElement) || document.documentElement;
-}
-
-// Helper function to get the position where snippets section starts
-function getSnippetsStartPosition(parentView: FountainView): number | null {
-  const script = parentView.getCachedScript();
-  if (!script || "error" in script) return null;
-
-  // Find the "# Snippets" header position
-  for (const element of script.script) {
-    if (element.kind === "section") {
-      const sectionText = script.sliceDocument(element.range);
-      if (sectionText.toLowerCase().includes("snippets")) {
-        return element.range.start;
-      }
-    }
-  }
-  return null;
-}
-
-// Helper function to create snip tooltips for text selections
-function getSnipTooltips(
-  state: EditorState,
-  parentView: FountainView,
-): readonly Tooltip[] {
-  const snippetsStart = getSnippetsStartPosition(parentView);
-
-  return state.selection.ranges
-    .filter((range) => !range.empty)
-    .filter((range) => {
-      // Only show snip button if selection is not after snippets section
-      if (snippetsStart === null) return true;
-      return range.from < snippetsStart;
-    })
-    .map((range) => {
-      // Position tooltip at the end of the selection
-      return {
-        pos: range.to,
-        above: true,
-        strictSide: true,
-        arrow: true,
-        create: () => {
-          const dom = document.createElement("button");
-          dom.className = "cm-tooltip-snip";
-          dom.textContent = "Snip";
-          dom.addEventListener("click", (e) => {
-            e.preventDefault();
-            parentView.saveSelectionAsSnippet(true);
-          });
-          return { dom };
-        },
-      };
-    });
-}
-
-// Function to create state field with captured parentView
-function createSnipTooltipField(parentView: FountainView) {
-  return StateField.define<readonly Tooltip[]>({
-    create: (state) => getSnipTooltips(state, parentView),
-
-    update(tooltips, tr) {
-      if (!tr.selection && !tr.docChanged) return tooltips;
-      return getSnipTooltips(tr.state, parentView);
-    },
-
-    provide: (f) => showTooltip.computeN([f], (state) => state.field(f)),
-  });
-}
-
-class EditorViewState implements ViewState {
-  readonly isEditMode = true;
-  private cmEditor: EditorView;
-  private path: string;
-
-  constructor(
-    contentEl: HTMLElement,
-    path: string,
-    text: string,
-    requestSave: () => void,
-    private parentView: FountainView,
-    spellCheckEnabled: boolean,
-  ) {
-    contentEl.empty();
-    const editorContainer = contentEl.createDiv("custom-editor-component");
-
-    // our screenplay sets some of the styling information
-    // before the code mirror overrides them. And instead of
-    // messing with !important in the css, we force the theme
-    // to take the values from higher up.
-    const theme = EditorView.theme({
-      "&": {
-        fontSize: "12pt",
-      },
-      ".cm-content": {
-        fontFamily: "inherit",
-        lineHeight: "inherit",
-      },
-      ".cm-scroller": {
-        fontFamily: "inherit",
-        lineHeight: "inherit",
-      },
-    });
-    const state = EditorState.create({
-      doc: text,
-      extensions: [
-        theme,
-        history(),
-        drawSelection(),
-        keymap.of([...defaultKeymap, ...historyKeymap, ...foldKeymap]),
-        EditorView.editorAttributes.of({ class: "screenplay" }),
-        EditorView.lineWrapping,
-        foldGutter(),
-        createFountainFoldService(() => parentView.getCachedScript() || parse("", {})),
-        createFountainEditorPlugin(
-          () => parentView.getCachedScript() || parse("", {}),
-          (script: FountainScript) => parentView.updateScriptDirectly(script),
-        ),
-        // Add character completion functionality
-        createCharacterCompletion(
-          () => parentView.getCachedScript() || parse("", {}),
-        ),
-        // Add snip tooltip functionality
-        createSnipTooltipField(parentView),
-        EditorView.updateListener.of((update: ViewUpdate) => {
-          if (update.docChanged) {
-            requestSave();
-          }
-        }),
-      ],
-    });
-    this.path = path;
-    this.cmEditor = new EditorView({
-      state: state,
-      parent: editorContainer,
-    });
-    this.cmEditor.contentDOM.spellcheck = spellCheckEnabled;
-  }
-
-  script(): FountainScript {
-    return this.parentView.getCachedScript() || parse("", {});
-  }
-
-  setViewData(path: string, text: string, _clear: boolean) {
-    this.path = path;
-    this.cmEditor.dispatch({
-      changes: {
-        from: 0,
-        to: this.cmEditor.state.doc.length,
-        insert: text,
-      },
-    });
-    // Parsing and updating is handled by parent view's setViewData
-  }
-
-  getViewData(): string {
-    return this.cmEditor.state.doc.toString();
-  }
-
-  clear(): void {}
-
-  destroy(): void {
-    this.cmEditor.destroy();
-  }
-
-  hasSelection(): boolean {
-    const selection = this.cmEditor.state.selection.main;
-    return !selection.empty;
-  }
-
-  getSelection(): { from: number; to: number; text: string } | null {
-    const selection = this.cmEditor.state.selection.main;
-    if (selection.empty) return null;
-    return {
-      from: selection.from,
-      to: selection.to,
-      text: this.cmEditor.state.doc.sliceString(selection.from, selection.to),
-    };
-  }
-
-  dispatchChanges(changes: { from: number; to: number; insert: string }): void {
-    this.cmEditor.dispatch({ changes });
-  }
-
-  getDocText(): string {
-    return this.cmEditor.state.doc.toString();
-  }
-
-  scrollToHere(r: Range): void {
-    this.cmEditor.dispatch({
-      // scroll the view
-      effects: EditorView.scrollIntoView(r.start, {
-        y: "start",
-        yMargin: 50,
-      }),
-      // select the text range
-      selection: EditorSelection.range(r.start, r.end),
-    });
-    this.cmEditor.focus();
-  }
-
-  focus(): void {
-    this.cmEditor.focus();
-  }
-
-  setSpellCheck(enabled: boolean): void {
-    this.cmEditor.contentDOM.spellcheck = enabled;
-  }
-
-  blackoutCharacter(): string | null { return null; }
-  render(): void {}
-
-  rangeOfFirstVisibleLine(): Range | null {
-    const scrollContainer =
-      firstScrollableElement(this.cmEditor.scrollDOM) ??
-      this.cmEditor.scrollDOM;
-    const bounds = scrollContainer.getBoundingClientRect();
-    const pos = this.cmEditor.posAtCoords({ x: bounds.x, y: bounds.y + 5 });
-    const lp = this.cmEditor.lineBlockAt(pos ?? 0);
-    return { start: lp.from, end: lp.to + 1 };
-  }
-}
-
-/** Stored in persistent state (workspace.json under the fountain key) */
-type FountainViewPersistedState = ReadonlyViewPersistedState & {
-  editing?: boolean; // undefined => false
-};
-
 export class FountainView extends TextFileView {
   state: ViewState;
   private readonlyViewState: ReadonlyViewPersistedState;
@@ -607,14 +136,7 @@ export class FountainView extends TextFileView {
     };
     // Initialize with empty document
     this.cachedScript = parse("", {});
-    this.state = new ReadonlyViewState(
-      this.contentEl,
-      this.readonlyViewState,
-      "",
-      (r) => this.startEditModeHere(r),
-      () => this.requestSave(),
-      this,
-    );
+    this.state = this.createReadonlyState(this.readonlyViewState, "");
     this.toggleEditAction = this.addAction(
       "edit",
       "Toggle readonly",
@@ -634,6 +156,40 @@ export class FountainView extends TextFileView {
       },
     );
     this.stopRehearsalModeAction.hide();
+  }
+
+  private readonlyCallbacks(): ReadonlyViewCallbacks {
+    return {
+      getScript: () => this.cachedScript,
+      startEditModeHere: (r) => this.startEditModeHere(r),
+      requestSave: () => this.requestSave(),
+      replaceText: (r, s) => this.replaceText(r, s),
+      moveScene: (r, p) => this.moveScene(r, p),
+      duplicateScene: (r) => this.duplicateScene(r),
+      moveSceneCrossFile: (r, p, n) => this.moveSceneCrossFile(r, p, n),
+      getText: (r) => this.getText(r),
+    };
+  }
+
+  private createReadonlyState(
+    pstate: ReadonlyViewPersistedState,
+    path: string,
+  ): ReadonlyViewState {
+    return new ReadonlyViewState(
+      this.contentEl,
+      pstate,
+      path,
+      this.readonlyCallbacks(),
+    );
+  }
+
+  private editorCallbacks(): EditorCallbacks {
+    return {
+      getScript: () => this.cachedScript,
+      onScriptChanged: (s) => this.updateScriptDirectly(s),
+      saveSelectionAsSnippet: (cut) => this.saveSelectionAsSnippet(cut),
+      requestSave: () => this.requestSave(),
+    };
   }
 
   private showViewMenu(evt: MouseEvent) {
@@ -914,13 +470,9 @@ export class FountainView extends TextFileView {
       // Switch to readonly mode
       this.showViewMenuAction.show();
       this.state.destroy();
-      this.state = new ReadonlyViewState(
-        this.contentEl,
+      this.state = this.createReadonlyState(
         this.readonlyViewState,
         this.file?.path ?? "",
-        (r) => this.startEditModeHere(r),
-        () => this.requestSave(),
-        this,
       );
       this.state.render();
       if (firstVisibleLine) {
@@ -939,8 +491,7 @@ export class FountainView extends TextFileView {
         this.contentEl,
         this.file?.path ?? "",
         text,
-        this.requestSave,
-        this,
+        this.editorCallbacks(),
         this.spellCheckEnabled,
       );
       if (firstVisibleLine) this.state.scrollToHere(collapseRangeToStart(firstVisibleLine));
@@ -1026,14 +577,7 @@ export class FountainView extends TextFileView {
     this.state.clear();
     if (this.state.isEditMode) {
       this.state.destroy();
-      this.state = new ReadonlyViewState(
-        this.contentEl,
-        this.readonlyViewState,
-        "",
-        (r) => this.startEditModeHere(r),
-        () => this.requestSave(),
-        this,
-      );
+      this.state = this.createReadonlyState(this.readonlyViewState, "");
     }
   }
 
@@ -1056,7 +600,7 @@ export class FountainView extends TextFileView {
     }
 
     // Check if selection is in snippets section
-    const snippetsStart = getSnippetsStartPosition(this);
+    const snippetsStart = getSnippetsStartPosition(this.cachedScript);
     if (snippetsStart !== null && selection.from >= snippetsStart) {
       return false;
     }
@@ -1148,7 +692,7 @@ export class FountainView extends TextFileView {
       const selection = this.state.getSelection();
       if (selection) {
         // Check if selection is in snippets section - if so, don't allow snipping
-        const snippetsStart = getSnippetsStartPosition(this);
+        const snippetsStart = getSnippetsStartPosition(this.cachedScript);
         if (snippetsStart !== null && selection.from >= snippetsStart) {
           return;
         }
