@@ -136,7 +136,24 @@ type ReadonlyViewPersistedState = {
   rehearsal?: Rehearsal; // This misses which dialogue(s) have been revealed, but is cheap and good enough
 } & ShowHideSettings;
 
-class ReadonlyViewState {
+interface ViewState {
+  readonly isEditMode: boolean;
+  getViewData(): string;
+  setViewData(path: string, text: string, clear: boolean): void;
+  clear(): void;
+  destroy(): void;
+  scrollToHere(r: Range): void;
+  script(): FountainScript;
+  render(): void;
+  focus(): void;
+  setSpellCheck(enabled: boolean): void;
+  hasSelection(): boolean;
+  blackoutCharacter(): string | null;
+  rangeOfFirstVisibleLine(): Range | null;
+}
+
+class ReadonlyViewState implements ViewState {
+  readonly isEditMode = false;
   public pstate: ReadonlyViewPersistedState;
   private contentEl: HTMLElement;
   private startEditModeHere: (range: Range) => void;
@@ -326,6 +343,11 @@ class ReadonlyViewState {
     //TODO: When do I need this?
   }
 
+  destroy(): void {}
+  focus(): void {}
+  setSpellCheck(_enabled: boolean): void {}
+  hasSelection(): boolean { return false; }
+
   rangeOfFirstVisibleLine(): Range | null {
     const screenplay = this.contentEl.querySelector(".screenplay");
     if (screenplay === null) return null;
@@ -411,7 +433,8 @@ function createSnipTooltipField(parentView: FountainView) {
   });
 }
 
-class EditorViewState {
+class EditorViewState implements ViewState {
+  readonly isEditMode = true;
   private cmEditor: EditorView;
   private path: string;
 
@@ -541,7 +564,18 @@ class EditorViewState {
     this.cmEditor.focus();
   }
 
-  firstVisibleLine(): Range {
+  focus(): void {
+    this.cmEditor.focus();
+  }
+
+  setSpellCheck(enabled: boolean): void {
+    this.cmEditor.contentDOM.spellcheck = enabled;
+  }
+
+  blackoutCharacter(): string | null { return null; }
+  render(): void {}
+
+  rangeOfFirstVisibleLine(): Range | null {
     const scrollContainer =
       firstScrollableElement(this.cmEditor.scrollDOM) ??
       this.cmEditor.scrollDOM;
@@ -549,14 +583,6 @@ class EditorViewState {
     const pos = this.cmEditor.posAtCoords({ x: bounds.x, y: bounds.y + 5 });
     const lp = this.cmEditor.lineBlockAt(pos ?? 0);
     return { start: lp.from, end: lp.to + 1 };
-  }
-
-  focus(): void {
-    this.cmEditor.focus();
-  }
-
-  setSpellCheck(enabled: boolean): void {
-    this.cmEditor.contentDOM.spellcheck = enabled;
   }
 }
 
@@ -566,7 +592,7 @@ type FountainViewPersistedState = ReadonlyViewPersistedState & {
 };
 
 export class FountainView extends TextFileView {
-  state: ReadonlyViewState | EditorViewState;
+  state: ViewState;
   private readonlyViewState: ReadonlyViewPersistedState;
   private toggleEditAction: HTMLElement;
   private showViewMenuAction: HTMLElement;
@@ -707,36 +733,32 @@ export class FountainView extends TextFileView {
   }
 
   isEditMode(): boolean {
-    return this.state instanceof EditorViewState;
+    return this.state.isEditMode;
   }
 
   /// Switch to edit mode (no-op if already in edit mode)
   switchToEditMode() {
-    if (!(this.state instanceof EditorViewState)) {
+    if (!this.state.isEditMode) {
       this.toggleEditMode();
     }
   }
 
   focusEditor() {
-    if (this.state instanceof EditorViewState) {
-      const editorState = this.state;
-      requestAnimationFrame(() => {
-        editorState.focus();
-      });
-    }
+    const state = this.state;
+    requestAnimationFrame(() => {
+      state.focus();
+    });
   }
 
   toggleSpellCheck(): boolean {
     this.spellCheckEnabled = !this.spellCheckEnabled;
-    if (this.state instanceof EditorViewState) {
-      this.state.setSpellCheck(this.spellCheckEnabled);
-    }
+    this.state.setSpellCheck(this.spellCheckEnabled);
     return this.spellCheckEnabled;
   }
 
   /// Switch to readonly mode (no-op if already in readonly mode)
   switchToReadonlyMode() {
-    if (!(this.state instanceof ReadonlyViewState)) {
+    if (this.state.isEditMode) {
       this.toggleEditMode();
     }
   }
@@ -752,10 +774,7 @@ export class FountainView extends TextFileView {
   }
 
   public blackoutCharacter(): string | null {
-    if (this.state instanceof ReadonlyViewState) {
-      return this.state.blackoutCharacter();
-    }
-    return null;
+    return this.state.blackoutCharacter();
   }
 
   public stopRehearsalMode() {
@@ -777,10 +796,7 @@ export class FountainView extends TextFileView {
 
   updateScript(newScript: FountainScript) {
     this.cachedScript = newScript;
-    // Trigger re-render if in readonly mode
-    if (this.state instanceof ReadonlyViewState) {
-      this.state.render();
-    }
+    this.state.render();
   }
 
   updateScriptDirectly(newScript: FountainScript) {
@@ -893,10 +909,10 @@ export class FountainView extends TextFileView {
 
   toggleEditMode() {
     const text = this.state.getViewData();
-    if (this.state instanceof EditorViewState) {
+    const firstVisibleLine = this.state.rangeOfFirstVisibleLine();
+    if (this.state.isEditMode) {
       // Switch to readonly mode
       this.showViewMenuAction.show();
-      const firstLine = this.state.firstVisibleLine();
       this.state.destroy();
       this.state = new ReadonlyViewState(
         this.contentEl,
@@ -907,15 +923,18 @@ export class FountainView extends TextFileView {
         this,
       );
       this.state.render();
-      const es = this.state;
-      requestAnimationFrame(() => {
-        es.scrollToHere(firstLine);
-      });
+      if (firstVisibleLine) {
+        const es = this.state;
+        requestAnimationFrame(() => {
+          es.scrollToHere(firstVisibleLine);
+        });
+      }
     } else {
       // Switch to editor
       this.showViewMenuAction.hide();
-      this.readonlyViewState = this.state.pstate;
-      const r = this.state.rangeOfFirstVisibleLine();
+      if (this.state instanceof ReadonlyViewState) {
+        this.readonlyViewState = this.state.pstate;
+      }
       this.state = new EditorViewState(
         this.contentEl,
         this.file?.path ?? "",
@@ -924,7 +943,7 @@ export class FountainView extends TextFileView {
         this,
         this.spellCheckEnabled,
       );
-      if (r !== null) this.state.scrollToHere(collapseRangeToStart(r));
+      if (firstVisibleLine) this.state.scrollToHere(collapseRangeToStart(firstVisibleLine));
     }
     this.toggleEditAction.empty();
     setIcon(this.toggleEditAction, this.isEditMode() ? "book-open" : "edit");
@@ -967,21 +986,14 @@ export class FountainView extends TextFileView {
 
   getState(): Record<string, unknown> {
     const textFileState = super.getState();
-    let editing: boolean;
-
     if (this.state instanceof ReadonlyViewState) {
-      // If readonly view is active make sure our
-      // copy matches
+      // If readonly view is active make sure our copy matches
       this.readonlyViewState = this.state.pstate;
-      editing = false;
-    } else {
-      editing = true;
     }
     textFileState.fountain = {
-      editing: editing,
+      editing: this.state.isEditMode,
       ...this.readonlyViewState,
     };
-
     return textFileState;
   }
 
@@ -1012,7 +1024,7 @@ export class FountainView extends TextFileView {
 
   clear(): void {
     this.state.clear();
-    if (this.state instanceof EditorViewState) {
+    if (this.state.isEditMode) {
       this.state.destroy();
       this.state = new ReadonlyViewState(
         this.contentEl,
@@ -1026,10 +1038,7 @@ export class FountainView extends TextFileView {
   }
 
   hasSelection(): boolean {
-    if (this.state instanceof EditorViewState) {
-      return this.state.hasSelection();
-    }
-    return false;
+    return this.state.hasSelection();
   }
 
   hasValidSelectionForSnipping(): boolean {
