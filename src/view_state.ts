@@ -20,6 +20,7 @@ export type FountainViewPersistedState = ReadonlyViewPersistedState & {
   editing?: boolean; // undefined => false
 };
 
+/** Common interface for the readonly and editor view states of a fountain document. */
 export interface ViewState {
   readonly isEditMode: boolean;
   getViewData(): string;

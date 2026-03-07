@@ -23,6 +23,7 @@ export type ReadonlyViewCallbacks = {
   getText: (range: Range) => string;
 };
 
+/** Renders the fountain script as HTML for reading, index cards, and rehearsal mode. */
 export class ReadonlyViewState implements ViewState {
   readonly isEditMode = false;
   public pstate: ReadonlyViewPersistedState;

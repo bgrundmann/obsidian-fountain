@@ -82,6 +82,7 @@ function createSnipTooltipField(callbacks: EditorCallbacks) {
   });
 }
 
+/** Wraps a CodeMirror editor for editing fountain script source text. */
 export class EditorViewState implements ViewState {
   readonly isEditMode = true;
   private cmEditor: EditorView;

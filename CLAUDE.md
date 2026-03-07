@@ -58,7 +58,10 @@ In the `src` folder:
 | File | Purpose |
 |------|---------|
 | `main.ts` | Plugin entry, commands, lifecycle |
-| `view.ts` | FountainView with readonly/edit states, editing ops |
+| `view.ts` | FountainView, text manipulation, editing ops |
+| `view_state.ts` | ViewState interface, shared view types |
+| `readonly_view_state.ts` | ReadonlyViewState (reading/index cards) |
+| `editor_view_state.ts` | EditorViewState (CodeMirror editor) |
 | `fountain.ts` | Core types, FountainScript, text utilities |
 | `fountain_parser.peggy` | Peggy grammar |
 | `reading_view.ts` | Readonly rendering |

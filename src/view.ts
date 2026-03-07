@@ -120,6 +120,7 @@ function duplicateSceneInString(text: string, range: Range): string {
 
 export const VIEW_TYPE_FOUNTAIN = "fountain";
 
+/** Obsidian TextFileView for .fountain files, managing mode switching and document operations. */
 export class FountainView extends TextFileView {
   state: ViewState;
   private readonlyViewState: ReadonlyViewPersistedState;
