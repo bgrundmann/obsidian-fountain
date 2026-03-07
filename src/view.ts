@@ -347,10 +347,6 @@ export class FountainView extends TextFileView {
     return this.state.script();
   }
 
-  getCachedScript(): FountainScript {
-    return this.cachedScript;
-  }
-
   updateScript(newScript: FountainScript) {
     this.cachedScript = newScript;
     this.state.render();
@@ -710,7 +706,7 @@ export class FountainView extends TextFileView {
   private insertAfterSnippetsHeader(text: string): void {
     if (!(this.state instanceof EditorViewState)) return;
 
-    const script = this.getCachedScript();
+    const script = this.getScript();
     if (!script || "error" in script) return;
 
     const docText = this.state.getDocText();
