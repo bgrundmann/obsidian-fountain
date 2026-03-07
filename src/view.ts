@@ -31,6 +31,12 @@ import {
   getSnippetsStartPosition,
 } from "./view_state";
 
+/** Return the newline characters needed to ensure text ends with a double newline. */
+function trailingNewlinesNeeded(text: string): string {
+  const lastTwo = text.slice(-2);
+  return lastTwo === "\n\n" ? "" : lastTwo[1] === "\n" ? "\n" : "\n\n";
+}
+
 /** Move the range of text to a new position. The newStart position is required
 to not be within range.
 */
@@ -91,10 +97,8 @@ function replaceTextInString(
  * @returns the modified text
  */
 function moveSceneInString(text: string, range: Range, newPos: number): string {
-  const lastTwo = text.slice(range.end - 2, range.end);
-  const extraNewLines =
-    lastTwo === "\n\n" ? "" : lastTwo[1] === "\n" ? "\n" : "\n\n";
-  return moveText(text, range, newPos, extraNewLines);
+  const sceneText = text.slice(range.start, range.end);
+  return moveText(text, range, newPos, trailingNewlinesNeeded(sceneText));
 }
 
 /**
@@ -109,12 +113,8 @@ function duplicateSceneInString(text: string, range: Range): string {
   // it might not have been properly terminated by an empty
   // line, in that case we must add the empty line between
   // the two scenes.
-  const lastTwo = sceneText.slice(-2);
-  const extraNewLines =
-    lastTwo === "\n\n" ? "" : lastTwo[1] === "\n" ? "\n" : "\n\n";
-
   return (
-    text.slice(0, range.end) + extraNewLines + sceneText + text.slice(range.end)
+    text.slice(0, range.end) + trailingNewlinesNeeded(sceneText) + sceneText + text.slice(range.end)
   );
 }
 
@@ -359,23 +359,28 @@ export class FountainView extends TextFileView {
   updateScriptDirectly(newScript: FountainScript) {
     this.cachedScript = newScript;
     // Update other views without triggering CodeMirror updates
+    for (const view of this.findViewsForPath(this.file?.path)) {
+      if (view !== this) {
+        view.updateScript(newScript);
+      }
+    }
+  }
+
+  private findViewsForPath(path: string | undefined): FountainView[] {
+    if (!path) return [];
+    const views: FountainView[] = [];
     this.app.workspace.iterateAllLeaves((leaf) => {
-      if (
-        leaf.view instanceof FountainView &&
-        leaf.view !== this &&
-        leaf.view.file?.path === this.file?.path
-      ) {
-        leaf.view.updateScript(newScript);
+      if (leaf.view instanceof FountainView && leaf.view.file?.path === path) {
+        views.push(leaf.view);
       }
     });
+    return views;
   }
 
   private updateAllViewsForFile(path: string, newScript: FountainScript) {
-    this.app.workspace.iterateAllLeaves((leaf) => {
-      if (leaf.view instanceof FountainView && leaf.view.file?.path === path) {
-        leaf.view.updateScript(newScript);
-      }
-    });
+    for (const view of this.findViewsForPath(path)) {
+      view.updateScript(newScript);
+    }
   }
 
   private applyTextTransform(transform: (text: string) => string): string {
@@ -419,34 +424,24 @@ export class FountainView extends TextFileView {
     const newSrcScript = parse(newSrcText, {});
     this.updateAllViewsForFile(srcPath, newSrcScript);
 
-    // Add scene to destination - need to get destination view
-    this.app.workspace.iterateAllLeaves((leaf) => {
-      if (
-        leaf.view instanceof FountainView &&
-        leaf.view.file?.path === dstPath
-      ) {
-        const dstText = leaf.view.cachedScript.document;
-        const sceneLastTwo = sceneText.slice(-2);
-        const sceneExtraNewLines =
-          sceneLastTwo === "\n\n"
-            ? ""
-            : sceneLastTwo[1] === "\n"
-              ? "\n"
-              : "\n\n";
-        const newDstText = replaceTextInString(
-          dstText,
-          { start: dstNewPos, end: dstNewPos },
-          sceneText + sceneExtraNewLines,
-        );
-        const newDstScript = parse(newDstText, {});
-        leaf.view.updateAllViewsForFile(dstPath, newDstScript);
+    // Add scene to destination
+    const dstViews = this.findViewsForPath(dstPath);
+    if (dstViews.length > 0) {
+      const dstView = dstViews[0];
+      const dstText = dstView.cachedScript.document;
+      const newDstText = replaceTextInString(
+        dstText,
+        { start: dstNewPos, end: dstNewPos },
+        sceneText + trailingNewlinesNeeded(sceneText),
+      );
+      const newDstScript = parse(newDstText, {});
+      this.updateAllViewsForFile(dstPath, newDstScript);
 
-        // Trigger file save for destination
-        if (leaf.view.file) {
-          leaf.view.app.vault.modify(leaf.view.file, newDstText);
-        }
+      // Trigger file save for destination
+      if (dstView.file) {
+        dstView.app.vault.modify(dstView.file, newDstText);
       }
-    });
+    }
 
     // Trigger file save for source
     if (this.file) {
