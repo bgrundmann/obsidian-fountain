@@ -13,11 +13,10 @@ import type { FountainScript, Range } from "./fountain";
 import { createCharacterCompletion } from "./character_completion";
 import { createFountainEditorPlugin } from "./fountain_editor";
 import { createFountainFoldService } from "./fountain_folding";
-import { parse } from "./fountain_parser";
 import { type ViewState, getSnippetsStartPosition } from "./view_state";
 
 export type EditorCallbacks = {
-  getScript: () => FountainScript | null;
+  getScript: () => FountainScript;
   onScriptChanged: (script: FountainScript) => void;
   saveSelectionAsSnippet: (cut: boolean) => void;
   requestSave: () => void;
@@ -115,7 +114,7 @@ export class EditorViewState implements ViewState {
         lineHeight: "inherit",
       },
     });
-    const getScript = () => callbacks.getScript() || parse("", {});
+    const getScript = () => callbacks.getScript();
     const state = EditorState.create({
       doc: text,
       extensions: [
@@ -149,7 +148,7 @@ export class EditorViewState implements ViewState {
   }
 
   script(): FountainScript {
-    return this.callbacks.getScript() || parse("", {});
+    return this.callbacks.getScript();
   }
 
   setViewData(path: string, text: string, _clear: boolean) {

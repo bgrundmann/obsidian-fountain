@@ -372,7 +372,7 @@ export default class FountainPlugin extends Plugin {
     modalType: "dialogue" | "structure" | "types",
   ) {
     const script = fountainView.getScript();
-    if (!script || "error" in script) {
+    if ("error" in script) {
       new Notice("Unable to parse fountain script");
       return;
     }

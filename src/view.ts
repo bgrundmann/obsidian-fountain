@@ -347,7 +347,7 @@ export class FountainView extends TextFileView {
     return this.state.script();
   }
 
-  getCachedScript(): FountainScript | null {
+  getCachedScript(): FountainScript {
     return this.cachedScript;
   }
 
@@ -450,13 +450,11 @@ export class FountainView extends TextFileView {
   }
 
   getText(range: Range): string {
-    const script = this.getCachedScript();
-    if (!script) return "";
-    return script.document.slice(range.start, range.end);
+    return this.cachedScript.document.slice(range.start, range.end);
   }
 
-  getScript(): FountainScript | null {
-    return this.getCachedScript();
+  getScript(): FountainScript {
+    return this.cachedScript;
   }
 
   toggleEditMode() {

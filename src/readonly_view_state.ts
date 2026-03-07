@@ -1,5 +1,4 @@
 import type { FountainScript, Range, ShowHideSettings } from "./fountain";
-import { parse } from "./fountain_parser";
 import { type Callbacks, renderIndexCards } from "./index_cards_view";
 import { rangeOfFirstVisibleLine, renderFountain } from "./reading_view";
 import {
@@ -9,7 +8,7 @@ import {
 } from "./view_state";
 
 export type ReadonlyViewCallbacks = {
-  getScript: () => FountainScript | null;
+  getScript: () => FountainScript;
   startEditModeHere: (range: Range) => void;
   requestSave: () => void;
   replaceText: (range: Range, replacement: string) => void;
@@ -50,7 +49,7 @@ export class ReadonlyViewState implements ViewState {
   }
 
   script(): FountainScript {
-    return this.callbacks.getScript() || parse("", {});
+    return this.callbacks.getScript();
   }
 
   public stopRehearsalMode() {
@@ -182,7 +181,7 @@ export class ReadonlyViewState implements ViewState {
   }
 
   getViewData(): string {
-    return this.callbacks.getScript()?.document || "";
+    return this.callbacks.getScript().document;
   }
 
   setViewData(path: string, _text: string, _clear: boolean): void {

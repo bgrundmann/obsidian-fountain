@@ -38,9 +38,9 @@ export interface ViewState {
 }
 
 export function getSnippetsStartPosition(
-  script: FountainScript | null,
+  script: FountainScript,
 ): number | null {
-  if (!script || "error" in script) return null;
+  if ("error" in script) return null;
 
   for (const element of script.script) {
     if (element.kind === "section") {
