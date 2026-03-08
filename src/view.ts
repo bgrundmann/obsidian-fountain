@@ -155,6 +155,11 @@ export class FountainView extends TextFileView {
       if (this.openSearch()) return false;
       return undefined;
     });
+    this.scope.register(["Mod"], "e", () => {
+      this.toggleEditMode();
+      this.app.workspace.requestSaveLayout();
+      return false;
+    });
     this.stopRehearsalModeAction = this.addAction(
       "brain",
       "Stop rehearsal",

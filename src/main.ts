@@ -107,15 +107,6 @@ export default class FountainPlugin extends Plugin {
     await createFile(null);
   }
 
-  private toggleFountainEditModeCommand(checking: boolean): boolean {
-    const fv = this.app.workspace.getActiveViewOfType(FountainView);
-    if (checking) return fv !== null;
-    if (fv) {
-      fv.toggleEditMode();
-    }
-    return true;
-  }
-
   private copySelectionAsSnippetCommand(checking: boolean): boolean {
     const fv = this.app.workspace.getActiveViewOfType(FountainView);
     if (checking) return fv?.hasValidSelectionForSnipping() ?? false;
@@ -241,13 +232,6 @@ export default class FountainPlugin extends Plugin {
       name: "New fountain document",
       callback: () => {
         this.newFountainDocumentCommand();
-      },
-    });
-    this.addCommand({
-      id: "toggle-fountain-edit-mode",
-      name: "Toggle edit mode",
-      checkCallback: (checking: boolean) => {
-        this.toggleFountainEditModeCommand(checking);
       },
     });
     this.addCommand({

@@ -19,6 +19,7 @@
 - folding of scenes
 - toggle spell check command (off by default to avoid distraction during creative writing)
 - search and replace in editor (Cmd/Ctrl+F)
+- toggle edit mode with Cmd/Ctrl+E (when a fountain file has focus)
 
 ## Command reference
 

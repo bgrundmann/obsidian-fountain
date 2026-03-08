@@ -7,6 +7,9 @@
   - Case sensitivity, regular expression, and whole word toggles
   - Match highlighting with navigation between results
   - Styled to match Obsidian's native UI
+- **Edit Mode Toggle**: Cmd/Ctrl+E now toggles edit mode when a fountain view has focus
+  - Works like Obsidian's native edit toggle but scoped to fountain files
+  - No custom hotkey binding needed
 
 ## [0.25.0] - Spelling Woes
 
