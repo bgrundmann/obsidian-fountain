@@ -701,3 +701,96 @@
 	background: var(--background-modifier-hover);
 	color: var(--text-normal);
 }
+
+/* Search panel styling to match Obsidian */
+
+.screenplay .cm-panel.cm-search {
+	background-color: var(--background-secondary);
+	border-bottom: 1px solid var(--background-modifier-border);
+	color: var(--text-normal);
+	font-family: var(--font-interface);
+	font-size: var(--font-ui-small);
+	padding: 6px 8px;
+}
+
+.screenplay .cm-panel.cm-search .cm-textfield {
+	background-color: var(--background-modifier-form-field);
+	color: var(--text-normal);
+	border: none;
+	border-radius: var(--input-radius);
+	padding: var(--input-padding);
+	height: var(--input-height);
+	font-family: var(--font-interface);
+	font-size: var(--font-ui-small);
+	font-weight: var(--input-font-weight);
+	box-shadow: var(--input-shadow);
+	box-sizing: border-box;
+}
+
+.screenplay .cm-panel.cm-search .cm-textfield:hover {
+	box-shadow: var(--input-shadow-hover);
+}
+
+.screenplay .cm-panel.cm-search .cm-textfield:focus {
+	border: none;
+	outline: none;
+	box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
+}
+
+.screenplay .cm-panel.cm-search .cm-button {
+	background-color: var(--interactive-normal);
+	background-image: none;
+	color: var(--text-normal);
+	border: none;
+	border-radius: var(--input-radius);
+	padding: var(--input-padding);
+	height: var(--input-height);
+	font-family: var(--font-interface);
+	font-size: var(--font-ui-small);
+	font-weight: var(--input-font-weight);
+	box-shadow: var(--input-shadow);
+	cursor: pointer;
+	box-sizing: border-box;
+}
+
+.screenplay .cm-panel.cm-search .cm-button:hover {
+	background-color: var(--interactive-hover);
+	box-shadow: var(--input-shadow-hover);
+}
+
+.screenplay .cm-panel.cm-search label {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	white-space: nowrap;
+}
+
+.screenplay .cm-panel.cm-search input[type="checkbox"] {
+	margin: 0;
+}
+
+.screenplay .cm-panel.cm-search [name="close"] {
+	color: var(--text-muted);
+	font-size: 16px;
+	background-image: none;
+	box-shadow: none;
+	border: none;
+	height: auto;
+}
+
+.screenplay .cm-panel.cm-search [name="close"]:hover {
+	color: var(--text-normal);
+	background-color: transparent;
+	box-shadow: none;
+}
+
+.screenplay .cm-searchMatch {
+	background-color: var(--text-highlight-bg) !important;
+}
+
+.screenplay .cm-searchMatch-selected {
+	background-color: var(--interactive-accent) !important;
+	color: var(--text-on-accent) !important;
+}

@@ -2,25 +2,20 @@
 
 ## Problem
 
-Our custom CodeMirror 6 editor doesn't get Obsidian's built-in search. Users need Ctrl/Cmd+F to work.
+Our custom CodeMirror 6 editor doesn't get Obsidian's built-in search. Users need Cmd/Ctrl+F to work.
 
 ## Solution
 
-Use `@codemirror/search`. It's already installed transitively and integrates directly with our CodeMirror setup. No new files needed.
+Use `@codemirror/search` for the search functionality. Use Obsidian's `View.scope` API
+to override Cmd/Ctrl+F when the Fountain view has focus (registering a global command
+causes hotkey conflicts).
 
-## Implementation
+## Key implementation detail: View.scope
 
-1. Add `@codemirror/search` as an explicit dependency in `package.json`.
+Obsidian intercepts Cmd/Ctrl+F globally before CodeMirror sees it. Registering an Obsidian
+command with `Mod+F` conflicts with the built-in "Search current file" command (both show
+red in hotkey settings).
 
-2. In `editor_view_state.ts`, add to the extensions array:
-
-```typescript
-import { search, searchKeymap, highlightSelectionMatches } from "@codemirror/search";
-
-// In the extensions list:
-search(),
-highlightSelectionMatches(),
-keymap.of(searchKeymap),
-```
-
-3. Add CSS in `core_styles.css` to style match highlights to fit Obsidian's theme. The default CodeMirror search panel should work without customization — only restyle if it looks wrong.
+The fix is `View.scope`: setting `this.scope = new Scope(this.app.scope)` on the view and
+registering Mod+F on that scope. When the view has focus, its scope handlers take priority.
+When another view has focus, Obsidian's normal Cmd+F works. No global command needed.
