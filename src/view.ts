@@ -369,6 +369,12 @@ export class FountainView extends TextFileView {
 
   updateScript(newScript: FountainScript) {
     this.cachedScript = newScript;
+    if (
+      this.state.isEditMode &&
+      this.state.getViewData() !== newScript.document
+    ) {
+      this.state.setViewData(this.file?.path ?? "", newScript.document, false);
+    }
     this.state.render();
   }
 
