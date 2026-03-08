@@ -16,6 +16,9 @@
   - Snippets drop zone always visible in sidebar for discoverability
   - Removed distracting "Snip" tooltip button that appeared on every selection
   - Note: the global "Copy/Move selection to snippet" commands have been removed in favor of the scoped shortcuts above
+- **E2E Testing**: Added end-to-end tests using wdio-obsidian-service
+  - Tests run against real Obsidian instance
+  - Covers edit mode toggling and snippet insertion
 
 ## [0.25.0] - Spelling Woes
 
