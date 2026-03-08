@@ -226,16 +226,18 @@ FADE TO BLACK:
 - Scroll to the end of your document and add a `# Snippets` section
 - Add your reusable content blocks, separating each with `===` (page breaks)
 
-**Method 2: Using the Snip button**
+**Method 2: Keyboard shortcuts**
 - Select any text in your script (outside the snippets section)
-- Click the "Snip" button that appears, or use the command palette: "Save Selection as Snippet"
-- For quick access, consider binding this command to `CMD+SHIFT+X` in Obsidian's hotkey settings
-- The selected text will be moved to the snippets section automatically
+- Press Cmd/Ctrl+Shift+X to move the selection to snippets
+- Press Cmd/Ctrl+Shift+C to copy the selection to snippets (keeping the original)
+
+**Method 3: Drag and drop**
+- Select text in your script and drag it into the snippets area in the sidebar
 
 ### Using Snippets
 
 - Open the Table of Contents panel in the right sidebar
-- The bottom half shows your available snippets as scaled-down previews
+- The bottom section shows your available snippets as scaled-down previews
 - Click on any snippet to jump to its location in the document for editing
 - Drag and drop snippets from the sidebar into your script to insert them
 - Snippets are copied (not moved) when dragged, so they remain available for reuse
@@ -244,8 +246,6 @@ FADE TO BLACK:
 
 - Everything after `# Snippets` is considered snippet content, even other section headers
 - Snippets are hidden from the main script when boneyard hiding is enabled
-- The snip button only appears for text selections outside the snippets section
-- You can duplicate snippets by dragging them into the snippets section itself
 
 ## Why did I do this?
 
