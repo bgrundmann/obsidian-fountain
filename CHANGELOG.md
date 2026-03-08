@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.26.0] - Find and Replace
+
+- **Search and Replace**: Full search and replace support in the editor via Cmd/Ctrl+F
+  - Find text, replace single or all occurrences
+  - Case sensitivity, regular expression, and whole word toggles
+  - Match highlighting with navigation between results
+  - Styled to match Obsidian's native UI
+
 ## [0.25.0] - Spelling Woes
 
 - **Toggle Spell Check**: New command to enable/disable spell checking in the editor

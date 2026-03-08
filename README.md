@@ -18,6 +18,7 @@
 - boneyard support (content after "# boneyard" header can be hidden)
 - folding of scenes
 - toggle spell check command (off by default to avoid distraction during creative writing)
+- search and replace in editor (Cmd/Ctrl+F)
 
 ## Command reference
 
