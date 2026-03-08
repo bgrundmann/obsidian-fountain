@@ -184,7 +184,7 @@ export default class FountainPlugin extends Plugin {
             }
 
             // Save the PDF to the vault
-            await this.app.vault.createBinary(outputPath, pdfBytes);
+            await this.app.vault.createBinary(outputPath, pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength) as ArrayBuffer);
 
             new Notice(`PDF generated: ${outputPath}`);
           } catch (error) {

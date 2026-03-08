@@ -19,6 +19,7 @@
 - **E2E Testing**: Added end-to-end tests using wdio-obsidian-service
   - Tests run against real Obsidian instance
   - Covers edit mode toggling and snippet insertion
+- **Dependencies**: Upgraded peggy 5, TypeScript 5.9, esbuild, Jest 30; removed unused biome and eslint
 
 ## [0.25.0] - Spelling Woes
 
