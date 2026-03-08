@@ -6,25 +6,22 @@ import {
   search,
   searchKeymap,
 } from "@codemirror/search";
-import { EditorSelection, EditorState, StateField } from "@codemirror/state";
+import { EditorSelection, EditorState } from "@codemirror/state";
 import {
   EditorView,
-  type Tooltip,
   type ViewUpdate,
   drawSelection,
   keymap,
-  showTooltip,
 } from "@codemirror/view";
 import type { FountainScript, Range } from "./fountain";
 import { createCharacterCompletion } from "./character_completion";
 import { createFountainEditorPlugin } from "./fountain_editor";
 import { createFountainFoldService } from "./fountain_folding";
-import { type ViewState, getSnippetsStartPosition } from "./view_state";
+import type { ViewState } from "./view_state";
 
 export type EditorCallbacks = {
   getScript: () => FountainScript;
   onScriptChanged: (script: FountainScript) => void;
-  saveSelectionAsSnippet: (cut: boolean) => void;
   requestSave: () => void;
 };
 
@@ -38,53 +35,6 @@ function firstScrollableElement(node: HTMLElement): HTMLElement | null {
     current = current.parentNode as HTMLElement;
   }
   return (document.scrollingElement as HTMLElement) || document.documentElement;
-}
-
-function getSnipTooltips(
-  state: EditorState,
-  callbacks: EditorCallbacks,
-): readonly Tooltip[] {
-  const snippetsStart = getSnippetsStartPosition(callbacks.getScript());
-
-  return state.selection.ranges
-    .filter((range) => !range.empty)
-    .filter((range) => {
-      // Only show snip button if selection is not after snippets section
-      if (snippetsStart === null) return true;
-      return range.from < snippetsStart;
-    })
-    .map((range) => {
-      // Position tooltip at the end of the selection
-      return {
-        pos: range.to,
-        above: true,
-        strictSide: true,
-        arrow: true,
-        create: () => {
-          const dom = document.createElement("button");
-          dom.className = "cm-tooltip-snip";
-          dom.textContent = "Snip";
-          dom.addEventListener("click", (e) => {
-            e.preventDefault();
-            callbacks.saveSelectionAsSnippet(true);
-          });
-          return { dom };
-        },
-      };
-    });
-}
-
-function createSnipTooltipField(callbacks: EditorCallbacks) {
-  return StateField.define<readonly Tooltip[]>({
-    create: (state) => getSnipTooltips(state, callbacks),
-
-    update(tooltips, tr) {
-      if (!tr.selection && !tr.docChanged) return tooltips;
-      return getSnipTooltips(tr.state, callbacks);
-    },
-
-    provide: (f) => showTooltip.computeN([f], (state) => state.field(f)),
-  });
 }
 
 /** Wraps a CodeMirror editor for editing fountain script source text. */
@@ -139,7 +89,6 @@ export class EditorViewState implements ViewState {
           (script: FountainScript) => callbacks.onScriptChanged(script),
         ),
         createCharacterCompletion(getScript),
-        createSnipTooltipField(callbacks),
         EditorView.updateListener.of((update: ViewUpdate) => {
           if (update.docChanged) {
             callbacks.requestSave();

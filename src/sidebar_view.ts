@@ -27,52 +27,68 @@ abstract class SidebarSection {
     this.callbacks = callbacks;
   }
 
-  abstract render(container: HTMLElement, script: FountainScript): void;
+  abstract render(
+    container: HTMLElement,
+    script: FountainScript,
+    isEditMode: boolean,
+  ): void;
 }
 
 class SnippetsSection extends SidebarSection {
-  render(container: HTMLElement, script: FountainScript): void {
+  render(
+    container: HTMLElement,
+    script: FountainScript,
+    isEditMode: boolean,
+  ): void {
     const structure = script.structure();
-    if (!structure.snippets || structure.snippets.length === 0) {
-      return;
-    }
+    const hasSnippets = structure.snippets && structure.snippets.length > 0;
+    if (!hasSnippets && !isEditMode) return;
 
-    container.createDiv({ cls: "snippets-section" }, (sectionDiv) => {
-      // Add class to section div for styling
-      sectionDiv.addClass("screenplay-snippets");
+    container.createDiv(
+      { cls: hasSnippets ? "snippets-section" : "snippets-section-empty" },
+      (sectionDiv) => {
+        sectionDiv.addClass("screenplay-snippets");
 
-      // Add drop handling
-      sectionDiv.addEventListener("dragover", (event) => {
-        event.preventDefault(); // Allow drop
-        sectionDiv.addClass("drag-over");
-      });
+        // Add drop handling
+        sectionDiv.addEventListener("dragover", (event) => {
+          event.preventDefault();
+          sectionDiv.addClass("drag-over");
+        });
 
-      sectionDiv.addEventListener("dragleave", (event) => {
-        sectionDiv.removeClass("drag-over");
-      });
+        sectionDiv.addEventListener("dragleave", (event) => {
+          sectionDiv.removeClass("drag-over");
+        });
 
-      sectionDiv.addEventListener("drop", (event) => {
-        event.preventDefault();
-        sectionDiv.removeClass("drag-over");
+        sectionDiv.addEventListener("drop", (event) => {
+          event.preventDefault();
+          sectionDiv.removeClass("drag-over");
 
-        const droppedText = event.dataTransfer?.getData("text/plain");
-        if (droppedText) {
-          this.callbacks.insertAfterSnippetsHeader(`${droppedText}\n\n===\n\n`);
+          const droppedText = event.dataTransfer?.getData("text/plain");
+          if (droppedText) {
+            this.callbacks.insertAfterSnippetsHeader(
+              `${droppedText}\n\n===\n\n`,
+            );
+          }
+        });
+
+        if (hasSnippets) {
+          sectionDiv.createEl("div", {
+            text: "Snippets",
+            cls: "snippets-instruction",
+          });
+
+          for (let i = 0; i < structure.snippets.length; i++) {
+            const snippet = structure.snippets[i];
+            this.renderSnippet(sectionDiv, script, snippet, i);
+          }
+        } else {
+          sectionDiv.createEl("div", {
+            text: "Drop selection here to create a snippet",
+            cls: "snippets-instruction",
+          });
         }
-      });
-
-      // Add subtle instruction text
-      sectionDiv.createEl("div", {
-        text: "Maybe later...",
-        cls: "snippets-instruction",
-      });
-
-      // Add snippets in file order
-      for (let i = 0; i < structure.snippets.length; i++) {
-        const snippet = structure.snippets[i];
-        this.renderSnippet(sectionDiv, script, snippet, i);
-      }
-    });
+      },
+    );
   }
 
   private renderSnippet(
@@ -135,7 +151,11 @@ class TocSection extends SidebarSection {
   private showTodos = true;
   private showSynopsis = false;
 
-  render(container: HTMLElement, script: FountainScript): void {
+  render(
+    container: HTMLElement,
+    script: FountainScript,
+    _isEditMode: boolean,
+  ): void {
     container.createDiv({ cls: "toc-section" }, (sectionDiv) => {
       sectionDiv.createDiv({ cls: "screenplay-toc" }, (div) => {
         div.createDiv({ cls: "toc-controls" }, (tocControls) => {
@@ -413,8 +433,9 @@ export class FountainSideBarView extends ItemView {
       if (ft) {
         const script = ft.getScript();
         if (!("error" in script)) {
+          const isEditMode = ft.isEditMode();
           for (const section of this.sections) {
-            section.render(sidebarDiv, script);
+            section.render(sidebarDiv, script, isEditMode);
           }
         }
       }

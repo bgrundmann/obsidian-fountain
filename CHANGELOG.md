@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.26.0] - Find and Replace
+## [0.26.0] - Find and Replace, UI Polish
 
 - **Search and Replace**: Full search and replace support in the editor via Cmd/Ctrl+F
   - Find text, replace single or all occurrences
@@ -10,6 +10,12 @@
 - **Edit Mode Toggle**: Cmd/Ctrl+E now toggles edit mode when a fountain view has focus
   - Works like Obsidian's native edit toggle but scoped to fountain files
   - No custom hotkey binding needed
+- **Snippets UX Improvements**:
+  - Cmd/Ctrl+Shift+X moves selection to snippets, Cmd/Ctrl+Shift+C copies it
+  - Drag and drop text into the snippets area in the sidebar
+  - Snippets drop zone always visible in sidebar for discoverability
+  - Removed distracting "Snip" tooltip button that appeared on every selection
+  - Note: the global "Copy/Move selection to snippet" commands have been removed in favor of the scoped shortcuts above
 
 ## [0.25.0] - Spelling Woes
 

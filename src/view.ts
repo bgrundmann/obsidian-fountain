@@ -160,6 +160,14 @@ export class FountainView extends TextFileView {
       this.app.workspace.requestSaveLayout();
       return false;
     });
+    this.scope.register(["Mod", "Shift"], "x", () => {
+      this.saveSelectionAsSnippet(true);
+      return false;
+    });
+    this.scope.register(["Mod", "Shift"], "c", () => {
+      this.saveSelectionAsSnippet(false);
+      return false;
+    });
     this.stopRehearsalModeAction = this.addAction(
       "brain",
       "Stop rehearsal",
@@ -199,7 +207,6 @@ export class FountainView extends TextFileView {
     return {
       getScript: () => this.cachedScript,
       onScriptChanged: (s) => this.updateScriptDirectly(s),
-      saveSelectionAsSnippet: (cut) => this.saveSelectionAsSnippet(cut),
       requestSave: () => this.requestSave(),
     };
   }
