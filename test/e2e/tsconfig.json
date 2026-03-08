@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2021",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "strict": true,
+    "noImplicitAny": true,
+    "types": [
+      "node",
+      "@wdio/globals/types",
+      "@wdio/mocha-framework",
+      "wdio-obsidian-service"
+    ]
+  },
+  "include": [
+    "specs/**/*.ts"
+  ]
+}
