@@ -40,6 +40,7 @@
 	"dependencies": {
 		"@codemirror/autocomplete": "^6.18.7",
 		"@codemirror/language": "^6.10.3",
+		"@codemirror/search": "^6.5.0",
 		"jest-environment-jsdom": "^29.7.0",
 		"pdf-lib": "^1.17.1"
 	}

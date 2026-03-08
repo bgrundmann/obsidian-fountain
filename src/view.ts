@@ -1,5 +1,6 @@
 import {
   Menu,
+  Scope,
   type TFile,
   TextFileView,
   type ViewStateResult,
@@ -149,6 +150,11 @@ export class FountainView extends TextFileView {
     this.showViewMenuAction = this.addAction("eye", "View options", (evt) =>
       this.showViewMenu(evt),
     );
+    this.scope = new Scope(this.app.scope);
+    this.scope.register(["Mod"], "f", () => {
+      if (this.openSearch()) return false;
+      return undefined;
+    });
     this.stopRehearsalModeAction = this.addAction(
       "brain",
       "Stop rehearsal",
@@ -305,6 +311,12 @@ export class FountainView extends TextFileView {
     requestAnimationFrame(() => {
       state.focus();
     });
+  }
+
+  openSearch(): boolean {
+    if (!this.state.isEditMode) return false;
+    (this.state as EditorViewState).openSearch();
+    return true;
   }
 
   toggleSpellCheck(): boolean {

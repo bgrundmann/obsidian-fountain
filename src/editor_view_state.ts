@@ -1,5 +1,11 @@
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { foldGutter, foldKeymap } from "@codemirror/language";
+import {
+  highlightSelectionMatches,
+  openSearchPanel,
+  search,
+  searchKeymap,
+} from "@codemirror/search";
 import { EditorSelection, EditorState, StateField } from "@codemirror/state";
 import {
   EditorView,
@@ -121,7 +127,9 @@ export class EditorViewState implements ViewState {
         theme,
         history(),
         drawSelection(),
-        keymap.of([...defaultKeymap, ...historyKeymap, ...foldKeymap]),
+        keymap.of([...defaultKeymap, ...historyKeymap, ...foldKeymap, ...searchKeymap]),
+        search(),
+        highlightSelectionMatches(),
         EditorView.editorAttributes.of({ class: "screenplay" }),
         EditorView.lineWrapping,
         foldGutter(),
@@ -211,6 +219,10 @@ export class EditorViewState implements ViewState {
 
   setSpellCheck(enabled: boolean): void {
     this.cmEditor.contentDOM.spellcheck = enabled;
+  }
+
+  openSearch(): void {
+    openSearchPanel(this.cmEditor);
   }
 
   blackoutCharacter(): string | null {
