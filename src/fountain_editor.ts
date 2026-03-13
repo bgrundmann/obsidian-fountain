@@ -179,20 +179,21 @@ class FountainEditorPlugin implements PluginValue {
               el.characterExtensionsRange.end,
               character,
             );
-            if (el.parenthetical !== null) {
-              builder.add(
-                el.parenthetical.start,
-                el.parenthetical.end,
-                parenthetical,
-              );
-            }
-            if (el.lines.length > 0) {
-              builder.add(
-                el.lines[0].range.start,
-                el.lines[el.lines.length - 1].range.end,
-                words,
-              );
-              this.decorateLines(builder, el.lines);
+            for (const item of el.content) {
+              if (item.kind === "parenthetical") {
+                builder.add(
+                  item.range.start,
+                  item.range.end,
+                  parenthetical,
+                );
+              } else {
+                builder.add(
+                  item.line.range.start,
+                  item.line.range.end,
+                  words,
+                );
+                this.decorateLines(builder, [item.line]);
+              }
             }
             break;
 

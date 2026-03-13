@@ -69,8 +69,12 @@ Line
 DialogueLine
  = !PageBreakPattern @Line
 
-DialogueLines
- = @lines:DialogueLine+ DialogueTerminator
+DialogueContentItem
+ = p:Parenthetical { return { kind: 'parenthetical', range: p }; }
+ / l:DialogueLine { return { kind: 'line', line: l }; }
+
+DialogueContent
+ = @items:DialogueContentItem+ DialogueTerminator
 
 DialogueTerminator
  = &PageBreakPattern
@@ -154,15 +158,13 @@ NewLineOrEndOfInput
 
 Dialogue
  = OptionalBlanks character:Character [ \t]* exts:CharacterExtensions "\n"
-  parenthetical:(Parenthetical)?
-  dialogue:DialogueLines
+  content:DialogueContent
  { return {
      range: range(),
      kind: 'dialogue',
      characterRange: character,
      characterExtensionsRange: exts,
-     parenthetical: parenthetical,
-     lines: dialogue
+     content: content
    }
  }
 
@@ -203,7 +205,8 @@ Scene
    return {
      kind: 'scene',
      range: range(),
-     heading: headingStart + result.heading,
+     heading: headingStart.text + result.heading,
+     forced: headingStart.forced,
      number: result.number
    };
  }
@@ -244,5 +247,5 @@ SceneNumberPrime
  }
 
 SceneStart
- = ('.' &[a-zA-Z0-9] { return '.'; }
- / prefix:("INT./EXT"i / "INT/EXT"i / "EXT"i / "EST"i / "INT"i / "I/E"i) separator:(" " / ".") { return prefix + separator; })
+ = ('.' &[a-zA-Z0-9] { return { text: '', forced: true }; }
+ / prefix:("INT./EXT"i / "INT/EXT"i / "EXT"i / "EST"i / "INT"i / "I/E"i) separator:(" " / ".") { return { text: prefix + separator, forced: false }; })

@@ -1,4 +1,5 @@
 import type { FountainElement, SceneHeading } from "../src/fountain";
+import { sceneHeadingTextEnd } from "../src/fountain";
 import { parse } from "../src/fountain_parser";
 
 describe("Scene numbering functionality", () => {
@@ -27,7 +28,7 @@ describe("Scene numbering functionality", () => {
 
       for (const scene of scenes) {
         if (scene.number === null) {
-          const insertPosition = scene.range.start + scene.heading.length;
+          const insertPosition = sceneHeadingTextEnd(scene);
           modifications.push({
             range: { start: insertPosition, end: insertPosition },
             replacement: ` #${currentNumber}#`,
@@ -75,7 +76,7 @@ describe("Scene numbering functionality", () => {
 
       for (const scene of scenes) {
         if (scene.number === null) {
-          const insertPosition = scene.range.start + scene.heading.length;
+          const insertPosition = sceneHeadingTextEnd(scene);
           modifications.push({
             range: { start: insertPosition, end: insertPosition },
             replacement: ` #${currentNumber}#`,
@@ -128,7 +129,7 @@ describe("Scene numbering functionality", () => {
 
       for (const scene of scenes) {
         if (scene.number === null) {
-          const insertPosition = scene.range.start + scene.heading.length;
+          const insertPosition = sceneHeadingTextEnd(scene);
           modifications.push({
             range: { start: insertPosition, end: insertPosition },
             replacement: ` #${nextSequentialNumber}#`,
@@ -193,7 +194,7 @@ describe("Scene numbering functionality", () => {
 
       for (const scene of scenes) {
         if (scene.number === null) {
-          const insertPosition = scene.range.start + scene.heading.length;
+          const insertPosition = sceneHeadingTextEnd(scene);
           modifications.push({
             range: { start: insertPosition, end: insertPosition },
             replacement: ` #${currentNumber}#`,
@@ -250,7 +251,7 @@ describe("Scene numbering functionality", () => {
         if (scene.number !== null) {
           // Remove the scene number including any spaces before it
           const beforeNumber = result.substring(
-            scene.range.start + scene.heading.length,
+            sceneHeadingTextEnd(scene),
             scene.number.start,
           );
           const spacesToRemove = beforeNumber.match(/\s*$/)?.[0] ?? "";
@@ -281,7 +282,7 @@ describe("Scene numbering functionality", () => {
         const scene = scenes[i];
         if (scene.number !== null) {
           const beforeNumber = result.substring(
-            scene.range.start + scene.heading.length,
+            sceneHeadingTextEnd(scene),
             scene.number.start,
           );
           const spacesToRemove = beforeNumber.match(/\s*$/)?.[0] ?? "";
@@ -311,7 +312,7 @@ describe("Scene numbering functionality", () => {
         const scene = scenes[i];
         if (scene.number !== null) {
           const beforeNumber = result.substring(
-            scene.range.start + scene.heading.length,
+            sceneHeadingTextEnd(scene),
             scene.number.start,
           );
           const spacesToRemove = beforeNumber.match(/\s*$/)?.[0] ?? "";

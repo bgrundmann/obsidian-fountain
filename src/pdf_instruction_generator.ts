@@ -17,6 +17,8 @@ import {
   type Transition,
   extractMarginMarker,
   extractTransitionText,
+  dialogueLines,
+  firstParenthetical,
 } from "./fountain";
 import type { PDFOptions } from "./pdf_options_dialog";
 import {
@@ -1047,9 +1049,10 @@ function prepareDialogueData(
 
   // Prepare parenthetical lines
   const parentheticalLines: string[] = [];
-  if (dialogue.parenthetical) {
+  const paren = firstParenthetical(dialogue);
+  if (paren) {
     const parentheticalText = fountainScript.document
-      .substring(dialogue.parenthetical.start, dialogue.parenthetical.end)
+      .substring(paren.start, paren.end)
       .trim();
 
     parentheticalLines.push(
@@ -1061,8 +1064,8 @@ function prepareDialogueData(
   }
 
   // Prepare dialogue lines
-  const dialogueLines: WrappedLine[] = [];
-  for (const line of dialogue.lines) {
+  const wrappedDialogueLines: WrappedLine[] = [];
+  for (const line of dialogueLines(dialogue)) {
     if (line.elements.length > 0) {
       const styledSegments = extractStyledSegments(
         line.elements,
@@ -1076,17 +1079,17 @@ function prepareDialogueData(
         false,
       );
 
-      dialogueLines.push(...wrappedLines);
+      wrappedDialogueLines.push(...wrappedLines);
     } else {
       // Empty line
-      dialogueLines.push({ segments: [], marginMarks: [] });
+      wrappedDialogueLines.push({ segments: [], marginMarks: [] });
     }
   }
 
   return {
     characterLine,
     parentheticalLines,
-    dialogueLines,
+    dialogueLines: wrappedDialogueLines,
     contd: false,
   };
 }

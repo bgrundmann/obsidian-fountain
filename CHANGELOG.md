@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.26.1] - Bugfix
+
+- **Forced Scene Headings**: The leading period (`.`) used to force a scene heading is now correctly stripped from the displayed heading text in the reading view, sidebar, and PDF output, as required by the Fountain spec.
+
 ## [0.26.0] - Find and Replace, UI Polish
 
 - **Search and Replace**: Full search and replace support in the editor via Cmd/Ctrl+F

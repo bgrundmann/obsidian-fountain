@@ -417,23 +417,25 @@ More action here.`;
                     start: 38,
                     end: 38,
                   },
-                  parenthetical: null,
-                  lines: [
+                  content: [
                     {
-                      range: {
-                        start: 39,
-                        end: 52,
-                      },
-                      centered: false,
-                      elements: [
-                        {
-                          kind: "text",
-                          range: {
-                            start: 39,
-                            end: 51,
-                          },
+                      kind: "line",
+                      line: {
+                        range: {
+                          start: 39,
+                          end: 52,
                         },
-                      ],
+                        centered: false,
+                        elements: [
+                          {
+                            kind: "text",
+                            range: {
+                              start: 39,
+                              end: 51,
+                            },
+                          },
+                        ],
+                      },
                     },
                   ],
                 },
@@ -451,23 +453,25 @@ More action here.`;
                     start: 57,
                     end: 57,
                   },
-                  parenthetical: null,
-                  lines: [
+                  content: [
                     {
-                      range: {
-                        start: 58,
-                        end: 68,
-                      },
-                      centered: false,
-                      elements: [
-                        {
-                          kind: "text",
-                          range: {
-                            start: 58,
-                            end: 67,
-                          },
+                      kind: "line",
+                      line: {
+                        range: {
+                          start: 58,
+                          end: 68,
                         },
-                      ],
+                        centered: false,
+                        elements: [
+                          {
+                            kind: "text",
+                            range: {
+                              start: 58,
+                              end: 67,
+                            },
+                          },
+                        ],
+                      },
                     },
                   ],
                 },

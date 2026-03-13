@@ -339,6 +339,7 @@ Character makes breakfast.`;
         kind: "scene" as const,
         range: { start: parkScene.range.start, end: parkScene.range.end },
         heading: parkScene.scene?.heading || "",
+        forced: false,
         number: null,
       };
 

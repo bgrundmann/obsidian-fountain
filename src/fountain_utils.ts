@@ -1,8 +1,12 @@
 import type {
   BasicTextElement,
+  Dialogue,
+  DialogueContent,
   FountainElement,
   Line,
   Note,
+  Range,
+  SceneHeading,
   StyledText,
   StyledTextElement,
   Transition,
@@ -47,19 +51,24 @@ export function mergeText(elts: StyledText): StyledText {
  * @param elements List of FountainElements to extract notes from
  * @returns Array of all Note elements found
  */
+function extractNotesFromLines(lines: Line[], notes: Note[]): void {
+  for (const line of lines) {
+    for (const textElement of line.elements) {
+      if (textElement.kind === "note") {
+        notes.push(textElement);
+      }
+    }
+  }
+}
+
 export function extractNotes(elements: FountainElement[]): Note[] {
   const notes: Note[] = [];
 
-  // Check if element has lines property (action and dialogue elements)
   for (const element of elements) {
-    if ("lines" in element) {
-      for (const line of element.lines) {
-        for (const textElement of line.elements) {
-          if (textElement.kind === "note") {
-            notes.push(textElement);
-          }
-        }
-      }
+    if (element.kind === "action" || element.kind === "lyrics") {
+      extractNotesFromLines(element.lines, notes);
+    } else if (element.kind === "dialogue") {
+      extractNotesFromLines(dialogueLines(element), notes);
     }
   }
   return notes;
@@ -135,4 +144,43 @@ export function mergeConsecutiveActions(
   }
   if (prev !== null) merged.push(prev);
   return merged;
+}
+
+/** Position in the source text just after the heading text (before any scene number or trailing whitespace). */
+export function sceneHeadingTextEnd(scene: SceneHeading): number {
+  return scene.range.start + scene.heading.length + (scene.forced ? 1 : 0);
+}
+
+/** Extract just the dialogue lines from a Dialogue element's content, ignoring parentheticals. */
+export function dialogueLines(dialogue: Dialogue): Line[] {
+  return dialogue.content
+    .filter((c): c is { kind: "line"; line: Line } => c.kind === "line")
+    .map((c) => c.line);
+}
+
+/** Extract the first parenthetical range from a Dialogue element's content, or null. */
+export function firstParenthetical(dialogue: Dialogue): Range | null {
+  for (const c of dialogue.content) {
+    if (c.kind === "parenthetical") return c.range;
+  }
+  return null;
+}
+
+/** Filter the content of a dialogue element, keeping only lines that pass the filter. Parentheticals are kept as-is. */
+export function filterDialogueContent(
+  content: DialogueContent[],
+  filterLine: (line: Line) => Line | null,
+): DialogueContent[] {
+  const result: DialogueContent[] = [];
+  for (const c of content) {
+    if (c.kind === "parenthetical") {
+      result.push(c);
+    } else {
+      const filtered = filterLine(c.line);
+      if (filtered !== null) {
+        result.push({ kind: "line", line: filtered });
+      }
+    }
+  }
+  return result;
 }

@@ -45,10 +45,10 @@ export function getScenePreview(
     } else if (el.kind === "dialogue") {
       // Format as "CHARACTER: dialogue"
       const charName = script.sliceDocumentForDisplay(el.characterRange).trim();
-      if (el.lines.length > 0) {
-        const firstLine = el.lines[0];
+      const firstLine = el.content.find((c) => c.kind === "line");
+      if (firstLine) {
         const dialogueText = script
-          .sliceDocumentForDisplay(firstLine.range)
+          .sliceDocumentForDisplay(firstLine.line.range)
           .trim();
         const formatted = `${charName}: ${dialogueText}`;
         parts.push(formatted);

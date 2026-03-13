@@ -521,6 +521,28 @@ No luck. He has no choice to deal the cards.`,
       },
     ],
   );
+
+  test_script(
+    "Parenthetical after dialogue line",
+    `STEEL
+(starting the engine)
+The car's been parked for days.
+(beat)
+We need gas.
+
+`,
+    [
+      {
+        kind: "dialogue",
+        content: [
+          { kind: "parenthetical" },
+          { kind: "line" },
+          { kind: "parenthetical" },
+          { kind: "line" },
+        ],
+      },
+    ],
+  );
 });
 
 describe("Emphasis in actions", () => {

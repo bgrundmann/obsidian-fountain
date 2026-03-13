@@ -63,26 +63,28 @@ function renderDialogue(
       });
     },
   );
-  if (dialogue.parenthetical) {
-    const p = dialogue.parenthetical;
-    parent.createDiv(
-      {
-        attr: dataRange(p),
-      },
-      (div) => {
-        div.createDiv({
-          cls: "dialogue-parenthetical",
-          text: script.sliceDocument(p),
-        });
-      },
-    );
-  }
   const classes =
     blackoutCharacter &&
     script.charactersOf(dialogue).includes(blackoutCharacter)
       ? ["blackout", "dialogue-words"]
       : ["dialogue-words"];
-  renderLines(parent, script, classes, dialogue.lines, false, settings);
+  for (const item of dialogue.content) {
+    if (item.kind === "parenthetical") {
+      parent.createDiv(
+        {
+          attr: dataRange(item.range),
+        },
+        (div) => {
+          div.createDiv({
+            cls: "dialogue-parenthetical",
+            text: script.sliceDocument(item.range),
+          });
+        },
+      );
+    } else {
+      renderLines(parent, script, classes, [item.line], false, settings);
+    }
+  }
   renderBlankLine(parent, dialogue.range);
 }
 

@@ -20,6 +20,9 @@ export {
   type Action,
   type SceneHeading,
   type Transition,
+  type DialogueContent,
+  type DialogueContentParenthetical,
+  type DialogueContentLine,
   type Dialogue,
   type Section,
   type Lyrics,
@@ -39,6 +42,10 @@ export {
   extractMarginMarker,
   extractTransitionText,
   mergeConsecutiveActions,
+  sceneHeadingTextEnd,
+  dialogueLines,
+  firstParenthetical,
+  filterDialogueContent,
 } from "./fountain_utils";
 
 export { FountainScript } from "./fountain_script";

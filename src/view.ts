@@ -13,6 +13,7 @@ import {
   type SceneHeading,
   type ShowHideSettings,
   collapseRangeToStart,
+  sceneHeadingTextEnd,
 } from "./fountain";
 import { parse } from "./fountain_parser";
 import { FuzzySelectString } from "./fuzzy_select_string";
@@ -641,7 +642,7 @@ export class FountainView extends TextFileView {
     for (const scene of scenes) {
       if (scene.number === null) {
         // No existing number, add the next sequential number
-        const insertPosition = scene.range.start + scene.heading.length;
+        const insertPosition = sceneHeadingTextEnd(scene);
         modifications.push({
           range: { start: insertPosition, end: insertPosition },
           replacement: ` #${nextSequentialNumber}#`,
@@ -687,7 +688,7 @@ export class FountainView extends TextFileView {
       if (scene.number !== null) {
         // Remove the scene number including any spaces before it
         const beforeNumber = this.cachedScript.document.substring(
-          scene.range.start + scene.heading.length,
+          sceneHeadingTextEnd(scene),
           scene.number.start,
         );
         const spacesToRemove = beforeNumber.match(/\s*$/)?.[0] ?? "";

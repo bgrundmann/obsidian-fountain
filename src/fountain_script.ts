@@ -18,6 +18,7 @@ import {
   StructureSection,
   dataRange,
 } from "./fountain_types";
+import { filterDialogueContent } from "./fountain_utils";
 import {
   extractMarginMarker,
   maybeEscapeLeadingSpaces,
@@ -410,8 +411,11 @@ export class FountainScript {
       }
 
       case "dialogue": {
-        const filteredLines = this.filterLines(element.lines, settings);
-        return { ...element, lines: filteredLines };
+        const filteredContent = filterDialogueContent(
+          element.content,
+          (line) => this.filterLine(line, settings),
+        );
+        return { ...element, content: filteredContent };
       }
 
       default:

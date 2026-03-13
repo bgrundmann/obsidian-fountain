@@ -129,6 +129,7 @@ export type SceneHeading = {
   kind: "scene";
   range: Range;
   heading: string;
+  forced: boolean;
   number: Range | null;
 };
 
@@ -138,13 +139,24 @@ export type Transition = {
   forced: boolean;
 };
 
+export type DialogueContentParenthetical = {
+  kind: "parenthetical";
+  range: Range;
+};
+
+export type DialogueContentLine = {
+  kind: "line";
+  line: Line;
+};
+
+export type DialogueContent = DialogueContentParenthetical | DialogueContentLine;
+
 export type Dialogue = {
   kind: "dialogue";
   range: Range; /// range of everything
   characterRange: Range; /// range of the character line excl extensions excl whitespace at the beginning.
   characterExtensionsRange: Range; /// range of all extensions (empty range if no extensions) including all parentheses
-  parenthetical: Range | null;
-  lines: Line[];
+  content: DialogueContent[];
 };
 
 export type Section = {
