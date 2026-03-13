@@ -206,7 +206,6 @@ export class FountainView extends TextFileView {
 
   private editorCallbacks(): EditorCallbacks {
     return {
-      getScript: () => this.cachedScript,
       onScriptChanged: (s) => this.updateScriptDirectly(s),
       requestSave: () => this.requestSave(),
     };

@@ -17,10 +17,10 @@ import type { FountainScript, Range } from "./fountain";
 import { createCharacterCompletion } from "./character_completion";
 import { createFountainEditorPlugin } from "./fountain_editor";
 import { createFountainFoldService } from "./fountain_folding";
+import { fountainScriptField } from "./fountain_state";
 import type { ViewState } from "./view_state";
 
 export type EditorCallbacks = {
-  getScript: () => FountainScript;
   onScriptChanged: (script: FountainScript) => void;
   requestSave: () => void;
 };
@@ -70,11 +70,11 @@ export class EditorViewState implements ViewState {
         lineHeight: "inherit",
       },
     });
-    const getScript = () => callbacks.getScript();
     const state = EditorState.create({
       doc: text,
       extensions: [
         theme,
+        fountainScriptField,
         history(),
         drawSelection(),
         keymap.of([...defaultKeymap, ...historyKeymap, ...foldKeymap, ...searchKeymap]),
@@ -83,14 +83,16 @@ export class EditorViewState implements ViewState {
         EditorView.editorAttributes.of({ class: "screenplay" }),
         EditorView.lineWrapping,
         foldGutter(),
-        createFountainFoldService(getScript),
-        createFountainEditorPlugin(
-          getScript,
-          (script: FountainScript) => callbacks.onScriptChanged(script),
+        createFountainFoldService(),
+        createFountainEditorPlugin(),
+        createCharacterCompletion(
+          () => this.cmEditor.state.field(fountainScriptField),
         ),
-        createCharacterCompletion(getScript),
         EditorView.updateListener.of((update: ViewUpdate) => {
           if (update.docChanged) {
+            callbacks.onScriptChanged(
+              update.state.field(fountainScriptField),
+            );
             callbacks.requestSave();
           }
         }),

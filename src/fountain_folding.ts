@@ -2,18 +2,16 @@ import { foldService } from "@codemirror/language";
 import type { EditorState } from "@codemirror/state";
 import type { FountainScript, ScriptStructure } from "./fountain";
 import { StructureSection } from "./fountain";
+import { fountainScriptField } from "./fountain_state";
 
 /**
- * Creates a folding service for Fountain scripts that provides folding ranges
- * for sections and scenes based on the parsed script structure.
+ * Creates a folding service for Fountain scripts that reads the parsed
+ * script from the StateField, ensuring it is always in sync with the
+ * current document.
  */
-export function createFountainFoldService(getScript: () => FountainScript) {
+export function createFountainFoldService() {
   return foldService.of((state: EditorState, from: number, to: number) => {
-    const script = getScript();
-    if (!script) {
-      return null;
-    }
-
+    const script = state.field(fountainScriptField);
     const structure = script.structure();
     return findFoldableSceneAt(structure, from, script.document);
   });

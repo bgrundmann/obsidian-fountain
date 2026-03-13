@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.26.2] - Bugfix
+
+- **Fold Chevrons**: Fixed a visual glitch where fold indicators (chevrons) next to scene headings in edit mode would sometimes disappear or double when editing near a scene heading. The root cause was a timing issue: the fold gutter queried the parsed script before it had been updated to reflect the latest document changes. Parsing is now done in a CodeMirror StateField, ensuring it is always in sync when the fold gutter reads it.
+
 ## [0.26.1] - Bugfix
 
 - **Forced Scene Headings**: The leading period (`.`) used to force a scene heading is now correctly stripped from the displayed heading text in the reading view, sidebar, and PDF output, as required by the Fountain spec.

@@ -68,6 +68,7 @@ In the `src` folder:
 | `fountain_parser.peggy` | Peggy grammar |
 | `reading_view.ts` | Readonly rendering |
 | `fountain_editor.ts` | CodeMirror syntax highlighting |
+| `fountain_state.ts` | StateField for parsed FountainScript |
 | `fountain_folding.ts` | Scene folding service |
 | `character_completion.ts` | Character name autocompletion |
 | `sidebar_view.ts` | TOC + snippets sidebar |

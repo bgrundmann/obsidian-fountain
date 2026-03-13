@@ -14,7 +14,7 @@ import {
   type StyledTextElement,
   intersect,
 } from "./fountain";
-import { parse } from "./fountain_parser";
+import { fountainScriptField } from "./fountain_state";
 export { createFountainEditorPlugin };
 
 /// This extends CodeMirror 6 to syntax highlight fountain.
@@ -34,11 +34,7 @@ class FountainEditorPlugin implements PluginValue {
   private noteMargin: Decoration;
   private centered: Decoration;
 
-  constructor(
-    view: EditorView,
-    readonly getScript: () => FountainScript,
-    readonly updateScriptDirectly: (script: FountainScript) => void,
-  ) {
+  constructor(view: EditorView) {
     this.bold = Decoration.mark({ class: "bold" });
     this.italics = Decoration.mark({ class: "italics" });
     this.underline = Decoration.mark({ class: "underline" });
@@ -53,11 +49,6 @@ class FountainEditorPlugin implements PluginValue {
   }
 
   update(update: ViewUpdate) {
-    if (update.docChanged) {
-      const newText = update.view.state.doc.toString();
-      const newScript = parse(newText, {});
-      this.updateScriptDirectly(newScript);
-    }
     if (update.docChanged || update.viewportChanged) {
       this.decorations = this.buildDecorations(update.view);
     }
@@ -124,7 +115,7 @@ class FountainEditorPlugin implements PluginValue {
 
   buildDecorations(view: EditorView): DecorationSet {
     const builder = new RangeSetBuilder<Decoration>();
-    const fscript = this.getScript();
+    const fscript = view.state.field(fountainScriptField);
     const scene = Decoration.mark({ class: "scene-heading" });
     const section = Decoration.mark({ class: "section" });
     const synopsis = Decoration.mark({ class: "synopsis" });
@@ -226,11 +217,8 @@ const pluginSpec: PluginSpec<FountainEditorPlugin> = {
   decorations: (value: FountainEditorPlugin) => value.decorations,
 };
 
-function createFountainEditorPlugin(
-  getScript: () => FountainScript,
-  updateScriptDirectly: (script: FountainScript) => void,
-): ViewPlugin<FountainEditorPlugin> {
+function createFountainEditorPlugin(): ViewPlugin<FountainEditorPlugin> {
   return ViewPlugin.define((view) => {
-    return new FountainEditorPlugin(view, getScript, updateScriptDirectly);
+    return new FountainEditorPlugin(view);
   }, pluginSpec);
 }
