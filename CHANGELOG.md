@@ -3,6 +3,7 @@
 ## [0.26.1] - Bugfix
 
 - **Forced Scene Headings**: The leading period (`.`) used to force a scene heading is now correctly stripped from the displayed heading text in the reading view, sidebar, and PDF output, as required by the Fountain spec.
+- **Interleaved Parentheticals**: Parentheticals are now correctly recognized after dialogue lines, not only after the character name. This matches the Fountain spec which allows parentheticals anywhere within a dialogue block (e.g. `(beat)` between lines of dialogue).
 
 ## [0.26.0] - Find and Replace, UI Polish
 
