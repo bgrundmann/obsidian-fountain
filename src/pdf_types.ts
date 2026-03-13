@@ -207,10 +207,14 @@ export type PageState = {
   lastElementType: string | null; // Type of previous element for spacing rules
 };
 
+// A single rendered line within a dialogue block
+export type PreparedDialogueContentLine =
+  | { kind: "parenthetical"; text: string }
+  | { kind: "dialogue"; wrappedLine: WrappedLine };
+
 // Prepared dialogue data for rendering
 export type PreparedDialogue = {
   characterLine: string;
-  parentheticalLines: string[];
-  dialogueLines: WrappedLine[];
+  contentLines: PreparedDialogueContentLine[];
   contd: boolean;
 };

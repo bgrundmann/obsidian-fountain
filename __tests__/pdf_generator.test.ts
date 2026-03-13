@@ -270,6 +270,37 @@ describe("PDF Instruction Generation", () => {
       expect(parentheticalInstruction?.x).toBe(234); // PARENTHETICAL_INDENT
     });
 
+    it("should generate instructions for dialogue with interleaved parentheticals", () => {
+      const script = parser.parse(
+        "STEEL\n(starting the engine)\nHello.\n(beat)\nGoodbye.\n\n",
+      );
+
+      const instructions = generateInstructions(script);
+      const textInstructions = instructions.filter(
+        (inst) => inst.type === "text",
+      ) as TextInstruction[];
+
+      // Extract just the dialogue-related text instructions in order
+      const dialogueTexts = textInstructions
+        .filter(
+          (inst) =>
+            inst.data === "STEEL" ||
+            inst.data === "(starting the engine)" ||
+            inst.data === "Hello." ||
+            inst.data === "(beat)" ||
+            inst.data === "Goodbye.",
+        )
+        .map((inst) => ({ data: inst.data, x: inst.x }));
+
+      expect(dialogueTexts).toEqual([
+        { data: "STEEL", x: 288 }, // CHARACTER_INDENT
+        { data: "(starting the engine)", x: 234 }, // PARENTHETICAL_INDENT
+        { data: "Hello.", x: 180 }, // DIALOGUE_INDENT
+        { data: "(beat)", x: 234 }, // PARENTHETICAL_INDENT
+        { data: "Goodbye.", x: 180 }, // DIALOGUE_INDENT
+      ]);
+    });
+
     it("should generate instructions for transitions", () => {
       const script = parser.parse("> FADE OUT.");
 

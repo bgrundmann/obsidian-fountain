@@ -17,8 +17,6 @@ import {
   type Transition,
   extractMarginMarker,
   extractTransitionText,
-  dialogueLines,
-  firstParenthetical,
 } from "./fountain";
 import type { PDFOptions } from "./pdf_options_dialog";
 import {
@@ -26,6 +24,7 @@ import {
   type Instruction,
   type PageState,
   type PreparedDialogue,
+  type PreparedDialogueContentLine,
   type StyledTextSegment,
   type WrappedLine,
   ACTION_INDENT,
@@ -1013,7 +1012,7 @@ function generateLyricsInstructions(
 }
 
 function dialogueRequiredLines(dialogue: PreparedDialogue): number {
-  return 1 + dialogue.parentheticalLines.length + dialogue.dialogueLines.length;
+  return 1 + dialogue.contentLines.length;
 }
 
 /**
@@ -1047,49 +1046,51 @@ function prepareDialogueData(
 
   const characterLine = characterName + characterExtensions;
 
-  // Prepare parenthetical lines
-  const parentheticalLines: string[] = [];
-  const paren = firstParenthetical(dialogue);
-  if (paren) {
-    const parentheticalText = fountainScript.document
-      .substring(paren.start, paren.end)
-      .trim();
+  // Prepare content lines in order, preserving interleaving
+  const contentLines: PreparedDialogueContentLine[] = [];
+  for (const item of dialogue.content) {
+    if (item.kind === "parenthetical") {
+      const parentheticalText = fountainScript.document
+        .substring(item.range.start, item.range.end)
+        .trim();
 
-    parentheticalLines.push(
-      ...wrapPlainText(
+      for (const wrappedText of wrapPlainText(
         parentheticalText,
         pageState.charactersPerLine.parenthetical,
-      ),
-    );
-  }
-
-  // Prepare dialogue lines
-  const wrappedDialogueLines: WrappedLine[] = [];
-  for (const line of dialogueLines(dialogue)) {
-    if (line.elements.length > 0) {
-      const styledSegments = extractStyledSegments(
-        line.elements,
-        fountainScript.document,
-        options,
-      );
-
-      const wrappedLines = wrapStyledText(
-        styledSegments,
-        pageState.charactersPerLine.dialogue,
-        false,
-      );
-
-      wrappedDialogueLines.push(...wrappedLines);
+      )) {
+        contentLines.push({ kind: "parenthetical", text: wrappedText });
+      }
     } else {
-      // Empty line
-      wrappedDialogueLines.push({ segments: [], marginMarks: [] });
+      const line = item.line;
+      if (line.elements.length > 0) {
+        const styledSegments = extractStyledSegments(
+          line.elements,
+          fountainScript.document,
+          options,
+        );
+
+        const wrappedLines = wrapStyledText(
+          styledSegments,
+          pageState.charactersPerLine.dialogue,
+          false,
+        );
+
+        for (const wrappedLine of wrappedLines) {
+          contentLines.push({ kind: "dialogue", wrappedLine });
+        }
+      } else {
+        // Empty line
+        contentLines.push({
+          kind: "dialogue",
+          wrappedLine: { segments: [], marginMarks: [] },
+        });
+      }
     }
   }
 
   return {
     characterLine,
-    parentheticalLines,
-    dialogueLines: wrappedDialogueLines,
+    contentLines,
     contd: false,
   };
 }
@@ -1107,29 +1108,25 @@ function splitDialogue(
   const availableSpace = pageState.currentY - pageState.margins.bottom;
   const availableLines = Math.floor(availableSpace / pageState.lineHeight);
 
-  // Lines needed: 1 (character) + parentheticals + dialogue lines + 1 (MORE)
-  const linesForFirstPart =
-    availableLines - 1 - preparedDialogue.parentheticalLines.length - 1;
+  // Lines available for content: total - 1 (character) - 1 (MORE)
+  const linesForFirstPart = availableLines - 1 - 1;
 
-  // Split dialogue lines (PreparedDialogueLine[] now)
-  const dialogueLinesPartA = preparedDialogue.dialogueLines.slice(
+  const contentPartA = preparedDialogue.contentLines.slice(
     0,
     linesForFirstPart,
   );
-  const dialogueLinesPartB =
-    preparedDialogue.dialogueLines.slice(linesForFirstPart);
+  const contentPartB =
+    preparedDialogue.contentLines.slice(linesForFirstPart);
 
   const firstPart: PreparedDialogue = {
     characterLine: preparedDialogue.characterLine,
-    parentheticalLines: preparedDialogue.parentheticalLines,
-    dialogueLines: dialogueLinesPartA,
+    contentLines: contentPartA,
     contd: preparedDialogue.contd,
   };
 
   const secondPart: PreparedDialogue = {
     characterLine: preparedDialogue.characterLine,
-    parentheticalLines: [],
-    dialogueLines: dialogueLinesPartB,
+    contentLines: contentPartB,
     contd: true,
   };
 
@@ -1226,37 +1223,36 @@ function emitDialogueOnCurrentPage(
   });
   currentState = advanceLine(currentState);
 
-  // Emit parenthetical lines
-  for (const parentheticalLine of preparedDialogue.parentheticalLines) {
-    emitText(instructions, currentState, {
-      data: parentheticalLine,
-      x: PARENTHETICAL_INDENT,
-      bold: false,
-      italic: false,
-      underline: false,
-      color: "black",
-      strikethrough: false,
-      backgroundColor: undefined,
-    });
-    currentState = advanceLine(currentState);
-  }
-
-  // Emit dialogue lines
-  for (const dialogueLine of preparedDialogue.dialogueLines) {
-    if (dialogueLine.segments.length > 0) {
-      let currentX = DIALOGUE_INDENT;
-      for (const segment of dialogueLine.segments) {
-        if (segment.text.length > 0) {
-          currentX = emitText(instructions, currentState, {
-            data: segment.text,
-            x: currentX,
-            bold: segment.bold || false,
-            italic: segment.italic || false,
-            underline: segment.underline || false,
-            color: segment.color || "black",
-            strikethrough: segment.strikethrough || false,
-            backgroundColor: segment.backgroundColor,
-          });
+  // Emit content lines (interleaved parentheticals and dialogue)
+  for (const contentLine of preparedDialogue.contentLines) {
+    if (contentLine.kind === "parenthetical") {
+      emitText(instructions, currentState, {
+        data: contentLine.text,
+        x: PARENTHETICAL_INDENT,
+        bold: false,
+        italic: false,
+        underline: false,
+        color: "black",
+        strikethrough: false,
+        backgroundColor: undefined,
+      });
+    } else {
+      const dialogueLine = contentLine.wrappedLine;
+      if (dialogueLine.segments.length > 0) {
+        let currentX = DIALOGUE_INDENT;
+        for (const segment of dialogueLine.segments) {
+          if (segment.text.length > 0) {
+            currentX = emitText(instructions, currentState, {
+              data: segment.text,
+              x: currentX,
+              bold: segment.bold || false,
+              italic: segment.italic || false,
+              underline: segment.underline || false,
+              color: segment.color || "black",
+              strikethrough: segment.strikethrough || false,
+              backgroundColor: segment.backgroundColor,
+            });
+          }
         }
       }
 
