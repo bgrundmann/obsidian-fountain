@@ -87,3 +87,5 @@ Unit tests are in the `__tests__` folder. E2E tests are in `test/e2e/` (specs in
 
 Styling is in `core_styles.css`. As part of the build process `esbuild.config.mjs` concatenates 
 `fonts.css` and `core_styles.css` into `styles.css`.
+
+`fonts.css` and `styles.css` are very long and should not be read!
