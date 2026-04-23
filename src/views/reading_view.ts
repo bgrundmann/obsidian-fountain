@@ -11,6 +11,7 @@ import type {
 } from "../fountain";
 import { NBSP, dataRange, extractTransitionText } from "../fountain";
 import { renderBlankLine } from "./render_tools";
+import { styledTextToHtml } from "./styled_text";
 export {
   renderFountain,
   getDataRange,
@@ -122,7 +123,8 @@ function renderLines(
         // Need a nbsp so that the div is not empty and gets regular text height
         innerDiv.appendText(NBSP);
       } else {
-        const thisLineWasCompletelyHidden = !script.styledTextToHtml(
+        const thisLineWasCompletelyHidden = !styledTextToHtml(
+          script,
           innerDiv,
           line.elements,
           settings,
@@ -280,14 +282,14 @@ function renderTitlePage(parent: HTMLElement, script: FountainScript): void {
       if (kv.values.length === 1) {
         parent.createDiv({}, (div) => {
           div.appendText(`${kv.key}: `);
-          script.styledTextToHtml(div, kv.values[0], {}, true);
+          styledTextToHtml(script, div, kv.values[0], {}, true);
         });
       } else {
         parent.createDiv({ text: `${kv.key}: ` });
         for (const v of kv.values) {
           parent.createDiv({}, (div) => {
             div.appendText(INDENT);
-            script.styledTextToHtml(div, v, {}, true);
+            styledTextToHtml(script, div, v, {}, true);
           });
         }
       }

@@ -11,6 +11,7 @@ import {
 import { FountainView } from "./fountain_view";
 import { renderElement } from "./reading_view";
 import { getScenePreview } from "./render_tools";
+import { styledTextToHtml } from "./styled_text";
 
 export const VIEW_TYPE_SIDEBAR = "fountain-sidebar";
 
@@ -296,7 +297,7 @@ class TocSection extends SidebarSection {
               );
               for (const note of todos) {
                 s.createDiv({ cls: "todo" }, (div) => {
-                  script.styledTextToHtml(div, [note], {}, false);
+                  styledTextToHtml(script, div, [note], {}, false);
                   div.addEventListener("click", () =>
                     this.callbacks.scrollToRange(note.range),
                   );

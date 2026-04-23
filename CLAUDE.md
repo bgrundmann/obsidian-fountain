@@ -85,6 +85,7 @@ In the `src` folder:
 | `views/index_cards_view.ts` | Index card view |
 | `views/sidebar_view.ts` | TOC + snippets sidebar |
 | `views/render_tools.ts` | Shared HTML rendering helpers |
+| `views/styled_text.ts` | DOM rendering of styled inline text (bold/italic/notes/margin marks) |
 | `pdf/generator.ts` | PDF generation entry point and facade |
 | `pdf/types.ts` | PDF shared types, constants, geometry helpers |
 | `pdf/page_state.ts` | Page-state primitives (new page, line advance, page-break guards) |

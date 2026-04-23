@@ -8,6 +8,7 @@ import type {
 } from "../fountain";
 import { dataRange, extractNotes } from "../fountain";
 import { endOfRange, getScenePreview } from "./render_tools";
+import { styledTextToHtml } from "./styled_text";
 
 export type Callbacks = {
   reRender: () => void;
@@ -355,7 +356,7 @@ function renderIndexCard(
         );
         for (const note of todos) {
           indexCard.createDiv({}, (div) => {
-            script.styledTextToHtml(div, [note], {}, false);
+            styledTextToHtml(script, div, [note], {}, false);
             div.addEventListener("click", () =>
               callbacks.startEditModeHere(note.range),
             );

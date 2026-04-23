@@ -46,6 +46,7 @@ export {
   dialogueLines,
   firstParenthetical,
   filterDialogueContent,
+  maybeEscapeLeadingSpaces,
 } from "./fountain_utils";
 
 export { FountainScript } from "./fountain_script";

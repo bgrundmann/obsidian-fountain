@@ -7,20 +7,12 @@ import type {
   PageBreak,
   Range,
   ScriptStructure,
-  ShowHideSettings,
   Snippets,
-  StyledTextElement,
-  StyledTextWithNotesAndBoneyard,
   TextElementWithNotesAndBoneyard,
 } from "./fountain_types";
+import { StructureScene, StructureSection } from "./fountain_types";
 import {
-  StructureScene,
-  StructureSection,
-  dataRange,
-} from "./fountain_types";
-import { filterDialogueContent } from "./fountain_utils";
-import {
-  extractMarginMarker,
+  filterDialogueContent,
   maybeEscapeLeadingSpaces,
   mergeConsecutiveActions,
 } from "./fountain_utils";
@@ -79,108 +71,6 @@ export class FountainScript {
       d.characterRange.end,
     );
     return text.split("&").map((s) => s.trim());
-  }
-
-  /** @returns false if all elements passed in where hidden because of settings. */
-  styledTextToHtml(
-    parent: HTMLElement,
-    st: StyledTextWithNotesAndBoneyard,
-    settings: ShowHideSettings,
-    escapeLeadingSpaces: boolean,
-  ): boolean {
-    let someVisible = false;
-    for (const el of st) {
-      if (this.renderTextElement(parent, el, settings, escapeLeadingSpaces)) {
-        someVisible = true;
-      }
-    }
-    return someVisible || st.length > 0;
-  }
-
-  private renderStyledTextElement(
-    parent: HTMLElement,
-    el: StyledTextElement,
-    settings: ShowHideSettings,
-  ): void {
-    parent.createEl("span", { cls: el.kind }, (span) => {
-      for (const e of el.elements) {
-        this.renderTextElement(span, e, settings, false);
-      }
-    });
-  }
-
-  /** Extract a text element from the fountain document safe to be used as
-      HTML source.
-      @returns false if the element was hidden because of settings.
-    */
-  private renderTextElement(
-    parent: HTMLElement,
-    el: TextElementWithNotesAndBoneyard,
-    settings: ShowHideSettings,
-    escapeLeadingSpaces: boolean,
-  ): boolean {
-    switch (el.kind) {
-      case "text":
-        parent.appendText(
-          maybeEscapeLeadingSpaces(
-            escapeLeadingSpaces,
-            this.sliceDocument(el.range),
-          ),
-        );
-        return true;
-      case "bold":
-      case "italics":
-      case "underline":
-        this.renderStyledTextElement(parent, el, settings);
-        return true;
-
-      case "note":
-        {
-          if (settings.hideNotes) {
-            return false;
-          }
-
-          // Check if this is a margin note
-          const markerWord = extractMarginMarker(el);
-          if (markerWord !== null) {
-            parent.createEl(
-              "span",
-              { cls: "note-margin", attr: dataRange(el.range) },
-              (span) => {
-                span.appendText(markerWord);
-              },
-            );
-            return true;
-          }
-
-          const noteKindClasses: Record<string, string> = {
-            "+": "note-symbol-plus",
-            "-": "note-symbol-minus",
-            "todo": "note-todo",
-          };
-          const noteKindClass = noteKindClasses[el.noteKind] ?? "note";
-          parent.createEl(
-            "span",
-            { cls: noteKindClass, attr: dataRange(el.range) },
-            (span) => {
-              if (el.noteKind === "todo") {
-                span.createEl("b", { text: "TODO: " });
-              }
-              span.appendText(
-                maybeEscapeLeadingSpaces(
-                  true,
-                  this.sliceDocument(el.textRange),
-                ),
-              );
-            },
-          );
-        }
-        return true;
-
-      case "boneyard":
-        /// TODO: support
-        return false;
-    }
   }
 
   with_source(): (FountainElement & { source: string })[] {
