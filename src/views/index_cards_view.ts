@@ -5,9 +5,8 @@ import type {
   StructureScene,
   StructureSection,
   Synopsis,
-} from "./fountain";
-import { dataRange, extractNotes } from "./fountain";
-
+} from "../fountain";
+import { dataRange, extractNotes } from "../fountain";
 import { endOfRange, getScenePreview } from "./render_tools";
 
 export type Callbacks = {

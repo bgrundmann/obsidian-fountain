@@ -4,7 +4,7 @@ import {
   type FountainScript,
   type StructureScene,
   dataRange,
-} from "./fountain";
+} from "../fountain";
 
 export function endOfRange(r: Range): Range {
   return { start: r.end, end: r.end };

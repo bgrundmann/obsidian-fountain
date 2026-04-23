@@ -12,17 +12,9 @@ import {
   type Range,
   type ShowHideSettings,
   collapseRangeToStart,
-} from "./fountain";
-import { parse } from "./fountain_parser";
-import { FuzzySelectString } from "./fuzzy_select_string";
-import {
-  type EditorCallbacks,
-  EditorViewState,
-} from "./editor_view_state";
-import {
-  type ReadonlyViewCallbacks,
-  ReadonlyViewState,
-} from "./readonly_view_state";
+} from "../fountain";
+import { parse } from "../fountain_parser";
+import { FuzzySelectString } from "../fuzzy_select_string";
 import {
   type Edit,
   applyEdits,
@@ -31,7 +23,15 @@ import {
   computeMoveSceneAcrossFilesEdits,
   computeMoveSceneEdits,
   computeRemoveSceneNumberEdits,
-} from "./scene_operations";
+} from "../scene_operations";
+import {
+  type EditorCallbacks,
+  EditorViewState,
+} from "./editor_view_state";
+import {
+  type ReadonlyViewCallbacks,
+  ReadonlyViewState,
+} from "./readonly_view_state";
 import {
   type FountainViewPersistedState,
   type ReadonlyViewPersistedState,

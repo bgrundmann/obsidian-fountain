@@ -9,15 +9,15 @@ import type { FountainElement } from "./fountain";
 import { parse } from "./fountain_parser";
 import { generatePDF, UnsupportedCharacterError } from "./pdf/generator";
 import { type PDFOptions, PDFOptionsDialog } from "./pdf/options_dialog";
-import { renderContent } from "./reading_view";
+import { renderContent } from "./views/reading_view";
 import {
   RemoveDialogueModal,
   RemoveElementTypesModal,
   RemoveStructureModal,
   removeElementsFromText,
 } from "./removal_commands";
-import { FountainSideBarView, VIEW_TYPE_SIDEBAR } from "./sidebar_view";
-import { FountainView, VIEW_TYPE_FOUNTAIN } from "./view";
+import { FountainSideBarView, VIEW_TYPE_SIDEBAR } from "./views/sidebar_view";
+import { FountainView, VIEW_TYPE_FOUNTAIN } from "./views/fountain_view";
 
 export default class FountainPlugin extends Plugin {
   async onload() {

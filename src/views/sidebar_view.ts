@@ -7,10 +7,10 @@ import {
   type Synopsis,
   dataRange,
   extractNotes,
-} from "./fountain";
+} from "../fountain";
+import { FountainView } from "./fountain_view";
 import { renderElement } from "./reading_view";
 import { getScenePreview } from "./render_tools";
-import { FountainView } from "./view";
 
 export const VIEW_TYPE_SIDEBAR = "fountain-sidebar";
 

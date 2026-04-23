@@ -68,20 +68,23 @@ In the `src` folder:
 | File | Purpose |
 |------|---------|
 | `main.ts` | Plugin entry, commands, lifecycle |
-| `view.ts` | FountainView, mode switching, `applyEditsToFile` pipeline |
-| `view_state.ts` | ViewState interface, shared view types |
-| `readonly_view_state.ts` | ReadonlyViewState (reading/index cards) |
-| `editor_view_state.ts` | EditorViewState (CodeMirror editor) |
 | `scene_operations.ts` | Pure `Edit[]`-producing scene-level text operations |
 | `fountain.ts` | Core types, FountainScript, text utilities |
 | `fountain_parser.peggy` | Peggy grammar |
-| `reading_view.ts` | Readonly rendering |
 | `fountain_editor.ts` | CodeMirror syntax highlighting |
 | `fountain_state.ts` | StateField for parsed FountainScript |
 | `fountain_folding.ts` | Scene folding service |
 | `character_completion.ts` | Character name autocompletion |
-| `sidebar_view.ts` | TOC + snippets sidebar |
-| `index_cards_view.ts` | Index card view |
+| `fuzzy_select_string.ts` | Fuzzy search modal |
+| `removal_commands.ts` | Removal command modals + text-removal helpers |
+| `views/fountain_view.ts` | FountainView, mode switching, `applyEditsToFile` pipeline |
+| `views/view_state.ts` | ViewState interface, shared view types |
+| `views/readonly_view_state.ts` | ReadonlyViewState (reading/index cards) |
+| `views/editor_view_state.ts` | EditorViewState (CodeMirror editor) |
+| `views/reading_view.ts` | Readonly rendering |
+| `views/index_cards_view.ts` | Index card view |
+| `views/sidebar_view.ts` | TOC + snippets sidebar |
+| `views/render_tools.ts` | Shared HTML rendering helpers |
 | `pdf/generator.ts` | PDF generation entry point and facade |
 | `pdf/types.ts` | PDF shared types, constants, geometry helpers |
 | `pdf/page_state.ts` | Page-state primitives (new page, line advance, page-break guards) |
@@ -89,9 +92,6 @@ In the `src` folder:
 | `pdf/instruction_generator.ts` | Element-to-instruction translation + orchestration |
 | `pdf/renderer.ts` | PDF rendering using pdf-lib |
 | `pdf/options_dialog.ts` | PDF export options modal |
-| `render_tools.ts` | Shared HTML rendering |
-| `fuzzy_select_string.ts` | Fuzzy search modal |
-| `removal_commands.ts` | Removal command modals + text-removal helpers |
 
 Unit tests are in the `__tests__` folder. E2E tests are in `test/e2e/` (specs in `test/e2e/specs/`, test vaults in `test/e2e/vaults/`).
 

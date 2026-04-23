@@ -1,7 +1,7 @@
-import type { FountainScript, Range, ShowHideSettings } from "./fountain";
+import type { FountainScript, Range, ShowHideSettings } from "../fountain";
+import type { Edit } from "../scene_operations";
 import { type Callbacks, renderIndexCards } from "./index_cards_view";
 import { rangeOfFirstVisibleLine, renderFountain } from "./reading_view";
-import type { Edit } from "./scene_operations";
 import {
   type ReadonlyViewPersistedState,
   ShowMode,

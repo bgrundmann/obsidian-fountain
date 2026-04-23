@@ -13,12 +13,12 @@ import {
   drawSelection,
   keymap,
 } from "@codemirror/view";
-import type { FountainScript, Range } from "./fountain";
-import { createCharacterCompletion } from "./character_completion";
-import { createFountainEditorPlugin } from "./fountain_editor";
-import { createFountainFoldService } from "./fountain_folding";
-import { fountainScriptField } from "./fountain_state";
-import type { Edit } from "./scene_operations";
+import { createCharacterCompletion } from "../character_completion";
+import type { FountainScript, Range } from "../fountain";
+import { createFountainEditorPlugin } from "../fountain_editor";
+import { createFountainFoldService } from "../fountain_folding";
+import { fountainScriptField } from "../fountain_state";
+import type { Edit } from "../scene_operations";
 import type { ViewState } from "./view_state";
 
 export type EditorCallbacks = {

@@ -8,8 +8,8 @@ import type {
   Range,
   ShowHideSettings,
   Synopsis,
-} from "./fountain";
-import { NBSP, dataRange, extractTransitionText } from "./fountain";
+} from "../fountain";
+import { NBSP, dataRange, extractTransitionText } from "../fountain";
 import { renderBlankLine } from "./render_tools";
 export {
   renderFountain,
