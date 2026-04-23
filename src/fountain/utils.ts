@@ -10,11 +10,11 @@ import type {
   StyledText,
   StyledTextElement,
   Transition,
-} from "./fountain_types";
-import { NBSP } from "./fountain_types";
+} from "./types";
+import { NBSP } from "./types";
 
 // Use import type to avoid runtime circular dependency
-import type { FountainScript } from "./fountain_script";
+import type { FountainScript } from "./script";
 
 /** Is this one or more explicit blank lines? That is an Action element only consisting of one or more blank lines? */
 export function isBlankLines(f: FountainElement) {

@@ -12,8 +12,8 @@ node_modules
 # They should be uploaded to GitHub releases instead.
 main.js
 styles.css
-fountain_parser.d.ts
-fountain_parser.js
+src/fountain/parser.d.ts
+src/fountain/parser.js
 
 # Exclude sourcemaps
 *.map

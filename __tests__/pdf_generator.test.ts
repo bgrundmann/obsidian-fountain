@@ -10,7 +10,7 @@ import {
   generatePDF,
 } from "../src/pdf/generator";
 
-import * as parser from "../src/fountain_parser";
+import * as parser from "../src/fountain/parser";
 
 describe("findFirstNonWin1252Char", () => {
   it("should return null for ASCII text", () => {

@@ -69,10 +69,13 @@ In the `src` folder:
 |------|---------|
 | `main.ts` | Plugin entry, commands, lifecycle |
 | `scene_operations.ts` | Pure `Edit[]`-producing scene-level text operations |
-| `fountain.ts` | Core types, FountainScript, text utilities |
-| `fountain_parser.peggy` | Peggy grammar |
 | `fuzzy_select_string.ts` | Fuzzy search modal |
 | `removal_commands.ts` | Removal command modals + text-removal helpers |
+| `fountain/index.ts` | Barrel re-export of the fountain core API |
+| `fountain/types.ts` | AST types, `Range`, structure helpers |
+| `fountain/script.ts` | `FountainScript` class |
+| `fountain/utils.ts` | Shared utilities (mergeText, extractNotes, etc.) |
+| `fountain/parser.peggy` | Peggy grammar |
 | `codemirror/editor.ts` | CodeMirror syntax highlighting |
 | `codemirror/state.ts` | StateField for parsed FountainScript |
 | `codemirror/folding.ts` | Scene folding service |

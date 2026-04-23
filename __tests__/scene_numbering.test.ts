@@ -1,4 +1,4 @@
-import { parse } from "../src/fountain_parser";
+import { parse } from "../src/fountain/parser";
 import {
   applyEdits,
   computeAddSceneNumberEdits,

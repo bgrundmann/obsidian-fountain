@@ -9,13 +9,13 @@ import type {
   ScriptStructure,
   Snippets,
   TextElementWithNotesAndBoneyard,
-} from "./fountain_types";
-import { StructureScene, StructureSection } from "./fountain_types";
+} from "./types";
+import { StructureScene, StructureSection } from "./types";
 import {
   filterDialogueContent,
   maybeEscapeLeadingSpaces,
   mergeConsecutiveActions,
-} from "./fountain_utils";
+} from "./utils";
 
 export class FountainScript {
   readonly titlePage: KeyValue[];

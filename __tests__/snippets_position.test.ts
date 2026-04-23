@@ -1,6 +1,6 @@
 import { describe, expect, test } from "@jest/globals";
 import type { FountainScript } from "../src/fountain";
-import { parse } from "../src/fountain_parser";
+import { parse } from "../src/fountain/parser";
 
 describe("Snippets position detection", () => {
   test("finds snippets section start position", () => {

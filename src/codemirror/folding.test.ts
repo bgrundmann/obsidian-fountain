@@ -1,5 +1,5 @@
 import { buildFoldRanges, findFoldAtPosition, findFoldableSceneAt } from "./folding";
-import { parse } from "../fountain_parser";
+import { parse } from "../fountain/parser";
 
 describe("Fountain Folding", () => {
   describe("buildFoldRanges", () => {

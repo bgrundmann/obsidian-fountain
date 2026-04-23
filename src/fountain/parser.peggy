@@ -7,9 +7,8 @@
 // happens (TM).
 
 {{
-const fountain = require("./fountain");
-const FountainScript = fountain.FountainScript;
-const mergeText = fountain.mergeText;
+const { FountainScript } = require("./script");
+const { mergeText } = require("./utils");
 
 }}
 

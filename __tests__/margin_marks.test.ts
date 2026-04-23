@@ -1,5 +1,5 @@
 import { extractMarginMarker, extractNotes } from "../src/fountain";
-import { parse } from "../src/fountain_parser";
+import { parse } from "../src/fountain/parser";
 
 describe("Margin Marks", () => {
   describe("Parser", () => {

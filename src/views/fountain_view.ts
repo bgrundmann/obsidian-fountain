@@ -13,7 +13,7 @@ import {
   type ShowHideSettings,
   collapseRangeToStart,
 } from "../fountain";
-import { parse } from "../fountain_parser";
+import { parse } from "../fountain/parser";
 import { FuzzySelectString } from "../fuzzy_select_string";
 import {
   type Edit,

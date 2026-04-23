@@ -1,6 +1,6 @@
 import { describe, expect, test } from "@jest/globals";
 import { PDFDocument } from "pdf-lib";
-import { parse } from "../src/fountain_parser";
+import { parse } from "../src/fountain/parser";
 import { generatePDF } from "../src/pdf/generator";
 
 describe("PDF Generator", () => {

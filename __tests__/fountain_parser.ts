@@ -1,7 +1,7 @@
 import { describe, expect, test } from "@jest/globals";
 import type { FountainScript } from "../src/fountain";
 import { extractTransitionText } from "../src/fountain";
-import { parse } from "../src/fountain_parser";
+import { parse } from "../src/fountain/parser";
 
 function test_script(
   label: string,

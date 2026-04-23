@@ -1,5 +1,5 @@
 import type { FountainElement, FountainScript, SceneHeading } from "../src/fountain";
-import { parse } from "../src/fountain_parser";
+import { parse } from "../src/fountain/parser";
 import {
   type Edit,
   applyEdits,

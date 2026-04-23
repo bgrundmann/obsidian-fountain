@@ -6,7 +6,7 @@ import {
   type WorkspaceLeaf,
 } from "obsidian";
 import type { FountainElement } from "./fountain";
-import { parse } from "./fountain_parser";
+import { parse } from "./fountain/parser";
 import { generatePDF, UnsupportedCharacterError } from "./pdf/generator";
 import { type PDFOptions, PDFOptionsDialog } from "./pdf/options_dialog";
 import { renderContent } from "./views/reading_view";

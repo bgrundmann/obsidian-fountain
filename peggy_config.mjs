@@ -1,6 +1,6 @@
 export default {
-	input: "src/fountain_parser.peggy",
-	output: "src/fountain_parser.js",
+	input: "src/fountain/parser.peggy",
+	output: "src/fountain/parser.js",
 	dts: true,
 	returnTypes: {
 		parse: "FountainScript",

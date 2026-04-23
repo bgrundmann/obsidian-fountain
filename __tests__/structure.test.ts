@@ -1,6 +1,6 @@
 import { describe, expect, test } from "@jest/globals";
 import type { FountainScript } from "../src/fountain";
-import { parse } from "../src/fountain_parser";
+import { parse } from "../src/fountain/parser";
 
 // Brick & Steel sample script content
 const BRICK_AND_STEEL = `Title:

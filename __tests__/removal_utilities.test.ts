@@ -1,5 +1,5 @@
 import type { FountainElement } from "../src/fountain";
-import { parse } from "../src/fountain_parser";
+import { parse } from "../src/fountain/parser";
 
 // Utility function to remove elements from document text
 function removeElementsFromText(

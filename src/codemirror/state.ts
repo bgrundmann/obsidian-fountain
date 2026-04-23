@@ -1,6 +1,6 @@
 import { StateEffect, StateField } from "@codemirror/state";
 import type { FountainScript } from "../fountain";
-import { parse } from "../fountain_parser";
+import { parse } from "../fountain/parser";
 
 /**
  * State effect to set the fountain script externally (e.g., when the document

@@ -33,7 +33,7 @@ export {
   type ScriptStructure,
   StructureSection,
   StructureScene,
-} from "./fountain_types";
+} from "./types";
 
 export {
   isBlankLines,
@@ -47,6 +47,6 @@ export {
   firstParenthetical,
   filterDialogueContent,
   maybeEscapeLeadingSpaces,
-} from "./fountain_utils";
+} from "./utils";
 
-export { FountainScript } from "./fountain_script";
+export { FountainScript } from "./script";
