@@ -17,8 +17,8 @@ import {
   type Transition,
   extractMarginMarker,
   extractTransitionText,
-} from "./fountain";
-import type { PDFOptions } from "./pdf_options_dialog";
+} from "../fountain";
+import type { PDFOptions } from "./options_dialog";
 import {
   type Color,
   type Instruction,
@@ -42,7 +42,7 @@ import {
   getCharacterWidth,
   getTitlePageCenterStart,
   getTitlePageCenterX,
-} from "./pdf_types";
+} from "./types";
 
 /**
  * Emits margin marks in the left margin at the current Y position.

@@ -8,7 +8,7 @@ import {
   findFirstNonWin1252Char,
   UnsupportedCharacterError,
   generatePDF,
-} from "../src/pdf_generator";
+} from "../src/pdf/generator";
 
 import * as parser from "../src/fountain_parser";
 

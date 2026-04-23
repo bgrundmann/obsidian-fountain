@@ -1,7 +1,7 @@
 import { describe, expect, test } from "@jest/globals";
 import { PDFDocument } from "pdf-lib";
 import { parse } from "../src/fountain_parser";
-import { generatePDF } from "../src/pdf_generator";
+import { generatePDF } from "../src/pdf/generator";
 
 describe("PDF Generator", () => {
   test("should create a basic PDF document", async () => {

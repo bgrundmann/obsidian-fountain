@@ -7,8 +7,8 @@ import {
 } from "obsidian";
 import type { FountainElement } from "./fountain";
 import { parse } from "./fountain_parser";
-import { generatePDF, UnsupportedCharacterError } from "./pdf_generator";
-import { type PDFOptions, PDFOptionsDialog } from "./pdf_options_dialog";
+import { generatePDF, UnsupportedCharacterError } from "./pdf/generator";
+import { type PDFOptions, PDFOptionsDialog } from "./pdf/options_dialog";
 import { renderContent } from "./reading_view";
 import {
   RemoveDialogueModal,

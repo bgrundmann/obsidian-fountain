@@ -4,30 +4,30 @@
  */
 
 import type { PDFDocument } from "pdf-lib";
-import type { FountainScript } from "./fountain";
-import type { PDFOptions } from "./pdf_options_dialog";
-import { generateInstructions } from "./pdf_instruction_generator";
-import { renderInstructionsToPDF } from "./pdf_renderer";
+import type { FountainScript } from "../fountain";
+import type { PDFOptions } from "./options_dialog";
+import { generateInstructions } from "./instruction_generator";
+import { renderInstructionsToPDF } from "./renderer";
 import {
   UnsupportedCharacterError,
   findFirstNonWin1252Char,
-} from "./pdf_types";
+} from "./types";
 
 // Re-export types and utilities that external code may need
 export {
   UnsupportedCharacterError,
   findFirstNonWin1252Char,
-} from "./pdf_types";
+} from "./types";
 
 export type {
   Instruction,
   NewPageInstruction,
   TextInstruction,
   Color,
-} from "./pdf_types";
+} from "./types";
 
-export { generateInstructions } from "./pdf_instruction_generator";
-export { renderInstructionsToPDF } from "./pdf_renderer";
+export { generateInstructions } from "./instruction_generator";
+export { renderInstructionsToPDF } from "./renderer";
 
 /**
  * Main entry point for PDF generation

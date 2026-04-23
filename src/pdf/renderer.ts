@@ -3,12 +3,12 @@
  */
 
 import { PDFDocument, type PDFPage, StandardFonts, rgb } from "pdf-lib";
-import type { PDFOptions } from "./pdf_options_dialog";
+import type { PDFOptions } from "./options_dialog";
 import {
   type Instruction,
   FONT_SIZE,
   rgbOfColor,
-} from "./pdf_types";
+} from "./types";
 
 /**
  * Executes instructions to create the final PDF document
