@@ -339,11 +339,9 @@ export default class FountainPlugin extends Plugin {
       }
 
       try {
-        const currentText = fountainView.getViewData();
-        const newText = removeElementsFromText(currentText, elementsToRemove);
-
         if (duplicateFile) {
-          // Create a duplicate file with the filtered content
+          const currentText = fountainView.getViewData();
+          const newText = removeElementsFromText(currentText, elementsToRemove);
           const currentFile = fountainView.file;
           if (!currentFile) {
             new Notice("No file is currently open");
@@ -355,8 +353,13 @@ export default class FountainPlugin extends Plugin {
             elementsToRemove.length,
           );
         } else {
-          // Apply directly to current file
-          fountainView.setViewData(newText, false);
+          // Apply directly to current file via the precise edit pipeline
+          // so cursor and undo history survive.
+          const edits = elementsToRemove.map((el) => ({
+            range: el.range,
+            replacement: "",
+          }));
+          fountainView.applyEditsToFile(edits);
         }
         new Notice(
           `Removed ${elementsToRemove.length} element${elementsToRemove.length === 1 ? "" : "s"}`,

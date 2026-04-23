@@ -10,10 +10,8 @@ import {
 import {
   type FountainScript,
   type Range,
-  type SceneHeading,
   type ShowHideSettings,
   collapseRangeToStart,
-  sceneHeadingTextEnd,
 } from "./fountain";
 import { parse } from "./fountain_parser";
 import { FuzzySelectString } from "./fuzzy_select_string";
@@ -26,99 +24,21 @@ import {
   ReadonlyViewState,
 } from "./readonly_view_state";
 import {
+  type Edit,
+  applyEdits,
+  computeAddSceneNumberEdits,
+  computeDuplicateSceneEdits,
+  computeMoveSceneAcrossFilesEdits,
+  computeMoveSceneEdits,
+  computeRemoveSceneNumberEdits,
+} from "./scene_operations";
+import {
   type FountainViewPersistedState,
   type ReadonlyViewPersistedState,
   ShowMode,
   type ViewState,
   getSnippetsStartPosition,
 } from "./view_state";
-
-/** Return the newline characters needed to ensure text ends with a double newline. */
-function trailingNewlinesNeeded(text: string): string {
-  const lastTwo = text.slice(-2);
-  return lastTwo === "\n\n" ? "" : lastTwo[1] === "\n" ? "\n" : "\n\n";
-}
-
-/** Move the range of text to a new position. The newStart position is required
-to not be within range.
-*/
-function moveText(
-  text: string,
-  range: Range,
-  newStart: number,
-  newTrailer = "",
-): string {
-  // Extract the text to be moved
-  const movedPortion = text.slice(range.start, range.end);
-  const beforeRange = text.slice(0, range.start);
-  const afterRange = text.slice(range.end);
-
-  // If moving forward
-  if (newStart >= range.end) {
-    return (
-      beforeRange +
-      afterRange.slice(0, newStart - range.end) +
-      movedPortion +
-      newTrailer +
-      afterRange.slice(newStart - range.end)
-    );
-  }
-  // If moving backward
-  return (
-    text.slice(0, newStart) +
-    movedPortion +
-    newTrailer +
-    text.slice(newStart, range.start) +
-    afterRange
-  );
-}
-
-/**
- * Replace a range of text.
- *
- * @param text the overall text
- * @param range range of text to replace
- * @param replacement text that replaces the text in range
- * @returns the modified text
- */
-function replaceTextInString(
-  text: string,
-  range: Range,
-  replacement: string,
-): string {
-  const beforeRange = text.slice(0, range.start);
-  const afterRange = text.slice(range.end);
-  return beforeRange + replacement + afterRange;
-}
-
-/**
- * Move the scene to a new position in the document.
- * @param text the document text
- * @param range complete scene heading + content
- * @param newPos new position
- * @returns the modified text
- */
-function moveSceneInString(text: string, range: Range, newPos: number): string {
-  const sceneText = text.slice(range.start, range.end);
-  return moveText(text, range, newPos, trailingNewlinesNeeded(sceneText));
-}
-
-/**
- * Duplicate a scene in the document.
- * @param text the document text
- * @param range the range of the complete scene heading + content
- * @returns the modified text
- */
-function duplicateSceneInString(text: string, range: Range): string {
-  const sceneText = text.slice(range.start, range.end);
-  // If the scene was the last scene of the document
-  // it might not have been properly terminated by an empty
-  // line, in that case we must add the empty line between
-  // the two scenes.
-  return (
-    text.slice(0, range.end) + trailingNewlinesNeeded(sceneText) + sceneText + text.slice(range.end)
-  );
-}
 
 export const VIEW_TYPE_FOUNTAIN = "fountain";
 
@@ -206,7 +126,7 @@ export class FountainView extends TextFileView {
 
   private editorCallbacks(): EditorCallbacks {
     return {
-      onScriptChanged: (s) => this.updateScriptDirectly(s),
+      onScriptChanged: (s) => this.onUserEdit(s),
       requestSave: () => this.requestSave(),
     };
   }
@@ -367,24 +287,16 @@ export class FountainView extends TextFileView {
     }
   }
 
-  updateScript(newScript: FountainScript) {
+  /** User-typed edit in this view's CM editor — propagate the reparsed
+   *  script to every sibling view open on this file. */
+  onUserEdit(newScript: FountainScript) {
     this.cachedScript = newScript;
-    if (
-      this.state.isEditMode &&
-      this.state.getViewData() !== newScript.document
-    ) {
-      this.state.setViewData(this.file?.path ?? "", newScript.document, false);
-    }
-    this.state.render();
-  }
-
-  updateScriptDirectly(newScript: FountainScript) {
-    this.cachedScript = newScript;
-    // Update other views without triggering CodeMirror updates
-    for (const view of this.findViewsForPath(this.file?.path)) {
-      if (view !== this) {
-        view.updateScript(newScript);
-      }
+    const path = this.file?.path;
+    if (!path) return;
+    for (const view of this.findViewsForPath(path)) {
+      if (view === this) continue;
+      view.cachedScript = newScript;
+      view.state.receiveScript(newScript);
     }
   }
 
@@ -399,34 +311,37 @@ export class FountainView extends TextFileView {
     return views;
   }
 
-  private updateAllViewsForFile(path: string, newScript: FountainScript) {
-    for (const view of this.findViewsForPath(path)) {
-      view.updateScript(newScript);
-    }
-  }
-
-  private applyTextTransform(transform: (text: string) => string): string {
+  /**
+   * Single programmatic-edit pipeline. Computes the new text from
+   * `edits`, reparses once, distributes the edits to every view on this
+   * file (editor views dispatch as a CM transaction so cursor/undo
+   * survive; readonly views re-render), and writes to disk.
+   */
+  applyEditsToFile(edits: Edit[]): void {
+    if (edits.length === 0) return;
     const path = this.file?.path;
     if (!path) throw new Error("No file path available");
-    const newText = transform(this.cachedScript.document);
+    const newText = applyEdits(this.cachedScript.document, edits);
     const newScript = parse(newText, {});
-    this.updateAllViewsForFile(path, newScript);
+    for (const view of this.findViewsForPath(path)) {
+      view.cachedScript = newScript;
+      view.state.receiveEdits(edits, newScript);
+    }
     if (this.file) {
       this.app.vault.modify(this.file, newText);
     }
-    return newText;
   }
 
-  replaceText(range: Range, replacement: string): string {
-    return this.applyTextTransform((t) => replaceTextInString(t, range, replacement));
+  replaceText(range: Range, replacement: string): void {
+    this.applyEditsToFile([{ range, replacement }]);
   }
 
-  moveScene(range: Range, newPos: number): string {
-    return this.applyTextTransform((t) => moveSceneInString(t, range, newPos));
+  moveScene(range: Range, newPos: number): void {
+    this.applyEditsToFile(computeMoveSceneEdits(this.cachedScript, range, newPos));
   }
 
-  duplicateScene(range: Range): string {
-    return this.applyTextTransform((t) => duplicateSceneInString(t, range));
+  duplicateScene(range: Range): void {
+    this.applyEditsToFile(computeDuplicateSceneEdits(this.cachedScript, range));
   }
 
   moveSceneCrossFile(
@@ -434,41 +349,17 @@ export class FountainView extends TextFileView {
     dstPath: string,
     dstNewPos: number,
   ): void {
-    const srcPath = this.file?.path;
-    if (!srcPath) throw new Error("No source file path available");
-
-    // Extract scene text from source
-    const srcText = this.cachedScript.document;
-    const sceneText = srcText.slice(srcRange.start, srcRange.end);
-
-    // Remove scene from source
-    const newSrcText = replaceTextInString(srcText, srcRange, "");
-    const newSrcScript = parse(newSrcText, {});
-    this.updateAllViewsForFile(srcPath, newSrcScript);
-
-    // Add scene to destination
-    const dstViews = this.findViewsForPath(dstPath);
-    if (dstViews.length > 0) {
-      const dstView = dstViews[0];
-      const dstText = dstView.cachedScript.document;
-      const newDstText = replaceTextInString(
-        dstText,
-        { start: dstNewPos, end: dstNewPos },
-        sceneText + trailingNewlinesNeeded(sceneText),
-      );
-      const newDstScript = parse(newDstText, {});
-      this.updateAllViewsForFile(dstPath, newDstScript);
-
-      // Trigger file save for destination
-      if (dstView.file) {
-        dstView.app.vault.modify(dstView.file, newDstText);
-      }
-    }
-
-    // Trigger file save for source
-    if (this.file) {
-      this.app.vault.modify(this.file, newSrcText);
-    }
+    if (!this.file?.path) throw new Error("No source file path available");
+    const dstView = this.findViewsForPath(dstPath)[0];
+    if (!dstView) return;
+    const { srcEdits, dstEdits } = computeMoveSceneAcrossFilesEdits(
+      this.cachedScript,
+      srcRange,
+      dstView.cachedScript,
+      dstNewPos,
+    );
+    this.applyEditsToFile(srcEdits);
+    dstView.applyEditsToFile(dstEdits);
   }
 
   getText(range: Range): string {
@@ -536,18 +427,25 @@ export class FountainView extends TextFileView {
     return this.state.getViewData();
   }
 
-  setViewData(data: string, clear: boolean): void {
+  setViewData(data: string, _clear: boolean): void {
     const path = this.file?.path;
-    if (path) {
-      // Short circuit if data unchanged to avoid redundant parsing
-      // when Obsidian calls setViewData on all views for the same file
-      if (this.cachedScript.document === data) return;
-
-      const newScript = parse(data, {});
-      this.updateAllViewsForFile(path, newScript);
-
-      // Delegate to current state for any state-specific handling
-      this.state.setViewData(path, data, clear);
+    if (!path) return;
+    // Short-circuit if the data hasn't actually changed — Obsidian fires
+    // setViewData on all views of the same file when any one of them
+    // saves, and re-parsing every time would be wasteful.
+    if (this.cachedScript.document === data) {
+      // Still keep paths in sync on the first load, where the state was
+      // constructed with an empty path.
+      for (const view of this.findViewsForPath(path)) {
+        view.state.setPath(path);
+      }
+      return;
+    }
+    const newScript = parse(data, {});
+    for (const view of this.findViewsForPath(path)) {
+      view.cachedScript = newScript;
+      view.state.setPath(path);
+      view.state.receiveScript(newScript);
     }
   }
 
@@ -630,72 +528,14 @@ export class FountainView extends TextFileView {
    * an existing purely numeric scene number, continues from that number + 1.
    */
   addSceneNumbers(): void {
-    const scenes = this.cachedScript.script.filter(
-      (element): element is SceneHeading => element.kind === "scene",
-    );
-
-    let nextSequentialNumber = 1;
-    const modifications: Array<{ range: Range; replacement: string }> = [];
-
-    // Process scenes in forward order to track numbering
-    for (const scene of scenes) {
-      if (scene.number === null) {
-        // No existing number, add the next sequential number
-        const insertPosition = sceneHeadingTextEnd(scene);
-        modifications.push({
-          range: { start: insertPosition, end: insertPosition },
-          replacement: ` #${nextSequentialNumber}#`,
-        });
-        nextSequentialNumber++;
-      } else {
-        // Scene has a number, check if it's purely numeric
-        const existingNumberText = this.cachedScript.document.substring(
-          scene.number.start + 1,
-          scene.number.end - 1,
-        );
-        const parsedNumber = Number.parseInt(existingNumberText, 10);
-        // Only update counter if the number is purely numeric (parseInt matches the full string)
-        if (
-          !Number.isNaN(parsedNumber) &&
-          parsedNumber.toString() === existingNumberText.trim()
-        ) {
-          // Continue numbering from this purely numeric scene number
-          nextSequentialNumber = parsedNumber + 1;
-        }
-        // Non-purely-numeric scene numbers (like "5A") don't affect the counter
-      }
-    }
-
-    // Apply modifications in reverse order to maintain correct positions
-    for (let i = modifications.length - 1; i >= 0; i--) {
-      const mod = modifications[i];
-      this.replaceText(mod.range, mod.replacement);
-    }
+    this.applyEditsToFile(computeAddSceneNumberEdits(this.cachedScript));
   }
 
   /**
    * Removes all scene numbers from scenes.
    */
   removeSceneNumbers(): void {
-    const scenes = this.cachedScript.script.filter(
-      (element): element is SceneHeading => element.kind === "scene",
-    );
-
-    // Process scenes in reverse order to maintain correct positions when removing
-    for (let i = scenes.length - 1; i >= 0; i--) {
-      const scene = scenes[i];
-      if (scene.number !== null) {
-        // Remove the scene number including any spaces before it
-        const beforeNumber = this.cachedScript.document.substring(
-          sceneHeadingTextEnd(scene),
-          scene.number.start,
-        );
-        const spacesToRemove = beforeNumber.match(/\s*$/)?.[0] ?? "";
-        const startPos = scene.number.start - spacesToRemove.length;
-
-        this.replaceText({ start: startPos, end: scene.number.end }, "");
-      }
-    }
+    this.applyEditsToFile(computeRemoveSceneNumberEdits(this.cachedScript));
   }
 
   /**

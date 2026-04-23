@@ -1,4 +1,5 @@
 import type { FountainScript, Range, ShowHideSettings } from "./fountain";
+import type { Edit } from "./scene_operations";
 
 export enum ShowMode {
   Script = "script",
@@ -24,7 +25,19 @@ export type FountainViewPersistedState = ReadonlyViewPersistedState & {
 export interface ViewState {
   readonly isEditMode: boolean;
   getViewData(): string;
-  setViewData(path: string, text: string, clear: boolean): void;
+  /**
+   * Apply edits to the state. Editor dispatches them as CM changes so
+   * cursor and undo survive; readonly ignores edits and re-renders from
+   * `newScript`.
+   */
+  receiveEdits(edits: Edit[], newScript: FountainScript): void;
+  /**
+   * Adopt a new script wholesale, without edits. Editor replaces the CM
+   * document; readonly re-renders. Used for external file reloads and for
+   * propagating user-typed edits to sibling views.
+   */
+  receiveScript(newScript: FountainScript): void;
+  setPath(path: string): void;
   clear(): void;
   destroy(): void;
   scrollToHere(r: Range): void;

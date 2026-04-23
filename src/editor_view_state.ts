@@ -18,6 +18,7 @@ import { createCharacterCompletion } from "./character_completion";
 import { createFountainEditorPlugin } from "./fountain_editor";
 import { createFountainFoldService } from "./fountain_folding";
 import { fountainScriptField } from "./fountain_state";
+import type { Edit } from "./scene_operations";
 import type { ViewState } from "./view_state";
 
 export type EditorCallbacks = {
@@ -42,6 +43,10 @@ export class EditorViewState implements ViewState {
   readonly isEditMode = true;
   private cmEditor: EditorView;
   private path: string;
+  /** True while a sync-driven dispatch is in flight, so the update listener
+   *  knows to skip `onScriptChanged` / `requestSave` and avoid re-propagating
+   *  an edit that has already been distributed by the parent FountainView. */
+  private syncing = false;
 
   constructor(
     contentEl: HTMLElement,
@@ -89,7 +94,7 @@ export class EditorViewState implements ViewState {
           () => this.cmEditor.state.field(fountainScriptField),
         ),
         EditorView.updateListener.of((update: ViewUpdate) => {
-          if (update.docChanged) {
+          if (update.docChanged && !this.syncing) {
             callbacks.onScriptChanged(
               update.state.field(fountainScriptField),
             );
@@ -106,16 +111,45 @@ export class EditorViewState implements ViewState {
     this.cmEditor.contentDOM.spellcheck = spellCheckEnabled;
   }
 
-  setViewData(path: string, text: string, _clear: boolean) {
+  receiveEdits(edits: Edit[], _newScript: FountainScript): void {
+    if (edits.length === 0) return;
+    // CM treats every `from`/`to` in a batch as a pre-transaction position
+    // and expects them sorted ascending and non-overlapping.
+    const changes = [...edits]
+      .sort((a, b) => a.range.start - b.range.start)
+      .map((e) => ({
+        from: e.range.start,
+        to: e.range.end,
+        insert: e.replacement,
+      }));
+    this.syncing = true;
+    try {
+      this.cmEditor.dispatch({ changes });
+    } finally {
+      this.syncing = false;
+    }
+  }
+
+  receiveScript(newScript: FountainScript): void {
+    // No precise edits available — full-doc replace. Cursor/undo are lost
+    // on this path by necessity (used for external reloads and for
+    // propagating user-typed edits to non-originating editors).
+    this.syncing = true;
+    try {
+      this.cmEditor.dispatch({
+        changes: {
+          from: 0,
+          to: this.cmEditor.state.doc.length,
+          insert: newScript.document,
+        },
+      });
+    } finally {
+      this.syncing = false;
+    }
+  }
+
+  setPath(path: string): void {
     this.path = path;
-    this.cmEditor.dispatch({
-      changes: {
-        from: 0,
-        to: this.cmEditor.state.doc.length,
-        insert: text,
-      },
-    });
-    // Parsing and updating is handled by parent view's setViewData
   }
 
   getViewData(): string {

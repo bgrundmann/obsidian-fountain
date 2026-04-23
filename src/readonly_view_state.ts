@@ -1,6 +1,7 @@
 import type { FountainScript, Range, ShowHideSettings } from "./fountain";
 import { type Callbacks, renderIndexCards } from "./index_cards_view";
 import { rangeOfFirstVisibleLine, renderFountain } from "./reading_view";
+import type { Edit } from "./scene_operations";
 import {
   type ReadonlyViewPersistedState,
   ShowMode,
@@ -180,10 +181,18 @@ export class ReadonlyViewState implements ViewState {
     return this.callbacks.getScript().document;
   }
 
-  setViewData(path: string, _text: string, _clear: boolean): void {
-    this.path = path;
-    // Parsing and updating is handled by parent view's setViewData
+  receiveEdits(_edits: Edit[], _newScript: FountainScript): void {
+    // Readonly has no CM to dispatch into; just re-render from the script
+    // already stored on the parent FountainView.
     this.render();
+  }
+
+  receiveScript(_newScript: FountainScript): void {
+    this.render();
+  }
+
+  setPath(path: string): void {
+    this.path = path;
   }
 
   clear(): void {

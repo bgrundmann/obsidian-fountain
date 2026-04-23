@@ -49,6 +49,14 @@ interface ScriptStructure { sections: StructureSection[]; snippets: Snippet[]; }
 - `FountainScript.structure()` parses snippets section
 - Re-parse document after modifications rather than in-place edits
 
+### Edit pipeline
+All programmatic document mutations go through `FountainView.applyEditsToFile(edits: Edit[])`:
+- `Edit` and the `compute*Edits` helpers (move/duplicate/cross-file/scene numbers) live in `scene_operations.ts` and are pure.
+- `applyEditsToFile` reparses once, distributes the edits to every view open on the file, and writes to disk.
+- `EditorViewState.receiveEdits` dispatches them as a single CM transaction so cursor/undo survive; `ReadonlyViewState.receiveEdits` re-renders.
+- `FountainView.setViewData` handles only Obsidian-initiated external reloads (no edits available; calls `receiveScript` for a full-doc replace).
+- User-typed edits flow through CM's update listener → `onUserEdit` → sibling views via `receiveScript`.
+
 ### PDF Generation
 Uses `pdf-lib`. Two-phase: generate draw instructions → render to PDF.
 Left margin fixed at 1.5" for binding; other margins computed to maintain consistent characters/line across paper sizes.
@@ -60,10 +68,11 @@ In the `src` folder:
 | File | Purpose |
 |------|---------|
 | `main.ts` | Plugin entry, commands, lifecycle |
-| `view.ts` | FountainView, text manipulation, editing ops |
+| `view.ts` | FountainView, mode switching, `applyEditsToFile` pipeline |
 | `view_state.ts` | ViewState interface, shared view types |
 | `readonly_view_state.ts` | ReadonlyViewState (reading/index cards) |
 | `editor_view_state.ts` | EditorViewState (CodeMirror editor) |
+| `scene_operations.ts` | Pure `Edit[]`-producing scene-level text operations |
 | `fountain.ts` | Core types, FountainScript, text utilities |
 | `fountain_parser.peggy` | Peggy grammar |
 | `reading_view.ts` | Readonly rendering |
@@ -80,8 +89,7 @@ In the `src` folder:
 | `pdf_options_dialog.ts` | PDF export options modal |
 | `render_tools.ts` | Shared HTML rendering |
 | `fuzzy_select_string.ts` | Fuzzy search modal |
-| `removal_commands.ts` | Removal command modals |
-| `removal_utilities.ts` | Range extraction for removals |
+| `removal_commands.ts` | Removal command modals + text-removal helpers |
 
 Unit tests are in the `__tests__` folder. E2E tests are in `test/e2e/` (specs in `test/e2e/specs/`, test vaults in `test/e2e/vaults/`).
 

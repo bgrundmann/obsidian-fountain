@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+- **Cursor and undo survive programmatic edits**: Operations that modify the document from outside the editor — scene moves, scene duplication, cross-file scene moves, add/remove scene numbers, and removal commands applied to the current file — now preserve the cursor position and leave a single undoable step in the editor. Previously these replaced the entire CodeMirror document, which reset the cursor and collapsed the change into one opaque undo.
+- **Internal**: Scene-level text manipulation moved out of `view.ts` into a pure `scene_operations.ts` module, and all programmatic document mutations now flow through a single `applyEditsToFile` pipeline. Added e2e tests for cross-view sync and cursor preservation.
+
 ## [0.26.2] - Bugfix
 
 - **Fold Chevrons**: Fixed a visual glitch where fold indicators (chevrons) next to scene headings in edit mode would sometimes disappear or double when editing near a scene heading. The root cause was a timing issue: the fold gutter queried the parsed script before it had been updated to reflect the latest document changes. Parsing is now done in a CodeMirror StateField, ensuring it is always in sync when the fold gutter reads it.
