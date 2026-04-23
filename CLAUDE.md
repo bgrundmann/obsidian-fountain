@@ -83,8 +83,10 @@ In the `src` folder:
 | `sidebar_view.ts` | TOC + snippets sidebar |
 | `index_cards_view.ts` | Index card view |
 | `pdf/generator.ts` | PDF generation entry point and facade |
-| `pdf/types.ts` | PDF shared types, constants, utilities |
-| `pdf/instruction_generator.ts` | PDF instruction generation from AST |
+| `pdf/types.ts` | PDF shared types, constants, geometry helpers |
+| `pdf/page_state.ts` | Page-state primitives (new page, line advance, page-break guards) |
+| `pdf/text_wrapping.ts` | Styled-segment extraction, word wrapping, dialogue prep |
+| `pdf/instruction_generator.ts` | Element-to-instruction translation + orchestration |
 | `pdf/renderer.ts` | PDF rendering using pdf-lib |
 | `pdf/options_dialog.ts` | PDF export options modal |
 | `render_tools.ts` | Shared HTML rendering |
