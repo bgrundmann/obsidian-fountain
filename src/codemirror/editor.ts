@@ -13,8 +13,8 @@ import {
   type Line,
   type StyledTextElement,
   intersect,
-} from "./fountain";
-import { fountainScriptField } from "./fountain_state";
+} from "../fountain";
+import { fountainScriptField } from "./state";
 export { createFountainEditorPlugin };
 
 /// This extends CodeMirror 6 to syntax highlight fountain.

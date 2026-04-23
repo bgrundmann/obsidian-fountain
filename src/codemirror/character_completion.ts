@@ -5,7 +5,7 @@ import {
   autocompletion,
 } from "@codemirror/autocomplete";
 import type { Extension } from "@codemirror/state";
-import type { FountainScript } from "./fountain";
+import type { FountainScript } from "../fountain";
 
 /**
  * Pattern to match at least two characters, all uppercase letters or numbers,

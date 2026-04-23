@@ -71,12 +71,12 @@ In the `src` folder:
 | `scene_operations.ts` | Pure `Edit[]`-producing scene-level text operations |
 | `fountain.ts` | Core types, FountainScript, text utilities |
 | `fountain_parser.peggy` | Peggy grammar |
-| `fountain_editor.ts` | CodeMirror syntax highlighting |
-| `fountain_state.ts` | StateField for parsed FountainScript |
-| `fountain_folding.ts` | Scene folding service |
-| `character_completion.ts` | Character name autocompletion |
 | `fuzzy_select_string.ts` | Fuzzy search modal |
 | `removal_commands.ts` | Removal command modals + text-removal helpers |
+| `codemirror/editor.ts` | CodeMirror syntax highlighting |
+| `codemirror/state.ts` | StateField for parsed FountainScript |
+| `codemirror/folding.ts` | Scene folding service |
+| `codemirror/character_completion.ts` | Character name autocompletion |
 | `views/fountain_view.ts` | FountainView, mode switching, `applyEditsToFile` pipeline |
 | `views/view_state.ts` | ViewState interface, shared view types |
 | `views/readonly_view_state.ts` | ReadonlyViewState (reading/index cards) |

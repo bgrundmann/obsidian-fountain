@@ -1,8 +1,8 @@
 import { foldService } from "@codemirror/language";
 import type { EditorState } from "@codemirror/state";
-import type { FountainScript, ScriptStructure } from "./fountain";
-import { StructureSection } from "./fountain";
-import { fountainScriptField } from "./fountain_state";
+import type { FountainScript, ScriptStructure } from "../fountain";
+import { StructureSection } from "../fountain";
+import { fountainScriptField } from "./state";
 
 /**
  * Creates a folding service for Fountain scripts that reads the parsed
