@@ -50,3 +50,13 @@ export {
 } from "./utils";
 
 export { FountainScript } from "./script";
+
+export {
+  type Edit,
+  applyEdits,
+  computeMoveSceneEdits,
+  computeDuplicateSceneEdits,
+  computeMoveSceneAcrossFilesEdits,
+  computeAddSceneNumberEdits,
+  computeRemoveSceneNumberEdits,
+} from "./scene_operations";

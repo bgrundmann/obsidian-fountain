@@ -17,8 +17,7 @@ import { createCharacterCompletion } from "../codemirror/character_completion";
 import { createFountainEditorPlugin } from "../codemirror/editor";
 import { createFountainFoldService } from "../codemirror/folding";
 import { fountainScriptField } from "../codemirror/state";
-import type { FountainScript, Range } from "../fountain";
-import type { Edit } from "../scene_operations";
+import type { Edit, FountainScript, Range } from "../fountain";
 import type { ViewState } from "./view_state";
 
 export type EditorCallbacks = {

@@ -1,9 +1,6 @@
-import {
-  type FountainScript,
-  type Range,
-  type SceneHeading,
-  sceneHeadingTextEnd,
-} from "./fountain";
+import type { FountainScript } from "./script";
+import type { Range, SceneHeading } from "./types";
+import { sceneHeadingTextEnd } from "./utils";
 
 export interface Edit {
   range: Range;

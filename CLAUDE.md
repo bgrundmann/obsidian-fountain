@@ -57,7 +57,7 @@ interface ScriptStructure { sections: StructureSection[]; snippets: Snippet[]; }
 
 ### Edit pipeline
 All programmatic document mutations go through `FountainView.applyEditsToFile(edits: Edit[])`:
-- `Edit` and the `compute*Edits` helpers (move/duplicate/cross-file/scene numbers) live in `scene_operations.ts` and are pure.
+- `Edit` and the `compute*Edits` helpers (move/duplicate/cross-file/scene numbers) live in `fountain/scene_operations.ts` and are pure.
 - `applyEditsToFile` reparses once, distributes the edits to every view open on the file, and writes to disk.
 - `EditorViewState.receiveEdits` dispatches them as a single CM transaction so cursor/undo survive; `ReadonlyViewState.receiveEdits` re-renders.
 - `FountainView.setViewData` handles only Obsidian-initiated external reloads (no edits available; calls `receiveScript` for a full-doc replace).
@@ -78,13 +78,14 @@ In the `src` folder:
 | File | Purpose |
 |------|---------|
 | `main.ts` | Plugin entry, commands, lifecycle |
-| `scene_operations.ts` | Pure `Edit[]`-producing scene-level text operations |
 | `fuzzy_select_string.ts` | Fuzzy search modal |
 | `removal_commands.ts` | Removal command modals + text-removal helpers |
 | `fountain/index.ts` | Barrel re-export of the fountain core API |
 | `fountain/types.ts` | AST types, `Range`, structure helpers |
 | `fountain/script.ts` | `FountainScript` class |
 | `fountain/utils.ts` | Shared utilities (mergeText, extractNotes, etc.) |
+| `fountain/scene_operations.ts` | Pure `Edit[]`-producing scene-level text operations |
+| `fountain/ast.ts` | Typed factories used by the grammar to build AST nodes |
 | `fountain/parser.peggy` | Peggy grammar |
 | `codemirror/editor.ts` | CodeMirror syntax highlighting |
 | `codemirror/state.ts` | StateField for parsed FountainScript |

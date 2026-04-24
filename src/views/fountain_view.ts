@@ -8,22 +8,20 @@ import {
   setIcon,
 } from "obsidian";
 import {
+  type Edit,
   type FountainScript,
   type Range,
   type ShowHideSettings,
-  collapseRangeToStart,
-} from "../fountain";
-import { parse } from "../fountain/parser";
-import { FuzzySelectString } from "../fuzzy_select_string";
-import {
-  type Edit,
   applyEdits,
+  collapseRangeToStart,
   computeAddSceneNumberEdits,
   computeDuplicateSceneEdits,
   computeMoveSceneAcrossFilesEdits,
   computeMoveSceneEdits,
   computeRemoveSceneNumberEdits,
-} from "../scene_operations";
+} from "../fountain";
+import { parse } from "../fountain/parser";
+import { FuzzySelectString } from "../fuzzy_select_string";
 import {
   type EditorCallbacks,
   EditorViewState,

@@ -1,9 +1,9 @@
-import { parse } from "../src/fountain/parser";
 import {
   applyEdits,
   computeAddSceneNumberEdits,
   computeRemoveSceneNumberEdits,
-} from "../src/scene_operations";
+} from "../src/fountain";
+import { parse } from "../src/fountain/parser";
 
 describe("Scene numbering", () => {
   describe("computeAddSceneNumberEdits", () => {

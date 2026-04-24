@@ -1,5 +1,9 @@
-import type { FountainScript, Range, ShowHideSettings } from "../fountain";
-import type { Edit } from "../scene_operations";
+import type {
+  Edit,
+  FountainScript,
+  Range,
+  ShowHideSettings,
+} from "../fountain";
 
 export enum ShowMode {
   Script = "script",

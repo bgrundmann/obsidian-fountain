@@ -1,12 +1,14 @@
-import type { FountainElement, FountainScript, SceneHeading } from "../src/fountain";
-import { parse } from "../src/fountain/parser";
 import {
   type Edit,
+  type FountainElement,
+  type FountainScript,
+  type SceneHeading,
   applyEdits,
   computeDuplicateSceneEdits,
   computeMoveSceneAcrossFilesEdits,
   computeMoveSceneEdits,
-} from "../src/scene_operations";
+} from "../src/fountain";
+import { parse } from "../src/fountain/parser";
 
 function isScene(e: FountainElement): e is SceneHeading {
   return e.kind === "scene";
