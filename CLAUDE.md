@@ -77,7 +77,8 @@ In the `src` folder:
 
 | File | Purpose |
 |------|---------|
-| `main.ts` | Plugin entry, commands, lifecycle |
+| `main.ts` | Plugin entry, lifecycle, command registration |
+| `commands.ts` | Command implementations + `ifFountainFile`/`ifFountainView` checkCallback helpers |
 | `fuzzy_select_string.ts` | Fuzzy search modal |
 | `removal_commands.ts` | Removal command modals + text-removal helpers |
 | `fountain/index.ts` | Barrel re-export of the fountain core API |
