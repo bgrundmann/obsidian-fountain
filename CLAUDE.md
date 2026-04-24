@@ -63,6 +63,10 @@ Left margin fixed at 1.5" for binding; other margins computed to maintain consis
 
 ## Source Files
 
+Note: the `fountain/` directory at repo root is the Claude Code skill
+file (`fountain/SKILL.md`), not source. The Fountain parser/core lives
+in `src/fountain/`.
+
 In the `src` folder:
 
 | File | Purpose |
