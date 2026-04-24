@@ -383,7 +383,7 @@ Character walks.`;
 
       // Find SECTION ONE
       const sectionOne = structure.sections.find(
-        (section: { section?: { range: Range } }) =>
+        (section) =>
           section.section &&
           script
             .sliceDocument(section.section.range)

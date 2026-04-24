@@ -3,6 +3,6 @@ export default {
 	output: "src/fountain/parser.js",
 	dts: true,
 	returnTypes: {
-		parse: "FountainScript",
+		Script: 'import("./script").FountainScript',
 	},
 };
