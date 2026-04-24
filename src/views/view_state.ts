@@ -25,7 +25,6 @@ export type ReadonlyViewCallbacks = {
 
 export type Rehearsal = {
   character: string;
-  previousShowHideSettings: ShowHideSettings;
 };
 
 export type ReadonlyViewPersistedState = {

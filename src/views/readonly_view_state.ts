@@ -36,31 +36,15 @@ export class ReadonlyViewState implements ViewState {
   }
 
   public stopRehearsalMode() {
-    if (this.pstate.rehearsal) {
-      this.pstate = {
-        ...this.pstate,
-        ...this.pstate.rehearsal.previousShowHideSettings,
-      };
-      this.pstate.rehearsal = undefined;
-      this.render();
-    }
+    if (!this.pstate.rehearsal) return;
+    this.pstate = { ...this.pstate, rehearsal: undefined };
+    this.render();
   }
 
   startRehearsalMode(character: string) {
-    this.pstate.rehearsal = {
-      character,
-      // We have to explicitely save all 3 settings otherwise
-      // they might be undefined instead of false and then not
-      // be set by the spread operator
-      previousShowHideSettings: {
-        hideBoneyard: this.pstate.hideBoneyard || false,
-        hideSynopsis: this.pstate.hideSynopsis || false,
-        hideNotes: this.pstate.hideNotes || false,
-      },
-    };
-    this.pstate.hideBoneyard = true;
-    this.pstate.hideNotes = true;
-    this.pstate.hideSynopsis = true;
+    // Rehearsal is a view-time override — it forces hide-all during
+    // render without touching the stored show/hide settings.
+    this.pstate = { ...this.pstate, rehearsal: { character } };
     this.render();
   }
 
@@ -101,9 +85,13 @@ export class ReadonlyViewState implements ViewState {
         renderIndexCards(mainblock, this.path, fp, this.callbacks);
         break;
 
-      case ShowMode.Script:
-        renderFountain(mainblock, fp, this.pstate, this.blackout ?? undefined);
+      case ShowMode.Script: {
+        const settings: ShowHideSettings = this.blackout
+          ? { hideBoneyard: true, hideNotes: true, hideSynopsis: true }
+          : this.pstate;
+        renderFountain(mainblock, fp, settings, this.blackout ?? undefined);
         break;
+      }
     }
 
     if (this.blackout) {
