@@ -69,6 +69,10 @@ export class FountainView extends TextFileView {
     this.showViewMenuAction = this.addAction("eye", "View options", (evt) =>
       this.showViewMenu(evt),
     );
+    // Hotkeys use View.scope rather than plugin-level commands: a global
+    // Mod+F command would conflict with Obsidian's built-in "Search current
+    // file" (both show red in hotkey settings). Scope-registered handlers
+    // take priority only when this view has focus, which is what we want.
     this.scope = new Scope(this.app.scope);
     this.scope.register(["Mod"], "f", () => {
       if (this.openSearch()) return false;
