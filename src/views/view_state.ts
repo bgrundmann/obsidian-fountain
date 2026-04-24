@@ -33,7 +33,12 @@ export type ReadonlyViewPersistedState = {
   rehearsal?: Rehearsal; // This misses which dialogue(s) have been revealed, but is cheap and good enough
 } & ShowHideSettings;
 
-/** Stored in persistent state (workspace.json under the fountain key) */
+/**
+ * Stored in persistent state (workspace.json under the fountain key).
+ * `editing` is kept separate from `mode` on purpose: toggling edit mode
+ * off must return to whichever readonly view (Script or IndexCards) was
+ * last active, so we have to remember it across the toggle.
+ */
 export type FountainViewPersistedState = ReadonlyViewPersistedState & {
   editing?: boolean; // undefined => false
 };
