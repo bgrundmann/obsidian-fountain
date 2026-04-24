@@ -9,6 +9,12 @@
 {{
 const { FountainScript } = require("./script");
 const { mergeText } = require("./utils");
+const {
+  mkAction, mkBoneyard, mkBold, mkCenteredLine, mkDialogue, mkDialogueLine,
+  mkItalics, mkKeyValue, mkLine, mkLyrics, mkNote, mkPageBreak, mkParenthetical,
+  mkRange, mkScene, mkSection, mkSynopsis, mkText, mkTransition, mkUnderline,
+  shiftLineStart,
+} = require("./ast");
 
 }}
 
@@ -19,7 +25,7 @@ TitlePage
  = values:KeyValue+ "\n" { return values; }
 
 KeyValue
- = key:Key ":" [ \t]* values:(@InlineValue / @MultiLineValues) { return { range: range(), key: key, values: values }; }
+ = key:Key ":" [ \t]* values:(@InlineValue / @MultiLineValues) { return mkKeyValue(range(), key, values); }
 
 Key
  = [a-zA-Z0-9_][a-zA-Z0-9_ ]* { return text() }
@@ -36,7 +42,7 @@ MultiLineValue
  = (" "|3..| / "\t") value:Value { return value; }
 
 PageBreak
- = OptionalBlanks "="|3..| NewLineOrEndOfInput { return { range: range(), kind: 'page-break' } }
+ = OptionalBlanks "="|3..| NewLineOrEndOfInput { return mkPageBreak(range()); }
 
 Element
  = Scene
@@ -54,14 +60,14 @@ LineTextElement
  / text:StyledTextElement { return text; }
 
 StyledTextElement
- = "**" elts:(!"**" @StyledTextElement)+ "**" { return { range: range(), kind: 'bold', elements:mergeText(elts) };}
- / "*" elts:(!"*" @StyledTextElement)+ "*" { return { range: range(), kind: 'italics', elements: mergeText(elts) };}
- / "_" elts:(!"_" @StyledTextElement)+ "_" { return { range: range(), kind: 'underline', elements: mergeText(elts) };}
- / (!"\n" .)  { return { range: range(), kind: 'text' };}
+ = "**" elts:(!"**" @StyledTextElement)+ "**" { return mkBold(range(), mergeText(elts)); }
+ / "*" elts:(!"*" @StyledTextElement)+ "*" { return mkItalics(range(), mergeText(elts)); }
+ / "_" elts:(!"_" @StyledTextElement)+ "_" { return mkUnderline(range(), mergeText(elts)); }
+ / (!"\n" .)  { return mkText(range()); }
 
 Line
  = elements:LineTextElement+ newline:("\n" / !.)
- { return { range:range(), centered: false, elements:mergeText(elements) } }
+ { return mkLine(range(), mergeText(elements)); }
 
 
 
@@ -69,8 +75,8 @@ DialogueLine
  = !PageBreakPattern @Line
 
 DialogueContentItem
- = p:Parenthetical { return { kind: 'parenthetical', range: p }; }
- / l:DialogueLine { return { kind: 'line', line: l }; }
+ = p:Parenthetical { return mkParenthetical(p); }
+ / l:DialogueLine { return mkDialogueLine(l); }
 
 DialogueContent
  = @items:DialogueContentItem+ DialogueTerminator
@@ -84,7 +90,7 @@ EndOfCenteredLine
 
 ActionLine
  = [ \t]*  ">" [ \t]* elements:(!EndOfCenteredLine @LineTextElement)+ EndOfCenteredLine
-   { return { range: range(), centered: true, elements:mergeText(elements) } }
+   { return mkCenteredLine(range(), mergeText(elements)); }
  / ForcedActionLine
  / !PageBreakPattern @Line
 
@@ -92,7 +98,7 @@ PageBreakPattern
  = OptionalBlanks "="|3..|
 
 ForcedActionLine
- = "!" line:Line  { line.range.start = line.range.start - 1; return line; }
+ = "!" line:Line  { return shiftLineStart(line, -1); }
 
 ActionLines
  = @lines:ActionLine+ ActionTerminator
@@ -103,20 +109,19 @@ ActionTerminator
 
 Transition
  = ">" transition:([^\n]*) !{ return transition.join("").endsWith("<") } BlankLineOrEndOfInput
- { return { kind: 'transition', range: range(), forced: true }; }
+ { return mkTransition(range(), true); }
  / OptionalBlanks (!("TO:\n"/"TO:" !.) [^\n] )* "TO:" BlankLineOrEndOfInput &{ const t = text(); return t.toUpperCase() === t; }
- { return { kind: 'transition', range: range(), forced: false }; }
+ { return mkTransition(range(), false); }
 
 Action
  = lines:ActionLines
-   { return { kind: 'action', range: range(), lines:lines };
-   }
+   { return mkAction(range(), lines); }
  / newline:NewLine
-   { return { kind: 'action', range:newline, lines: [{range:newline, centered: false, elements:[]}] } };
+   { return mkAction(newline, [mkLine(newline, [])]); }
 
 Note "note"
  = "[[" noteKind:NoteKind? noteText:NoteText "]]"?
- { return { range: range(), kind: 'note', noteKind:(noteKind ?? "").toLowerCase(), textRange:noteText  }; }
+ { return mkNote(range(), noteKind, noteText); }
 
 NoteText
  =  (!("]]"/"\n\n") .)* { return range(); }
@@ -133,17 +138,17 @@ MarkerWord = [a-zA-Z0-9_]* { return text() }
 
 Boneyard "boneyard"
  = OptionalBlanks "/*" (!"*/" .)* "*/"
- { return { range: range(), kind: 'boneyard' }; }
+ { return mkBoneyard(range()); }
 
 Section
  = OptionalBlanks hashes:Hashes RestOfLine NewLineOrEndOfInput
- { return { range: range(), depth:hashes, kind: 'section'} }
+ { return mkSection(range(), hashes); }
 
 Hashes
  = "#"+ { return text().length }
 
 Synopsis
- = lines:SynopsisLine+ NewLine? { return { range:range(), kind: 'synopsis', linesOfText:lines } }
+ = lines:SynopsisLine+ NewLine? { return mkSynopsis(range(), lines); }
 
 SynopsisLine
  = OptionalBlanks "=" synopsis:RestOfLine NewLineOrEndOfInput { return synopsis; }
@@ -158,14 +163,7 @@ NewLineOrEndOfInput
 Dialogue
  = OptionalBlanks character:Character [ \t]* exts:CharacterExtensions "\n"
   content:DialogueContent
- { return {
-     range: range(),
-     kind: 'dialogue',
-     characterRange: character,
-     characterExtensionsRange: exts,
-     content: content
-   }
- }
+ { return mkDialogue(range(), character, exts, content); }
 
 Parenthetical
  = OptionalBlanks "(" [^)\n]* ")" "\n" { return range() }
@@ -192,22 +190,16 @@ OptionalBlanks
 
 Lyrics
  = lines:LyricsLine+
- { return { kind: 'lyrics', range: range(), lines: lines }; }
+ { return mkLyrics(range(), lines); }
 
 LyricsLine
  = "~" elements:LineTextElement* newline:("\n" / !.)
- { return { range: range(), centered: false, elements: mergeText(elements) }; }
+ { return mkLine(range(), mergeText(elements)); }
 
 
 Scene
  = OptionalBlanks headingStart:SceneStart result:SceneHeadingAndNumber BlankLineOrEndOfInput {
-   return {
-     kind: 'scene',
-     range: range(),
-     heading: headingStart.text + result.heading,
-     forced: headingStart.forced,
-     number: result.number
-   };
+   return mkScene(range(), headingStart.text + result.heading, headingStart.forced, result.number);
  }
 
 SceneHeadingAndNumber
@@ -241,8 +233,7 @@ SceneNumber
 
 SceneNumberPrime
  = "#" [a-zA-Z0-9\-\.]+ "#" {
-   const loc = location();
-   return { start: loc.start.offset, end: loc.end.offset };
+   return mkRange(location());
  }
 
 SceneStart
