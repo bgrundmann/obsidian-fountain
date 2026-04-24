@@ -28,12 +28,10 @@ import {
   type EditorCallbacks,
   EditorViewState,
 } from "./editor_view_state";
-import {
-  type ReadonlyViewCallbacks,
-  ReadonlyViewState,
-} from "./readonly_view_state";
+import { ReadonlyViewState } from "./readonly_view_state";
 import {
   type FountainViewPersistedState,
+  type ReadonlyViewCallbacks,
   type ReadonlyViewPersistedState,
   ShowMode,
   type ViewState,
@@ -102,7 +100,9 @@ export class FountainView extends TextFileView {
   private readonlyCallbacks(): ReadonlyViewCallbacks {
     return {
       getScript: () => this.cachedScript,
+      reRender: () => this.state.render(),
       startEditModeHere: (r) => this.startEditModeHere(r),
+      startReadingModeHere: (r) => this.state.scrollToHere(r),
       requestSave: () => this.requestSave(),
       replaceText: (r, s) => this.replaceText(r, s),
       moveScene: (r, p) => this.moveScene(r, p),

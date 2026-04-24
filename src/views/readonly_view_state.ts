@@ -1,27 +1,13 @@
 import type { FountainScript, Range, ShowHideSettings } from "../fountain";
 import type { Edit } from "../scene_operations";
-import { type Callbacks, renderIndexCards } from "./index_cards_view";
+import { renderIndexCards } from "./index_cards_view";
 import { rangeOfFirstVisibleLine, renderFountain } from "./reading_view";
 import {
+  type ReadonlyViewCallbacks,
   type ReadonlyViewPersistedState,
   ShowMode,
   type ViewState,
 } from "./view_state";
-
-export type ReadonlyViewCallbacks = {
-  getScript: () => FountainScript;
-  startEditModeHere: (range: Range) => void;
-  requestSave: () => void;
-  replaceText: (range: Range, replacement: string) => void;
-  moveScene: (range: Range, newPos: number) => void;
-  duplicateScene: (range: Range) => void;
-  moveSceneCrossFile: (
-    srcRange: Range,
-    dstPath: string,
-    dstNewPos: number,
-  ) => void;
-  getText: (range: Range) => string;
-};
 
 /** Renders the fountain script as HTML for reading, index cards, and rehearsal mode. */
 export class ReadonlyViewState implements ViewState {
@@ -99,23 +85,6 @@ export class ReadonlyViewState implements ViewState {
 
   render() {
     this.contentEl.empty();
-    const callbacks: Callbacks = {
-      requestSave: () => this.callbacks.requestSave(),
-      reRender: () => this.render(),
-      startEditModeHere: (r: Range) => this.callbacks.startEditModeHere(r),
-      startReadingModeHere: (r: Range) => this.scrollToHere(r),
-      replaceText: (range: Range, replacement: string) =>
-        this.callbacks.replaceText(range, replacement),
-      moveScene: (range: Range, newPos: number) =>
-        this.callbacks.moveScene(range, newPos),
-      duplicateScene: (range: Range) => this.callbacks.duplicateScene(range),
-      moveSceneCrossFile: (
-        srcRange: Range,
-        dstPath: string,
-        dstNewPos: number,
-      ) => this.callbacks.moveSceneCrossFile(srcRange, dstPath, dstNewPos),
-      getText: (range: Range) => this.callbacks.getText(range),
-    };
     const fp = this.callbacks.getScript();
     if ("error" in fp) {
       // The parser should not fail but handle bad inputs as action lines
@@ -129,7 +98,7 @@ export class ReadonlyViewState implements ViewState {
     );
     switch (this.showMode) {
       case ShowMode.IndexCards:
-        renderIndexCards(mainblock, this.path, fp, callbacks);
+        renderIndexCards(mainblock, this.path, fp, this.callbacks);
         break;
 
       case ShowMode.Script:

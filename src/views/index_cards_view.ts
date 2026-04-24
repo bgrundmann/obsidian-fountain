@@ -9,22 +9,7 @@ import type {
 import { dataRange, extractNotes } from "../fountain";
 import { endOfRange, getScenePreview } from "./render_tools";
 import { styledTextToHtml } from "./styled_text";
-
-export type Callbacks = {
-  reRender: () => void;
-  requestSave: () => void;
-  startEditModeHere: (range: Range) => void;
-  startReadingModeHere: (range: Range) => void;
-  replaceText: (range: Range, replacement: string) => void;
-  moveScene: (range: Range, newPos: number) => void;
-  duplicateScene: (range: Range) => void;
-  moveSceneCrossFile: (
-    srcRange: Range,
-    dstPath: string,
-    dstNewPos: number,
-  ) => void;
-  getText: (range: Range) => string;
-};
+import type { ReadonlyViewCallbacks } from "./view_state";
 
 type DragData = {
   path: string;
@@ -46,7 +31,7 @@ function dropHandler(
   dropZone: Element,
   path: string,
   dropZoneRange: Range,
-  callbacks: Callbacks,
+  callbacks: ReadonlyViewCallbacks,
   evt: DragEvent,
 ) {
   const dragData = getDragData(evt);
@@ -111,7 +96,7 @@ function dragstartHandler(path: string, range: Range, evt: DragEvent): void {
 
 function installDragAndDropHandlers(
   path: string,
-  callbacks: Callbacks,
+  callbacks: ReadonlyViewCallbacks,
   indexCard: HTMLElement,
   range: Range,
 ) {
@@ -139,7 +124,7 @@ function editSynopsisHandler(
   path: string,
   range: Range,
   linesOfText: Range[],
-  callbacks: Callbacks,
+  callbacks: ReadonlyViewCallbacks,
 ) {
   const lines = linesOfText.map((r) => callbacks.getText(r));
   const textarea = createEl("textarea", {
@@ -181,7 +166,7 @@ function editSceneHeadingHandler(
   path: string,
   script: FountainScript,
   headingRange: Range,
-  callbacks: Callbacks,
+  callbacks: ReadonlyViewCallbacks,
 ): void {
   const heading = indexCardDiv.querySelector(".scene-heading");
   const headingTextWithNewlines = script.sliceDocument(headingRange);
@@ -220,7 +205,7 @@ function renderSynopsis(
   script: FountainScript,
   synopsis: Synopsis | undefined,
   startPosIfEmpty: number,
-  callbacks: Callbacks,
+  callbacks: ReadonlyViewCallbacks,
   scene?: StructureScene,
 ): void {
   const synopsisRange = synopsis?.range || {
@@ -272,7 +257,7 @@ function renderIndexCard(
   path: string,
   script: FountainScript,
   scene: StructureScene,
-  callbacks: Callbacks,
+  callbacks: ReadonlyViewCallbacks,
 ): void {
   if (scene.scene) {
     const heading = scene.scene;
@@ -375,7 +360,7 @@ function renderSection(
   path: string,
   script: FountainScript,
   section: StructureSection,
-  callbacks: Callbacks,
+  callbacks: ReadonlyViewCallbacks,
 ): void {
   if (section.section) {
     const title = script.sliceDocument(section.section.range);
@@ -448,7 +433,7 @@ export function renderIndexCards(
   div: HTMLElement,
   path: string,
   script: FountainScript,
-  callbacks: Callbacks,
+  callbacks: ReadonlyViewCallbacks,
 ): void {
   const structure = script.structure();
   div.empty();

@@ -6,6 +6,23 @@ export enum ShowMode {
   IndexCards = "index-cards",
 }
 
+export type ReadonlyViewCallbacks = {
+  getScript: () => FountainScript;
+  reRender: () => void;
+  requestSave: () => void;
+  startEditModeHere: (range: Range) => void;
+  startReadingModeHere: (range: Range) => void;
+  replaceText: (range: Range, replacement: string) => void;
+  moveScene: (range: Range, newPos: number) => void;
+  duplicateScene: (range: Range) => void;
+  moveSceneCrossFile: (
+    srcRange: Range,
+    dstPath: string,
+    dstNewPos: number,
+  ) => void;
+  getText: (range: Range) => string;
+};
+
 export type Rehearsal = {
   character: string;
   previousShowHideSettings: ShowHideSettings;
