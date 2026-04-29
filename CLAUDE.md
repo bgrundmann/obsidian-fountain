@@ -67,49 +67,24 @@ All programmatic document mutations go through `FountainView.applyEditsToFile(ed
 Uses `pdf-lib`. Two-phase: generate draw instructions → render to PDF.
 Left margin fixed at 1.5" for binding; other margins computed to maintain consistent characters/line across paper sizes.
 
-## Source Files
+## Source Layout
 
 Note: the `fountain/` directory at repo root is the Claude Code skill
-file (`fountain/SKILL.md`), not source. The Fountain parser/core lives
-in `src/fountain/`.
+(`fountain/SKILL.md`), not source. The Fountain parser/core lives in
+`src/fountain/`.
 
-In the `src` folder:
+In `src/`:
 
-| File | Purpose |
-|------|---------|
-| `main.ts` | Plugin entry, lifecycle, command registration |
-| `commands.ts` | Command implementations + `ifFountainFile`/`ifFountainView` checkCallback helpers |
-| `fuzzy_select_string.ts` | Fuzzy search modal |
-| `removal_commands.ts` | Removal command modals + text-removal helpers |
-| `fountain/index.ts` | Barrel re-export of the fountain core API |
-| `fountain/types.ts` | AST types, `Range`, structure helpers |
-| `fountain/script.ts` | `FountainScript` class |
-| `fountain/utils.ts` | Shared utilities (mergeText, extractNotes, etc.) |
-| `fountain/scene_operations.ts` | Pure `Edit[]`-producing scene-level text operations |
-| `fountain/ast.ts` | Typed factories used by the grammar to build AST nodes |
-| `fountain/parser.peggy` | Peggy grammar |
-| `codemirror/editor.ts` | CodeMirror syntax highlighting |
-| `codemirror/state.ts` | StateField for parsed FountainScript |
-| `codemirror/folding.ts` | Scene folding service |
-| `codemirror/character_completion.ts` | Character name autocompletion |
-| `views/fountain_view.ts` | FountainView, mode switching, `applyEditsToFile` pipeline |
-| `views/view_state.ts` | ViewState interface, shared view types |
-| `views/readonly_view_state.ts` | ReadonlyViewState (reading/index cards) |
-| `views/editor_view_state.ts` | EditorViewState (CodeMirror editor) |
-| `views/reading_view.ts` | Readonly rendering |
-| `views/index_cards_view.ts` | Index card view |
-| `views/sidebar_view.ts` | TOC + snippets sidebar |
-| `views/render_tools.ts` | Shared HTML rendering helpers |
-| `views/styled_text.ts` | DOM rendering of styled inline text (bold/italic/notes/margin marks) |
-| `pdf/generator.ts` | PDF generation entry point and facade |
-| `pdf/types.ts` | PDF shared types, constants, geometry helpers |
-| `pdf/page_state.ts` | Page-state primitives (new page, line advance, page-break guards) |
-| `pdf/text_wrapping.ts` | Styled-segment extraction, word wrapping, dialogue prep |
-| `pdf/instruction_generator.ts` | Element-to-instruction translation + orchestration |
-| `pdf/renderer.ts` | PDF rendering using pdf-lib |
-| `pdf/options_dialog.ts` | PDF export options modal |
+- **`main.ts`** — plugin entry, lifecycle, command registration.
+- **`commands.ts`** — command implementations + `ifFountainFile` / `ifFountainView` checkCallback helpers.
+- **`removal_commands.ts`** — removal-command modals *and* the text-removal helpers they call (both live here, not split).
+- **`fuzzy_select_string.ts`** — fuzzy search modal.
+- **`fountain/`** — parser and AST core. Entry: `index.ts` (barrel). Grammar in `parser.peggy` (autogenerates `parser.js`/`parser.d.ts` via `npm run parser`; don't hand-edit). `scene_operations.ts` holds pure `Edit[]`-producing helpers used by the edit pipeline.
+- **`codemirror/`** — CodeMirror integration: syntax highlighting, parsed-script `StateField`, scene folding, character-name completion.
+- **`views/`** — Obsidian views. Entry: `fountain_view.ts` (owns `applyEditsToFile`). `view_state.ts` defines the shared `ViewState` interface implemented by `readonly_view_state.ts` and `editor_view_state.ts`. `sidebar_view.ts` is the separate TOC/snippets sidebar.
+- **`pdf/`** — PDF export. Entry: `generator.ts` (facade). Two-phase pipeline: `instruction_generator.ts` produces draw instructions, `renderer.ts` renders them with `pdf-lib`.
 
-Unit tests are in the `__tests__` folder. E2E tests are in `test/e2e/` (specs in `test/e2e/specs/`, test vaults in `test/e2e/vaults/`).
+Unit tests live in `__tests__/`. E2E tests live in `test/e2e/` (specs in `specs/`, vaults in `vaults/`).
 
 Styling is in `core_styles.css`. As part of the build process `esbuild.config.mjs` concatenates 
 `fonts.css` and `core_styles.css` into `styles.css`.
