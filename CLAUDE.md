@@ -57,7 +57,7 @@ interface ScriptStructure { sections: StructureSection[]; snippets: Snippet[]; }
 
 ### Edit pipeline
 All programmatic document mutations go through `FountainView.applyEditsToFile(edits: Edit[])`:
-- `Edit` and the `compute*Edits` helpers (move/duplicate/cross-file/scene numbers) live in `fountain/scene_operations.ts` and are pure.
+- `Edit` and the `compute*Edits` helpers (move/duplicate/cross-file/scene numbers) live in `fountain/edits.ts` and are pure.
 - `applyEditsToFile` reparses once, distributes the edits to every view open on the file, and writes to disk.
 - `EditorViewState.receiveEdits` dispatches them as a single CM transaction so cursor/undo survive; `ReadonlyViewState.receiveEdits` re-renders.
 - `FountainView.setViewData` handles only Obsidian-initiated external reloads (no edits available; calls `receiveScript` for a full-doc replace).
@@ -79,7 +79,7 @@ In `src/`:
 - **`commands.ts`** — command implementations + `ifFountainFile` / `ifFountainView` checkCallback helpers.
 - **`removal_commands.ts`** — removal-command modals *and* the text-removal helpers they call (both live here, not split).
 - **`fuzzy_select_string.ts`** — fuzzy search modal.
-- **`fountain/`** — parser and AST core. Entry: `index.ts` (barrel). Grammar in `parser.peggy` (autogenerates `parser.js`/`parser.d.ts` via `npm run parser`; don't hand-edit). `scene_operations.ts` holds pure `Edit[]`-producing helpers used by the edit pipeline.
+- **`fountain/`** — parser and AST core. Entry: `index.ts` (barrel). Grammar in `parser.peggy` (autogenerates `parser.js`/`parser.d.ts` via `npm run parser`; don't hand-edit). `edits.ts` defines the `Edit` primitive and the pure `compute*Edits` helpers used by the edit pipeline.
 - **`codemirror/`** — CodeMirror integration: syntax highlighting, parsed-script `StateField`, scene folding, character-name completion.
 - **`views/`** — Obsidian views. Entry: `fountain_view.ts` (owns `applyEditsToFile`). `view_state.ts` defines the shared `ViewState` interface implemented by `readonly_view_state.ts` and `editor_view_state.ts`. `sidebar_view.ts` is the separate TOC/snippets sidebar.
 - **`pdf/`** — PDF export. Entry: `generator.ts` (facade). Two-phase pipeline: `instruction_generator.ts` produces draw instructions, `renderer.ts` renders them with `pdf-lib`.

@@ -59,4 +59,4 @@ export {
   computeMoveSceneAcrossFilesEdits,
   computeAddSceneNumberEdits,
   computeRemoveSceneNumberEdits,
-} from "./scene_operations";
+} from "./edits";
