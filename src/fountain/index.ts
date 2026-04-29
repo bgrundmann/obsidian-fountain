@@ -60,3 +60,5 @@ export {
   computeAddSceneNumberEdits,
   computeRemoveSceneNumberEdits,
 } from "./edits";
+
+export { removeElementsFromText } from "./removal";

@@ -1,39 +1,8 @@
-import type { FountainElement } from "../src/fountain";
+import {
+  type FountainElement,
+  removeElementsFromText,
+} from "../src/fountain";
 import { parse } from "../src/fountain/parser";
-
-// Utility function to remove elements from document text
-function removeElementsFromText(
-  originalText: string,
-  elementsToRemove: FountainElement[],
-): string {
-  if (elementsToRemove.length === 0) {
-    return originalText;
-  }
-
-  // Sort ranges by start position (lowest first) for forward iteration
-  const sortedRanges = elementsToRemove
-    .map((el) => el.range)
-    .sort((a, b) => a.start - b.start);
-
-  const slices: string[] = [];
-  let currentPos = 0;
-
-  for (const range of sortedRanges) {
-    // Add text before this range (if any)
-    if (currentPos < range.start) {
-      slices.push(originalText.slice(currentPos, range.start));
-    }
-    // Skip the range to remove it, update position
-    currentPos = range.end;
-  }
-
-  // Add any remaining text after the last removed range
-  if (currentPos < originalText.length) {
-    slices.push(originalText.slice(currentPos));
-  }
-
-  return slices.join("");
-}
 
 describe("Removal Utilities", () => {
   describe("removeElementsFromText", () => {

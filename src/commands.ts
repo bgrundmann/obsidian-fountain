@@ -1,5 +1,5 @@
 import { type App, Notice, type TFile } from "obsidian";
-import type { FountainElement } from "./fountain";
+import { type FountainElement, removeElementsFromText } from "./fountain";
 import { parse } from "./fountain/parser";
 import { UnsupportedCharacterError, generatePDF } from "./pdf/generator";
 import { type PDFOptions, PDFOptionsDialog } from "./pdf/options_dialog";
@@ -7,7 +7,6 @@ import {
   RemoveDialogueModal,
   RemoveElementTypesModal,
   RemoveStructureModal,
-  removeElementsFromText,
 } from "./removal_commands";
 import { FountainView } from "./views/fountain_view";
 import { VIEW_TYPE_SIDEBAR } from "./sidebar/sidebar_view";

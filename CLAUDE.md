@@ -77,7 +77,7 @@ In `src/`:
 
 - **`main.ts`** — plugin entry, lifecycle, command registration.
 - **`commands.ts`** — command implementations + `ifFountainFile` / `ifFountainView` checkCallback helpers.
-- **`removal_commands.ts`** — removal-command modals *and* the text-removal helpers they call (both live here, not split).
+- **`removal_commands.ts`** — removal-command modals (UI only). The pure text-removal helper lives in `fountain/removal.ts`.
 - **`fuzzy_select_string.ts`** — fuzzy search modal.
 - **`fountain/`** — parser and AST core. Entry: `index.ts` (barrel). Grammar in `parser.peggy` (autogenerates `parser.js`/`parser.d.ts` via `npm run parser`; don't hand-edit). `edits.ts` defines the `Edit` primitive and the pure `compute*Edits` helpers used by the edit pipeline.
 - **`codemirror/`** — CodeMirror integration: syntax highlighting, parsed-script `StateField`, scene folding, character-name completion.
