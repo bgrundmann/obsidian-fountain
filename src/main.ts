@@ -15,7 +15,10 @@ import {
 import { parse } from "./fountain/parser";
 import { FountainView, VIEW_TYPE_FOUNTAIN } from "./views/fountain_view";
 import { renderContent } from "./views/reading_view";
-import { FountainSideBarView, VIEW_TYPE_SIDEBAR } from "./views/sidebar_view";
+import {
+  FountainSideBarView,
+  VIEW_TYPE_SIDEBAR,
+} from "./sidebar/sidebar_view";
 
 export default class FountainPlugin extends Plugin {
   async onload() {

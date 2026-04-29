@@ -81,7 +81,8 @@ In `src/`:
 - **`fuzzy_select_string.ts`** — fuzzy search modal.
 - **`fountain/`** — parser and AST core. Entry: `index.ts` (barrel). Grammar in `parser.peggy` (autogenerates `parser.js`/`parser.d.ts` via `npm run parser`; don't hand-edit). `edits.ts` defines the `Edit` primitive and the pure `compute*Edits` helpers used by the edit pipeline.
 - **`codemirror/`** — CodeMirror integration: syntax highlighting, parsed-script `StateField`, scene folding, character-name completion.
-- **`views/`** — Obsidian views. Entry: `fountain_view.ts` (owns `applyEditsToFile`). `view_state.ts` defines the shared `ViewState` interface implemented by `readonly_view_state.ts` and `editor_view_state.ts`. `sidebar_view.ts` is the separate TOC/snippets sidebar.
+- **`views/`** — the main Obsidian view for `.fountain` files. Entry: `fountain_view.ts` (owns `applyEditsToFile`). `view_state.ts` defines the shared `ViewState` interface implemented by `readonly_view_state.ts` and `editor_view_state.ts`.
+- **`sidebar/`** — the separate TOC + snippets sidebar (`FountainSideBarView`). Different Obsidian view type from `FountainView`; consumes shared rendering helpers from `views/`.
 - **`pdf/`** — PDF export. Entry: `generator.ts` (facade). Two-phase pipeline: `instruction_generator.ts` produces draw instructions, `renderer.ts` renders them with `pdf-lib`.
 
 Unit tests live in `__tests__/`. E2E tests live in `test/e2e/` (specs in `specs/`, vaults in `vaults/`).

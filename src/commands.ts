@@ -10,7 +10,7 @@ import {
   removeElementsFromText,
 } from "./removal_commands";
 import { FountainView } from "./views/fountain_view";
-import { VIEW_TYPE_SIDEBAR } from "./views/sidebar_view";
+import { VIEW_TYPE_SIDEBAR } from "./sidebar/sidebar_view";
 
 export function hasActiveFountainFile(app: App): boolean {
   const f = app.workspace.getActiveFile();

@@ -8,10 +8,10 @@ import {
   dataRange,
   extractNotes,
 } from "../fountain";
-import { FountainView } from "./fountain_view";
-import { renderElement } from "./reading_view";
-import { getScenePreview } from "./render_tools";
-import { styledTextToHtml } from "./styled_text";
+import { FountainView } from "../views/fountain_view";
+import { renderElement } from "../views/reading_view";
+import { getScenePreview } from "../views/render_tools";
+import { styledTextToHtml } from "../views/styled_text";
 
 export const VIEW_TYPE_SIDEBAR = "fountain-sidebar";
 
