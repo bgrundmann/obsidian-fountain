@@ -56,10 +56,14 @@ interface ScriptStructure { sections: StructureSection[]; snippets: Snippet[]; }
 - Re-parse document after modifications rather than in-place edits
 
 ### Edit pipeline
-All programmatic document mutations go through `FountainView.applyEditsToFile(edits: Edit[])`:
+All programmatic document mutations go through the path-keyed
+`applyEditsToFountainFile(app, path, edits): Promise<void>` in
+`src/edit_pipeline.ts`:
 - `Edit` and the `compute*Edits` helpers (move/duplicate/cross-file/scene numbers) live in `fountain/edits.ts` and are pure.
-- `applyEditsToFile` reparses once, distributes the edits to every view open on the file, and writes to disk.
+- The helper picks source-of-truth based on whether the file is open: any open `FountainView`'s `cachedScript` (so typed-but-unsaved CM state isn't clobbered) or a `vault.read` if no view is open. It reparses once, distributes edits to every view, then awaits `vault.modify`.
 - `EditorViewState.receiveEdits` dispatches them as a single CM transaction so cursor/undo survive; `ReadonlyViewState.receiveEdits` re-renders.
+- `FountainView.applyEditsToFile` is a thin wrapper that delegates to the helper using the view's path — use it when you have a view in hand.
+- The plugin also exposes `FountainPlugin.applyEditsToFountainFile(path, edits)` for callers that don't have a `FountainView` (e.g. e2e tests and the future link-rename handler).
 - `FountainView.setViewData` handles only Obsidian-initiated external reloads (no edits available; calls `receiveScript` for a full-doc replace).
 - User-typed edits flow through CM's update listener → `onUserEdit` → sibling views via `receiveScript`.
 
@@ -77,11 +81,12 @@ In `src/`:
 
 - **`main.ts`** — plugin entry, lifecycle, command registration.
 - **`commands.ts`** — command implementations + `ifFountainFile` / `ifFountainView` checkCallback helpers.
+- **`edit_pipeline.ts`** — path-keyed `applyEditsToFountainFile` (the canonical entry point for programmatic mutations) and `findFountainViewsForPath`.
 - **`removal_commands.ts`** — removal-command modals (UI only). The pure text-removal helper lives in `fountain/removal.ts`.
 - **`fuzzy_select_string.ts`** — fuzzy search modal.
 - **`fountain/`** — parser and AST core. Entry: `index.ts` (barrel). Grammar in `parser.peggy` (autogenerates `parser.js`/`parser.d.ts` via `npm run parser`; don't hand-edit). `edits.ts` defines the `Edit` primitive and the pure `compute*Edits` helpers used by the edit pipeline.
 - **`codemirror/`** — CodeMirror integration: syntax highlighting, parsed-script `StateField`, scene folding, character-name completion.
-- **`views/`** — the main Obsidian view for `.fountain` files. Entry: `fountain_view.ts` (owns `applyEditsToFile`). `view_state.ts` defines the shared `ViewState` interface implemented by `readonly_view_state.ts` and `editor_view_state.ts`.
+- **`views/`** — the main Obsidian view for `.fountain` files. Entry: `fountain_view.ts` (delegates programmatic edits to `edit_pipeline`). `view_state.ts` defines the shared `ViewState` interface implemented by `readonly_view_state.ts` and `editor_view_state.ts`.
 - **`sidebar/`** — the separate TOC + snippets sidebar (`FountainSideBarView`). Different Obsidian view type from `FountainView`; consumes shared rendering helpers from `views/`.
 - **`pdf/`** — PDF export. Entry: `generator.ts` (facade). Two-phase pipeline: `instruction_generator.ts` produces draw instructions, `renderer.ts` renders them with `pdf-lib`.
 

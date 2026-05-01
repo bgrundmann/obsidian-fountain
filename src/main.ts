@@ -12,6 +12,8 @@ import {
   openSidebar,
   openSidebarCommand,
 } from "./commands";
+import { applyEditsToFountainFile } from "./edit_pipeline";
+import type { Edit } from "./fountain";
 import { parse } from "./fountain/parser";
 import { FountainView, VIEW_TYPE_FOUNTAIN } from "./views/fountain_view";
 import { renderContent } from "./views/reading_view";
@@ -38,6 +40,10 @@ export default class FountainPlugin extends Plugin {
   async onunload() {
     // Note that there is no unregisterView or unregisterExtensions methods
     // because obsidian already does this automatically when the plugin is unloaded.
+  }
+
+  applyEditsToFountainFile(path: string, edits: Edit[]): Promise<void> {
+    return applyEditsToFountainFile(this.app, path, edits);
   }
 
   private markdownPostProcessor(

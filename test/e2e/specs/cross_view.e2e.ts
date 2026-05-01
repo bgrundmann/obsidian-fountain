@@ -172,4 +172,139 @@ describe("Programmatic edits", function () {
       expect(textAfterUndo).not.toContain("PROGRAMMATIC_INSERT");
     });
   });
+
+  describe("unsaved typing", function () {
+    // Pins the safety property the rename handler will rely on: a
+    // programmatic edit on a file that has an open editor must compose on
+    // top of the editor's live CM state, not on a (possibly stale) read
+    // from disk. If the helper ever read from disk while typed-but-not-
+    // yet-saved text only existed in CM, that text would be clobbered.
+    it("preserves typed-but-unsaved text when a programmatic edit follows", async function () {
+      await browser.keys(["Meta", "e"]);
+      await browser.$(".cm-editor").waitForExist({ timeout: 5_000 });
+
+      // Dispatch a CM change directly (simulates the user typing) and then,
+      // synchronously in the same Obsidian frame so the debounced save has
+      // no chance to flush, run a programmatic edit elsewhere in the file.
+      await browser.executeObsidian(({ app }) => {
+        const leaf = app.workspace.activeLeaf!;
+        const view = leaf.view as any;
+        const cm = view.state.cmEditor;
+        cm.dispatch({
+          changes: { from: 0, to: 0, insert: "TYPED_BEFORE_SAVE\n" },
+        });
+
+        const script = view.getScript();
+        if ("error" in script) return;
+        for (const element of script.script) {
+          if (element.kind === "section") {
+            const text = script.document.slice(
+              element.range.start,
+              element.range.end,
+            );
+            if (text.toLowerCase().includes("snippets")) {
+              view.replaceText(
+                { start: element.range.end, end: element.range.end },
+                "\n\nPROGRAMMATIC_INSERT\n\n===\n\n",
+              );
+              return;
+            }
+          }
+        }
+      });
+
+      // The open editor's view of the document carries both edits.
+      const cmText = await browser.executeObsidian(({ app }) => {
+        const leaf = app.workspace.activeLeaf!;
+        return (leaf.view as any).getViewData();
+      });
+      expect(cmText).toContain("TYPED_BEFORE_SAVE");
+      expect(cmText).toContain("PROGRAMMATIC_INSERT");
+
+      // And once the modify call settles, disk matches. If the helper had
+      // read from disk for its source of truth, disk would only have
+      // PROGRAMMATIC_INSERT (the typed text would have been overwritten).
+      await browser.waitUntil(
+        async () => {
+          const onDisk = await browser.executeObsidian(async ({ app }) => {
+            const leaf = app.workspace.activeLeaf!;
+            const file = (leaf.view as any).file;
+            return await app.vault.read(file);
+          });
+          return (
+            onDisk.includes("TYPED_BEFORE_SAVE") &&
+            onDisk.includes("PROGRAMMATIC_INSERT")
+          );
+        },
+        { timeout: 5_000, timeoutMsg: "disk did not pick up both edits" },
+      );
+    });
+  });
+
+  describe("closed-file edits", function () {
+    it("edits a fountain file that has no view open", async function () {
+      const initial = await browser.executeObsidian(async ({ app }) => {
+        const f = app.vault.getAbstractFileByPath("dialogue.fountain");
+        return f && "extension" in f
+          ? await app.vault.read(f as any)
+          : null;
+      });
+      expect(initial).not.toBeNull();
+      expect(initial).not.toContain("CLOSED_FILE_INSERT");
+
+      const initialLeafCount = await browser.executeObsidian(({ app }) => {
+        let count = 0;
+        app.workspace.iterateAllLeaves((leaf) => {
+          const v = leaf.view as any;
+          if (
+            v.getViewType?.() === "fountain" &&
+            v.file?.path === "dialogue.fountain"
+          ) {
+            count++;
+          }
+        });
+        return count;
+      });
+      expect(initialLeafCount).toBe(0);
+
+      // Programmatic edit on the closed file via the path-keyed helper.
+      await browser.executeObsidian(async ({ app }) => {
+        const file = app.vault.getAbstractFileByPath(
+          "dialogue.fountain",
+        ) as any;
+        const text = await app.vault.read(file);
+        const insertAt = text.length;
+        // biome-ignore lint/suspicious/noExplicitAny: cross-process plugin handle
+        const plugin: any = (app as any).plugins.getPlugin("fountain");
+        await plugin.applyEditsToFountainFile("dialogue.fountain", [
+          {
+            range: { start: insertAt, end: insertAt },
+            replacement: "\n\nCLOSED_FILE_INSERT\n",
+          },
+        ]);
+      });
+
+      const after = await browser.executeObsidian(async ({ app }) => {
+        const f = app.vault.getAbstractFileByPath("dialogue.fountain") as any;
+        return await app.vault.read(f);
+      });
+      expect(after).toContain("CLOSED_FILE_INSERT");
+
+      // The helper must not have opened a view as a side effect.
+      const finalLeafCount = await browser.executeObsidian(({ app }) => {
+        let count = 0;
+        app.workspace.iterateAllLeaves((leaf) => {
+          const v = leaf.view as any;
+          if (
+            v.getViewType?.() === "fountain" &&
+            v.file?.path === "dialogue.fountain"
+          ) {
+            count++;
+          }
+        });
+        return count;
+      });
+      expect(finalLeafCount).toBe(0);
+    });
+  });
 });

@@ -8,11 +8,14 @@ import {
   setIcon,
 } from "obsidian";
 import {
+  applyEditsToFountainFile,
+  findFountainViewsForPath,
+} from "../edit_pipeline";
+import {
   type Edit,
   type FountainScript,
   type Range,
   type ShowHideSettings,
-  applyEdits,
   collapseRangeToStart,
   computeAddSceneNumberEdits,
   computeDuplicateSceneEdits,
@@ -295,43 +298,30 @@ export class FountainView extends TextFileView {
     this.cachedScript = newScript;
     const path = this.file?.path;
     if (!path) return;
-    for (const view of this.findViewsForPath(path)) {
+    for (const view of findFountainViewsForPath(this.app, path)) {
       if (view === this) continue;
       view.cachedScript = newScript;
       view.state.receiveScript(newScript);
     }
   }
 
-  private findViewsForPath(path: string | undefined): FountainView[] {
-    if (!path) return [];
-    const views: FountainView[] = [];
-    this.app.workspace.iterateAllLeaves((leaf) => {
-      if (leaf.view instanceof FountainView && leaf.view.file?.path === path) {
-        views.push(leaf.view);
-      }
-    });
-    return views;
+  /** Called by the path-keyed pipeline to apply a programmatic edit to
+   *  this view: update the cached script and dispatch the edits to the
+   *  underlying state (editor: CM transaction; readonly: re-render). */
+  receiveProgrammaticEdits(edits: Edit[], newScript: FountainScript): void {
+    this.cachedScript = newScript;
+    this.state.receiveEdits(edits, newScript);
   }
 
   /**
-   * Single programmatic-edit pipeline. Computes the new text from
-   * `edits`, reparses once, distributes the edits to every view on this
-   * file (editor views dispatch as a CM transaction so cursor/undo
-   * survive; readonly views re-render), and writes to disk.
+   * Thin wrapper around the path-keyed pipeline. Use this when you have
+   * a `FountainView` in hand; for paths without an open view, call
+   * `applyEditsToFountainFile` directly.
    */
-  applyEditsToFile(edits: Edit[]): void {
-    if (edits.length === 0) return;
+  applyEditsToFile(edits: Edit[]): Promise<void> {
     const path = this.file?.path;
     if (!path) throw new Error("No file path available");
-    const newText = applyEdits(this.cachedScript.document, edits);
-    const newScript = parse(newText, {});
-    for (const view of this.findViewsForPath(path)) {
-      view.cachedScript = newScript;
-      view.state.receiveEdits(edits, newScript);
-    }
-    if (this.file) {
-      this.app.vault.modify(this.file, newText);
-    }
+    return applyEditsToFountainFile(this.app, path, edits);
   }
 
   replaceText(range: Range, replacement: string): void {
@@ -352,7 +342,7 @@ export class FountainView extends TextFileView {
     dstNewPos: number,
   ): void {
     if (!this.file?.path) throw new Error("No source file path available");
-    const dstView = this.findViewsForPath(dstPath)[0];
+    const dstView = findFountainViewsForPath(this.app, dstPath)[0];
     if (!dstView) return;
     const { srcEdits, dstEdits } = computeMoveSceneAcrossFilesEdits(
       this.cachedScript,
@@ -438,13 +428,13 @@ export class FountainView extends TextFileView {
     if (this.cachedScript.document === data) {
       // Still keep paths in sync on the first load, where the state was
       // constructed with an empty path.
-      for (const view of this.findViewsForPath(path)) {
+      for (const view of findFountainViewsForPath(this.app, path)) {
         view.state.setPath(path);
       }
       return;
     }
     const newScript = parse(data, {});
-    for (const view of this.findViewsForPath(path)) {
+    for (const view of findFountainViewsForPath(this.app, path)) {
       view.cachedScript = newScript;
       view.state.setPath(path);
       view.state.receiveScript(newScript);
