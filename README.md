@@ -1,16 +1,37 @@
-# Fountain support for obsidian.
+# Fountain — write screenplays in obsidian
 
-## Features
+A plugin for writing screenplays in [Fountain format](https://fountain.io) inside Obsidian. Live formatting as you type, an editable index-card view, an outline-style sidebar, PDF export, rehearsal mode, snippets — basically the bits I kept wishing for whenever I tried to use Obsidian for actual scripts.
 
-- Automatic screenplay formatting. As long as you follow the fountain syntax, the editor will in real-time format what you type.
-- close to print readonly view / preview (with ability to hide notes, synopsis, boneyard)
-- PDF export with configurable options (paper size, scene heading formatting, optionally include synopsis & notes)
+![reading view](demo/hero.jpg)
+
+## Highlights
+
+- **Live screenplay formatting** as you type — follow Fountain syntax, the editor handles the formatting.
+- **Near-print readonly view** with optional hiding of notes, synopsis, and boneyard.
+- **PDF export** with configurable paper size, scene heading style, and synopsis/notes inclusion.
+- **Editable index cards** with drag-and-drop scene reordering (across files, even).
+- **Outline-style sidebar** that doubles as a planning tree — sections, synopses, and per-scene todos, all click-to-jump.
+- **Rehearsal mode** that blacks out a character's dialogue, so you can actually rehearse from the script.
+
+## Quick overview
+
+Type, watch it format:
+
+![live formatting](demo/live.gif)
+
+Toggle between the editor and a near-print readonly view:
+
+![toggle to readonly view](demo/toggle.gif)
+
+Rehearsal mode blacks out a character's dialogue:
+
+![rehearsal mode](demo/rehearsal.gif)
+
+## Everything else
+
 - **scene numbers** (`#1#`, `#1A#`, `#I-1-A#`, etc.) displayed in bold on left and right margins, with commands to automatically add or remove scene numbers
 - **content filtering/removal commands** to create filtered script versions (remove character dialogue, scenes/sections, or element types)
 - mark notes as todo `[[todo: This is a todo]]`
-- editable index card view to plan your script with drag & drop scene reordering and todo rendering
-- Rehearsal mode (blackout of a characters dialogue)
-- table of contents in right hand pane (with todos and synopsis included)
 - snippets system for reusable content blocks (stored within the document)
 - margin marks for script annotations (`[[@marker]]` syntax) that appear in the margin during reading view
 - **links to other vault files** (`[[>target]]` or `[[>target|display text]]`) — clickable in reading view, autocomplete in editor, automatically rewritten when the target is renamed
@@ -56,17 +77,26 @@ On the todo list with low priority:
 
 - support for dual dialogue
 
-## Screenshots
+## Using the Table of Contents
 
-![reading view](https://github.com/user-attachments/assets/56ddc475-4417-4b7b-b916-669cd3e29dce)
+The TOC sidebar is where the planning side of the plugin lives. Open it on the right and you get a live outline of your script — sections, scenes, synopses, and todos in one tree.
 
-![editing](https://github.com/user-attachments/assets/eae1ec17-5fd6-458e-a936-5182c8e4f0da)
+### What it shows
 
-![index cards](https://github.com/user-attachments/assets/0f0a7c3b-f7a6-4ad7-a809-75da6991d103)
+- **Sections** (`#`, `##`, …) as a hierarchy, with their scenes nested inside.
+- **Scene headings** under each section.
+- **Synopsis lines** (the `= ...` Fountain syntax) shown as your outline.
+- **Auto-previews** for scenes without a synopsis — the first sentence or two of the scene, so the outline stays useful before you've written synopses.
+- **Todos** (`[[todo: ...]]`) listed under their containing scene.
 
-## Quick overview over most features
+Click any of them to jump to that location in the script.
 
-https://github.com/user-attachments/assets/310fd6db-1b51-4cd4-9006-8758addc3807
+### Toggles
+
+At the top of the sidebar:
+
+- **todos?** — show or hide per-scene todos. On by default.
+- **preview?** — show or hide synopsis lines and auto-previews. Off by default, so the outline starts as a plain scene list — turn it on when you want detail.
 
 ## Using Margin Marks
 

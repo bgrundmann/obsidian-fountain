@@ -3,7 +3,7 @@
 	"name": "Fountain",
 	"version": "0.27.0",
 	"minAppVersion": "0.15.0",
-	"description": "Write and view screenplays in Fountain format with index cards and lots of other features.",
+	"description": "Write screenplays in Fountain format with live screenwriting formatting, index cards, PDF export, rehearsal mode, scene numbers, snippets, and margin marks.",
 	"author": "Benedikt Grundmann",
 	"authorUrl": "https://github.com/bgrundmann",
 	"isDesktopOnly": false

@@ -27,3 +27,4 @@ data.json
 test-vault/
 .aider*
 .obsidian-cache/
+demo/.obsidian/
