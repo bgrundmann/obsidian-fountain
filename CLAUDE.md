@@ -8,6 +8,7 @@
 - **Snippets**: Store in `# Snippets` section, Mod+Shift+X/C to move/copy selection, drag into script/sidebar
 - **Editor**: Scene folding (Ctrl+Shift+[ ]), character name completion
 - **Margin Marks**: `[[@marker]]` syntax renders in margin
+- **Links**: `[[>target]]` / `[[>target|display]]` link to other vault files; auto-rewritten on rename. See `design/links.md` for rationale and deferred features.
 - **Boneyard**: Content after `# boneyard` hidden when enabled
 - **Removal Commands**: Filter by character, scenes, or element types (creates copy by default)
 
@@ -104,6 +105,7 @@ In `src/`:
 - **`main.ts`** — plugin entry, lifecycle, command registration.
 - **`commands.ts`** — command implementations + `ifFountainFile` / `ifFountainView` checkCallback helpers.
 - **`edit_pipeline.ts`** — path-keyed `applyEditsToFountainFile` (the canonical entry point for programmatic mutations) and `findFountainViewsForPath`.
+- **`links_index.ts`** — `LinkIndex` for `[[>...]]` cross-file links: `targetPath → Set<sourceFile>` lookup, vault listeners, and rename rewriting through `applyEditsToFountainFile`.
 - **`removal_commands.ts`** — removal-command modals (UI only). The pure text-removal helper lives in `fountain/removal.ts`.
 - **`fuzzy_select_string.ts`** — fuzzy search modal.
 - **`fountain/`** — parser and AST core. Entry: `index.ts` (barrel). Grammar in `parser.peggy` (autogenerates `parser.js`/`parser.d.ts` via `npm run parser`; don't hand-edit). `edits.ts` defines the `Edit` primitive and the pure `compute*Edits` helpers used by the edit pipeline.
