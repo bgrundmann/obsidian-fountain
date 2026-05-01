@@ -51,7 +51,7 @@ fi
 # --- Ensure everything is pushed ---
 
 echo "Pushing to origin..."
-git push
+git push --follow-tags
 
 # --- Build ---
 
