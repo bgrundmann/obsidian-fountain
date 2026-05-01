@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.28.0] - Styled Synopses
+
+- **Synopsis content is now full-featured**: Synopsis lines (`= ...`) parse the same inline syntax as action and dialogue, so you can use `**bold**`, `*italics*`, `_underline_`, boneyard, todo/note kinds, margin marks, and `[[>links]]` inside a synopsis. Synopses render with the styling in reading view, the TOC sidebar, the index cards, and the editor; PDF export keeps the existing italic+gray base style and layers `**bold**` on top as bold-italic-gray.
+- **Links in synopses are real links**: `[[>...]]` inside a synopsis is clickable in reading view and tracked by the rename index, so renaming a target file rewrites references in synopses just like references in action/dialogue.
+- **TOC sidebar styling fix**: Bold/italic/underline and the plugin's link styling were scoped to `.screenplay` and didn't apply under `.screenplay-toc`. Synopsis content in the TOC sidebar now picks up the same styling as the reading view.
+
 ## [0.27.1] - Index Card Drag/Drop Fixes
 
 - **Same-file scene moves**: Dragging a scene to a new position within the same file no longer trips Obsidian's "modified externally" detection and no longer lands in the wrong position on forward moves. The previous code issued the source-delete and destination-insert as two separate `vault.modify` writes against an inconsistent base text; both edits now flow through a single batched edit.
