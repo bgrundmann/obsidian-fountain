@@ -6,6 +6,10 @@ import {
 } from "@codemirror/autocomplete";
 import type { Extension } from "@codemirror/state";
 import type { FountainScript } from "../fountain";
+import {
+  type LinkCompletionCandidate,
+  createLinkCompletionSource,
+} from "./link_completion";
 
 /**
  * Pattern to match at least two characters, all uppercase letters or numbers,
@@ -77,14 +81,22 @@ function filterCharacters(characters: string[], searchTerm: string): string[] {
 }
 
 /**
- * Creates the character completion extension for integration with CodeMirror 6
+ * Creates the combined autocompletion extension: character names and (when
+ * `getLinkCandidates` is provided) `[[>...]]` link targets.
  */
 export function createCharacterCompletion(
   getScript: () => FountainScript,
+  getLinkCandidates?: () => LinkCompletionCandidate[],
 ): Extension {
+  const sources: CompletionSource[] = [
+    createCharacterCompletionSource(getScript),
+  ];
+  if (getLinkCandidates) {
+    sources.push(createLinkCompletionSource(getLinkCandidates));
+  }
   return autocompletion({
     icons: false,
     activateOnTyping: true,
-    override: [createCharacterCompletionSource(getScript)],
+    override: sources,
   });
 }

@@ -16,6 +16,7 @@ import {
 import { createCharacterCompletion } from "../codemirror/character_completion";
 import { createFountainEditorPlugin } from "../codemirror/editor";
 import { createFountainFoldService } from "../codemirror/folding";
+import type { LinkCompletionCandidate } from "../codemirror/link_completion";
 import { fountainScriptField } from "../codemirror/state";
 import type { Edit, FountainScript, Range } from "../fountain";
 import type { ViewState } from "./view_state";
@@ -23,6 +24,8 @@ import type { ViewState } from "./view_state";
 export type EditorCallbacks = {
   onScriptChanged: (script: FountainScript) => void;
   requestSave: () => void;
+  /** Optional source of link completion candidates triggered on `[[>`. */
+  getLinkCandidates?: () => LinkCompletionCandidate[];
 };
 
 /// Returns the first scrollable element starting at the current element up to the DOM tree.
@@ -91,6 +94,7 @@ export class EditorViewState implements ViewState {
         createFountainEditorPlugin(),
         createCharacterCompletion(
           () => this.cmEditor.state.field(fountainScriptField),
+          callbacks.getLinkCandidates,
         ),
         EditorView.updateListener.of((update: ViewUpdate) => {
           if (update.docChanged && !this.syncing) {

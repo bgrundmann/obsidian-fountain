@@ -84,14 +84,36 @@ we do the equivalent ourselves. All necessary APIs are public.
 ### Index
 
 In-memory `targetPath → Set<fountainFile>` — a coarse filter answering
-"which fountain files might reference this target?" The parser provides
-precise ranges on demand, so the index does not store ranges.
+"which fountain files might reference this target?"
 
-- Populated on plugin load by scanning all `.fountain` files (parse,
-  walk for `>` notes, resolve each target via
-  `app.metadataCache.getFirstLinkpathDest`).
-- Updated on `vault.on('modify' | 'create' | 'delete')` for the changed
-  file by re-parsing just that file.
+The index never caches derived data (no ranges, no literals, no per-
+occurrence resolutions). The parser is the canonical source for
+everything precise; the index is purely a fast lookup keyed by current
+resolution. This avoids the staleness problems that come with caching
+data the editor mutates between save events.
+
+Only currently-resolved references are indexed. Unresolved literal
+targets are not tracked: render-time resolution via
+`getFirstLinkpathDest` lights them up automatically when their target
+file appears, and rename rewriting wouldn't touch them anyway.
+
+Refresh logic (one rule: re-parse the affected files and rebuild the
+relevant index entries):
+
+- **Plugin load**: scan all `.fountain` files (parse, walk for `>`
+  notes, resolve each target via `getFirstLinkpathDest`).
+- **`vault.on('modify')`**: re-parse just the changed file, refresh its
+  entries.
+- **`vault.on('create' | 'delete')`**: re-parse every fountain file and
+  rebuild the index. A new or removed file can shift the
+  shortest-unique-path resolution of basename-style literals in *other*
+  files, so we can't refresh only the changed file. For the worst
+  observed vault (~100 fountain files, ~1ms parse each), this is ~100ms
+  per event. Bulk events (e.g. a git pull adding many files) are
+  debounced with a trailing-edge timer (~250ms) into a single rebuild,
+  and the rebuild runs off the event loop so it never blocks the UI.
+- **`vault.on('rename')`**: handled separately below — see *On rename
+  of a link target* and *On rename of a `.fountain` file*.
 
 ### On rename of a link target
 
@@ -127,10 +149,6 @@ links — Obsidian core handles those. We only need to:
 
 - **Folder renames**: Obsidian fires per-file rename events for every
   contained file, so the per-file logic handles them transparently.
-- **Unresolved targets**: link text that doesn't currently resolve
-  should still be tracked (keyed by literal target string) so that
-  creating a file with that name later lights it up — but rewriting on
-  rename only applies to *resolved* links.
 - **Conflicts with the user editing**: rewrites must go through
   `applyEditsToFountainFile`, never direct `vault.modify`, otherwise
   an open editor's typed-but-unsaved state would be clobbered.

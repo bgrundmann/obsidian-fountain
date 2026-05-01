@@ -12,6 +12,8 @@ import {
   type Note,
   type TextElementWithNotesAndBoneyard,
   extractMarginMarker,
+  isLinkNote,
+  parseLinkContent,
 } from "../fountain";
 import type { PDFOptions } from "./options_dialog";
 import type {
@@ -189,6 +191,19 @@ export function extractStyledSegments(
         break;
       }
       case "note": {
+        // Links render as plain inline text regardless of hideNotes, since
+        // they are content rather than authorial notes.
+        if (isLinkNote(element as Note)) {
+          const { target, displayText } = parseLinkContent(
+            document.substring(element.textRange.start, element.textRange.end),
+          );
+          const label = displayText !== null ? displayText : target;
+          if (label.length > 0) {
+            segments.push({ text: label });
+          }
+          break;
+        }
+
         // Margin marks are handled independently of hideNotes.
         const markerWord = extractMarginMarker(element as Note);
         if (markerWord !== null) {

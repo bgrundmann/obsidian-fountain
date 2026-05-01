@@ -62,3 +62,12 @@ export {
 } from "./edits";
 
 export { removeElementsFromText } from "./removal";
+
+export {
+  LINK_NOTE_KIND,
+  type ParsedLink,
+  isLinkNote,
+  parseLinkContent,
+  extractLinks,
+  targetRefersTo,
+} from "./links";

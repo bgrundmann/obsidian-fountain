@@ -25,6 +25,8 @@ export type ReadonlyViewCallbacks = {
     dstNewPos: number,
   ) => void;
   getText: (range: Range) => string;
+  /** Open a `[[>target]]` link target. `event` carries Mod/Shift modifiers. */
+  openLink: (target: string, event: MouseEvent) => void;
 };
 
 export type Rehearsal = {

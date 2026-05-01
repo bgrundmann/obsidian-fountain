@@ -114,7 +114,32 @@ export class FountainView extends TextFileView {
       duplicateScene: (r) => this.duplicateScene(r),
       moveSceneCrossFile: (r, p, n) => this.moveSceneCrossFile(r, p, n),
       getText: (r) => this.getText(r),
+      openLink: (target, event) => this.openLink(target, event),
     };
+  }
+
+  /** Navigate to a `[[>target]]` link using Obsidian's standard link resolution. */
+  private openLink(target: string, event: MouseEvent): void {
+    const sourcePath = this.file?.path ?? "";
+    const inNewLeaf = event.metaKey || event.ctrlKey;
+    const dest = this.app.metadataCache.getFirstLinkpathDest(
+      target,
+      sourcePath,
+    );
+    if (!dest) {
+      // Unresolved: defer to Obsidian, which will offer to create the file.
+      this.app.workspace.openLinkText(target, sourcePath, inNewLeaf);
+      return;
+    }
+    if (inNewLeaf) {
+      this.app.workspace.getLeaf("tab").openFile(dest);
+    } else {
+      // Open the file in *this view's* leaf so the source file is the
+      // entry that lands in the back-history. `openLinkText` may pick a
+      // different leaf when the target is already open elsewhere or when
+      // the active leaf isn't the leaf the user clicked from.
+      this.leaf.openFile(dest);
+    }
   }
 
   private createReadonlyState(
@@ -133,7 +158,19 @@ export class FountainView extends TextFileView {
     return {
       onScriptChanged: (s) => this.onUserEdit(s),
       requestSave: () => this.requestSave(),
+      getLinkCandidates: () => this.getLinkCandidates(),
     };
+  }
+
+  private getLinkCandidates() {
+    const sourcePath = this.file?.path ?? "";
+    const candidates: { linktext: string; label: string }[] = [];
+    for (const file of this.app.vault.getFiles()) {
+      if (file.path === sourcePath) continue;
+      const linktext = this.app.metadataCache.fileToLinktext(file, sourcePath);
+      candidates.push({ linktext, label: file.path });
+    }
+    return candidates;
   }
 
   private showViewMenu(evt: MouseEvent) {
@@ -457,7 +494,12 @@ export class FountainView extends TextFileView {
   /// setState is called when the workspace.json deserialisation ran into
   /// a view of type fountain, it should restore the workspace.
   async setState(f: Record<string, unknown>, result: ViewStateResult) {
-    super.setState(f, result);
+    await super.setState(f, result);
+    // Mark this state change as a navigation event so the leaf records
+    // it in its back/forward stack — without this, opening a different
+    // fountain file in the same leaf may not be pushed to history, and
+    // pressing back from a link target ends up skipping the source file.
+    result.history = true;
     if ("fountain" in f) {
       // TODO: Should probably run proper deserialise code here
       // and deal with invalid state.

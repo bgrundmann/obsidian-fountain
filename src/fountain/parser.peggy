@@ -129,6 +129,7 @@ NoteText
 NoteKind
  = "+"   { return "+"; }
  / "-"   { return "-"; }
+ / ">"   { return ">"; }
  / "@" marker:MarkerWord { return "@" + marker; }
  / kind:NoteKindName ":" " "* { return kind }
 

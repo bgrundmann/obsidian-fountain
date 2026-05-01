@@ -15,6 +15,7 @@ import {
 import { applyEditsToFountainFile } from "./edit_pipeline";
 import type { Edit } from "./fountain";
 import { parse } from "./fountain/parser";
+import { LinkIndex } from "./links_index";
 import { FountainView, VIEW_TYPE_FOUNTAIN } from "./views/fountain_view";
 import { renderContent } from "./views/reading_view";
 import {
@@ -23,6 +24,8 @@ import {
 } from "./sidebar/sidebar_view";
 
 export default class FountainPlugin extends Plugin {
+  private linkIndex?: LinkIndex;
+
   async onload() {
     this.registerView(VIEW_TYPE_FOUNTAIN, (leaf) => new FountainView(leaf));
     this.registerExtensions(["fountain"], VIEW_TYPE_FOUNTAIN);
@@ -31,8 +34,10 @@ export default class FountainPlugin extends Plugin {
       (leaf) => new FountainSideBarView(leaf),
     );
     this.registerCommands();
+    this.linkIndex = new LinkIndex(this.app);
     this.app.workspace.onLayoutReady(() => {
       openSidebar(this.app);
+      this.linkIndex?.initialize();
     });
     this.registerMarkdownPostProcessor(this.markdownPostProcessor);
   }
@@ -40,6 +45,8 @@ export default class FountainPlugin extends Plugin {
   async onunload() {
     // Note that there is no unregisterView or unregisterExtensions methods
     // because obsidian already does this automatically when the plugin is unloaded.
+    this.linkIndex?.dispose();
+    this.linkIndex = undefined;
   }
 
   applyEditsToFountainFile(path: string, edits: Edit[]): Promise<void> {

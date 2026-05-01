@@ -101,6 +101,19 @@ export class ReadonlyViewState implements ViewState {
     if (this.blackout) {
       this.installToggleBlackoutHandlers();
     }
+    this.installLinkHandlers();
+  }
+
+  private installLinkHandlers() {
+    const links = this.contentEl.querySelectorAll(".fountain-link");
+    for (const link of links) {
+      link.addEventListener("click", (evt: Event) => {
+        const me = evt as MouseEvent;
+        me.preventDefault();
+        const target = (link as HTMLElement).getAttribute("data-link-target");
+        if (target) this.callbacks.openLink(target, me);
+      });
+    }
   }
 
   scrollToHere(r: Range) {

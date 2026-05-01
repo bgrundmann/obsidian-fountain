@@ -14,7 +14,9 @@ import {
   type TextElementWithNotesAndBoneyard,
   dataRange,
   extractMarginMarker,
+  isLinkNote,
   maybeEscapeLeadingSpaces,
+  parseLinkContent,
 } from "../fountain";
 
 /**
@@ -72,6 +74,23 @@ function renderTextElement(
       return true;
 
     case "note": {
+      if (isLinkNote(el)) {
+        const { target, displayText } = parseLinkContent(
+          script.sliceDocument(el.textRange),
+        );
+        const label = displayText !== null ? displayText : target;
+        parent.createEl(
+          "a",
+          {
+            cls: "fountain-link",
+            attr: { ...dataRange(el.range), "data-link-target": target },
+            href: "#",
+            text: label,
+          },
+        );
+        return true;
+      }
+
       if (settings.hideNotes) return false;
 
       const markerWord = extractMarginMarker(el);

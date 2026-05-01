@@ -32,6 +32,7 @@ class FountainEditorPlugin implements PluginValue {
   private noteTodo: Decoration;
   private note: Decoration;
   private noteMargin: Decoration;
+  private noteLink: Decoration;
   private centered: Decoration;
 
   constructor(view: EditorView) {
@@ -44,6 +45,7 @@ class FountainEditorPlugin implements PluginValue {
     this.noteTodo = Decoration.mark({ class: "note-todo" });
     this.note = Decoration.mark({ class: "note" });
     this.noteMargin = Decoration.mark({ class: "note-margin-editor" });
+    this.noteLink = Decoration.mark({ class: "fountain-link-editor" });
     this.centered = Decoration.mark({ class: "centered" });
     this.decorations = this.buildDecorations(view);
   }
@@ -100,6 +102,8 @@ class FountainEditorPlugin implements PluginValue {
               noteDeco = this.noteSymbolPlus;
             } else if (tel.noteKind === "-") {
               noteDeco = this.noteSymbolMinus;
+            } else if (tel.noteKind === ">") {
+              noteDeco = this.noteLink;
             } else if (tel.noteKind === "todo") {
               noteDeco = this.noteTodo;
             } else if (tel.noteKind.startsWith("@")) {

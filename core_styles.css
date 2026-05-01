@@ -423,6 +423,22 @@
 	background-color: rgba(var(--background-modifier-info-rgb), 0.3);
 }
 
+.screenplay .fountain-link {
+	color: var(--text-accent);
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.screenplay .fountain-link:hover {
+	color: var(--text-accent-hover);
+}
+
+/* Link styling in editor view */
+.screenplay .cm-line .fountain-link-editor {
+	color: var(--text-accent);
+	text-decoration: underline;
+}
+
 /* Margin note styling in editor view */
 .screenplay .cm-line .note-margin-editor {
 	color: var(--text-accent);
