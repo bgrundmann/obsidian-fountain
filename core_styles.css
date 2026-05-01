@@ -365,15 +365,15 @@
 
 /******** text decoration */
 
-.screenplay .bold {
+:is(.screenplay, .screenplay-toc) .bold {
 	font-weight: bold;
 }
 
-.screenplay .italics {
+:is(.screenplay, .screenplay-toc) .italics {
 	font-style: italic;
 }
 
-.screenplay .underline {
+:is(.screenplay, .screenplay-toc) .underline {
 	text-decoration: underline;
 }
 
@@ -423,13 +423,13 @@
 	background-color: rgba(var(--background-modifier-info-rgb), 0.3);
 }
 
-.screenplay .fountain-link {
+:is(.screenplay, .screenplay-toc) .fountain-link {
 	color: var(--text-accent);
 	text-decoration: underline;
 	cursor: pointer;
 }
 
-.screenplay .fountain-link:hover {
+:is(.screenplay, .screenplay-toc) .fountain-link:hover {
 	color: var(--text-accent-hover);
 }
 
