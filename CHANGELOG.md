@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.27.0] - Links!
 
 - **Links between fountain files** (`[[>target]]`): New note kind for clickable inter-file links. Use `[[>filename]]` or `[[>filename|display text]]` to link to other `.fountain` scripts, `.md` notes, or any vault file. Targets resolve via Obsidian's standard wiki-link rules (basename or path, with or without extension).
   - **Reading view**: Links render as styled, clickable text. Mod/Ctrl-click opens in a new tab.

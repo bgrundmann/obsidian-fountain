@@ -107,7 +107,7 @@ JANE
 (to herself)
 This changes everything.
 
-See [[>characters/jane.md]] for backstory.
+= See [[>characters/jane.md]] for backstory.
 ```
 
 ### Syntax
