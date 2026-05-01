@@ -28,6 +28,28 @@ npm run test     # Unit tests (Jest)
 npm run test:e2e # E2E tests (WebdriverIO, launches Obsidian)
 ```
 
+## Releasing
+
+`./release.sh` is the one-shot release tool. It is driven entirely by
+`CHANGELOG.md` — there is no separate version flag.
+
+1. Add a `## [x.y.z] - Title` entry at the top of `CHANGELOG.md`. The
+   bullets under it become the GitHub release body verbatim.
+2. Commit the code + changelog (and anything else you want shipped).
+3. Run `./release.sh`. It parses the topmost changelog header to learn
+   the version, prints what it's about to do, and waits for `y` before
+   doing anything destructive.
+
+Under the hood it then runs `npm version <ver>` (which fires
+`version-bump.mjs` to sync `manifest.json` + `versions.json` and creates
+a tagged commit), `git push --follow-tags`, `npm run build`, and
+`gh release create <ver> ... main.js styles.css manifest.json` so the
+plugin assets are attached to the release.
+
+The script aborts if the release already exists on GitHub. Don't bump
+the version manually — let `npm version` do it so the tag, the commit,
+and the bumped manifest stay in lockstep.
+
 ## Architecture
 
 ### Views
