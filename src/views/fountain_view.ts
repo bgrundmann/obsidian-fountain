@@ -110,9 +110,8 @@ export class FountainView extends TextFileView {
       startReadingModeHere: (r) => this.state.scrollToHere(r),
       requestSave: () => this.requestSave(),
       replaceText: (r, s) => this.replaceText(r, s),
-      moveScene: (r, p) => this.moveScene(r, p),
       duplicateScene: (r) => this.duplicateScene(r),
-      moveSceneCrossFile: (r, p, n) => this.moveSceneCrossFile(r, p, n),
+      moveSceneAcross: (args) => this.moveSceneAcross(args),
       getText: (r) => this.getText(r),
       openLink: (target, event) => this.openLink(target, event),
     };
@@ -365,29 +364,42 @@ export class FountainView extends TextFileView {
     this.applyEditsToFile([{ range, replacement }]);
   }
 
-  moveScene(range: Range, newPos: number): void {
-    this.applyEditsToFile(computeMoveSceneEdits(this.cachedScript, range, newPos));
-  }
-
   duplicateScene(range: Range): void {
     this.applyEditsToFile(computeDuplicateSceneEdits(this.cachedScript, range));
   }
 
-  moveSceneCrossFile(
-    srcRange: Range,
-    dstPath: string,
-    dstNewPos: number,
-  ): void {
-    if (!this.file?.path) throw new Error("No source file path available");
+  /**
+   * Move a scene from one file to another. When src and dst are the same
+   * file the two edits are sent through a single `applyEditsToFile` call
+   * so they share one consistent base text and one `vault.modify` write —
+   * issuing them as separate writes raced and tripped Obsidian's
+   * "modified externally" detection. Cross-file moves go through each
+   * file's path-keyed pipeline independently.
+   */
+  moveSceneAcross(args: {
+    srcPath: string;
+    srcRange: Range;
+    dstPath: string;
+    dstPos: number;
+  }): void {
+    const { srcPath, srcRange, dstPath, dstPos } = args;
+    const srcView = findFountainViewsForPath(this.app, srcPath)[0];
+    if (!srcView) return;
+    if (srcPath === dstPath) {
+      srcView.applyEditsToFile(
+        computeMoveSceneEdits(srcView.getScript(), srcRange, dstPos),
+      );
+      return;
+    }
     const dstView = findFountainViewsForPath(this.app, dstPath)[0];
     if (!dstView) return;
     const { srcEdits, dstEdits } = computeMoveSceneAcrossFilesEdits(
-      this.cachedScript,
+      srcView.getScript(),
       srcRange,
-      dstView.cachedScript,
-      dstNewPos,
+      dstView.getScript(),
+      dstPos,
     );
-    this.applyEditsToFile(srcEdits);
+    srcView.applyEditsToFile(srcEdits);
     dstView.applyEditsToFile(dstEdits);
   }
 

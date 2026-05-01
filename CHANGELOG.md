@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.27.1] - Index Card Drag/Drop Fixes
+
+- **Same-file scene moves**: Dragging a scene to a new position within the same file no longer trips Obsidian's "modified externally" detection and no longer lands in the wrong position on forward moves. The previous code issued the source-delete and destination-insert as two separate `vault.modify` writes against an inconsistent base text; both edits now flow through a single batched edit.
+- **Cross-file scene moves**: Dragging a card from one fountain file's index card view onto another file's index cards now correctly moves the scene. Previously the drop handler ignored the source path captured at drag-start and treated the destination view as the source, so the move corrupted the destination file rather than transferring the scene.
+- **Internal**: Replaced `moveSceneCrossFile` with `moveSceneAcross({srcPath, srcRange, dstPath, dstPos})`. Added e2e tests that drive real DragEvents through the index-cards DOM listeners.
+
 ## [0.27.0] - Links!
 
 - **Links between fountain files** (`[[>target]]`): New note kind for clickable inter-file links. Use `[[>filename]]` or `[[>filename|display text]]` to link to other `.fountain` scripts, `.md` notes, or any vault file. Targets resolve via Obsidian's standard wiki-link rules (basename or path, with or without extension).

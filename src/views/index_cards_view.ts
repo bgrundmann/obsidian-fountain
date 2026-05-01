@@ -36,17 +36,21 @@ function dropHandler(
 ) {
   const dragData = getDragData(evt);
   if (!dragData) return;
-  if (dragData.range.start === dropZoneRange.start) return;
+  // Same-file no-op: dropping a card on itself.
+  if (dragData.path === path && dragData.range.start === dropZoneRange.start) {
+    return;
+  }
   const before = dropZone.classList.contains("drop-left");
   if (!before && !dropZone.classList.contains("drop-right")) return;
   dropZone.classList.remove("drop-left");
   dropZone.classList.remove("drop-right");
   evt.preventDefault();
-  callbacks.moveSceneCrossFile(
-    dragData.range,
-    path,
-    before ? dropZoneRange.start : dropZoneRange.end,
-  );
+  callbacks.moveSceneAcross({
+    srcPath: dragData.path,
+    srcRange: dragData.range,
+    dstPath: path,
+    dstPos: before ? dropZoneRange.start : dropZoneRange.end,
+  });
   callbacks.requestSave();
   callbacks.reRender();
 }

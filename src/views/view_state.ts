@@ -17,13 +17,17 @@ export type ReadonlyViewCallbacks = {
   startEditModeHere: (range: Range) => void;
   startReadingModeHere: (range: Range) => void;
   replaceText: (range: Range, replacement: string) => void;
-  moveScene: (range: Range, newPos: number) => void;
   duplicateScene: (range: Range) => void;
-  moveSceneCrossFile: (
-    srcRange: Range,
-    dstPath: string,
-    dstNewPos: number,
-  ) => void;
+  /** Move a scene from `srcPath` (at `srcRange`) to `dstPath` (inserted at
+   *  `dstPos`). When `srcPath === dstPath` both edits go through a single
+   *  batch; otherwise the source delete and destination insert are routed
+   *  to each file's path-keyed pipeline. */
+  moveSceneAcross: (args: {
+    srcPath: string;
+    srcRange: Range;
+    dstPath: string;
+    dstPos: number;
+  }) => void;
   getText: (range: Range) => string;
   /** Open a `[[>target]]` link target. `event` carries Mod/Shift modifiers. */
   openLink: (target: string, event: MouseEvent) => void;
