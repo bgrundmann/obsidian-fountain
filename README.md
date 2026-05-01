@@ -13,6 +13,7 @@
 - table of contents in right hand pane (with todos and synopsis included)
 - snippets system for reusable content blocks (stored within the document)
 - margin marks for script annotations (`[[@marker]]` syntax) that appear in the margin during reading view
+- **links to other vault files** (`[[>target]]` or `[[>target|display text]]`) — clickable in reading view, autocomplete in editor, automatically rewritten when the target is renamed
 - fountain code blocks support for embedding fountain scripts in regular markdown notes (reading mode only -- *NOT* in live preview)
 - button in ribbon to create a new script (as scripts have .fountain extension)
 - boneyard support (content after "# boneyard" header can be hidden)
@@ -92,6 +93,41 @@ The lights dim. [[@lights]]
 
 - In reading view: Margin marks appear as small labels in the right margin
 - In editor view: Margin marks are displayed inline with distinct styling
+
+## Using Links
+
+Link to other files in your vault — other fountain scripts, markdown character notes, research documents, etc. Obsidian's standard `[[wiki-links]]` can't be used inside fountain files because Fountain already uses `[[ ]]` for notes (comments), so this plugin uses a `>` prefix:
+
+```fountain
+INT. KITCHEN - DAY
+
+JANE enters, holding the file from earlier. [[>act-one|earlier scenes]]
+
+JANE
+(to herself)
+This changes everything.
+
+See [[>characters/jane.md]] for backstory.
+```
+
+### Syntax
+
+- `[[>target]]` — display the target as the link text
+- `[[>target|display text]]` — show custom text for the link
+
+The target is resolved the same way as Obsidian's wiki-links — by basename or path, with or without file extension. So `[[>jane]]`, `[[>jane.md]]`, and `[[>characters/jane]]` all resolve to `characters/jane.md` if that's the closest matching file.
+
+### How It Works
+
+- **Reading view**: Links render as styled, clickable text. Click to navigate; Mod/Ctrl-click opens in a new tab.
+- **Editor**: Links are syntax-highlighted to stand out from plain notes. Typing `[[>` triggers autocomplete with vault file names — pick one and the closing `]]` is added for you.
+- **PDF export**: Links render inline as plain text (the display text if present, otherwise the target name). Hidden when their containing element is hidden (e.g. a link inside a synopsis is omitted when synopses are hidden).
+- **Rename**: When a linked file is renamed, every `[[>...]]` in your fountain files is updated automatically — preserving the form you originally used (basename vs full path, with/without extension).
+
+### Limitations
+
+- Links can only appear where Fountain notes already work — inside action, dialogue, lyrics, and the like. They can't be embedded inside scene headings or character lines, since those are parsed as single tokens.
+- `.fountain` file links don't appear in Obsidian's backlinks pane or graph view. The Obsidian plugin API doesn't yet expose link metadata for non-markdown file types.
 
 ## Using Scene Numbers
 

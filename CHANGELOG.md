@@ -2,7 +2,14 @@
 
 ## [Unreleased]
 
+- **Links between fountain files** (`[[>target]]`): New note kind for clickable inter-file links. Use `[[>filename]]` or `[[>filename|display text]]` to link to other `.fountain` scripts, `.md` notes, or any vault file. Targets resolve via Obsidian's standard wiki-link rules (basename or path, with or without extension).
+  - **Reading view**: Links render as styled, clickable text. Mod/Ctrl-click opens in a new tab.
+  - **Editor**: Links are syntax-highlighted; typing `[[>` triggers autocomplete with vault file names.
+  - **PDF export**: Links render inline as plain text (display text if present, otherwise the target).
+  - **Rename rewriting**: When a link target is renamed, references in `.fountain` files are rewritten automatically. Works whether the file is open or not, and preserves typed-but-unsaved editor state.
+  - Because `[[>...]]` is syntactically a Fountain note, any other Fountain tool that doesn't recognize the `>` kind will silently treat it as a comment.
 - **Cursor and undo survive programmatic edits**: Operations that modify the document from outside the editor — scene moves, scene duplication, cross-file scene moves, add/remove scene numbers, and removal commands applied to the current file — now preserve the cursor position and leave a single undoable step in the editor. Previously these replaced the entire CodeMirror document, which reset the cursor and collapsed the change into one opaque undo.
+- **Back navigation** from a fountain file now reliably returns to the file you came from (`setState` records each fountain-file transition in the leaf's history).
 - **Internal**: Scene-level text manipulation moved out of `view.ts` into a pure `scene_operations.ts` module, and all programmatic document mutations now flow through a single `applyEditsToFile` pipeline. Added e2e tests for cross-view sync and cursor preservation.
 
 ## [0.26.2] - Bugfix
