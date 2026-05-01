@@ -162,6 +162,7 @@ class FountainEditorPlugin implements PluginValue {
 
           case "synopsis":
             builder.add(el.range.start, el.range.end, synopsis);
+            this.decorateLines(builder, el.lines);
             break;
 
           case "page-break":

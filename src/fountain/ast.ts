@@ -103,8 +103,8 @@ export function mkPageBreak(range: Range): PageBreak {
   return { kind: "page-break", range };
 }
 
-export function mkSynopsis(range: Range, linesOfText: Range[]): Synopsis {
-  return { kind: "synopsis", range, linesOfText };
+export function mkSynopsis(range: Range, lines: Line[]): Synopsis {
+  return { kind: "synopsis", range, lines };
 }
 
 export function mkAction(range: Range, lines: Line[]): Action {

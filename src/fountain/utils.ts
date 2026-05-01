@@ -65,7 +65,11 @@ export function extractNotes(elements: FountainElement[]): Note[] {
   const notes: Note[] = [];
 
   for (const element of elements) {
-    if (element.kind === "action" || element.kind === "lyrics") {
+    if (
+      element.kind === "action" ||
+      element.kind === "lyrics" ||
+      element.kind === "synopsis"
+    ) {
       extractNotesFromLines(element.lines, notes);
     } else if (element.kind === "dialogue") {
       extractNotesFromLines(dialogueLines(element), notes);

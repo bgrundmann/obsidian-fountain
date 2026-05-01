@@ -38,7 +38,11 @@ function extractFromLines(lines: Line[], out: Note[]): void {
 export function extractLinks(elements: FountainElement[]): Note[] {
   const out: Note[] = [];
   for (const el of elements) {
-    if (el.kind === "action" || el.kind === "lyrics") {
+    if (
+      el.kind === "action" ||
+      el.kind === "lyrics" ||
+      el.kind === "synopsis"
+    ) {
       extractFromLines(el.lines, out);
     } else if (el.kind === "dialogue") {
       extractFromLines(dialogueLines(el), out);

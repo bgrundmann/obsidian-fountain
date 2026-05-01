@@ -110,13 +110,15 @@ export type PageBreak = {
 
 /** A synopsis is some text soley for the writer of the document.
  Often used to summarize the key points of a scene before the scene
- is written.  linesOfText is one element per line of text. Where each
- elements range excludes the '=' as well as the newline character.
+ is written. `lines` is one element per source line. Each line's range
+ excludes the leading '=' and the trailing newline; line elements may
+ include styled text (bold/italic/underline), notes (incl. `[[>...]]`
+ links and `[[@marker]]` margin marks), and boneyard.
 */
 export type Synopsis = {
   kind: "synopsis";
   range: Range;
-  linesOfText: Range[];
+  lines: Line[];
 };
 
 export type Action = {

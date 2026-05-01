@@ -59,6 +59,13 @@ describe("Links", () => {
       const links = extractLinks(script.script);
       expect(links).toHaveLength(3);
     });
+
+    it("parses links inside synopses", () => {
+      const script = parse("= See [[>act-two]] for the next act.\n");
+      const links = extractLinks(script.script);
+      expect(links).toHaveLength(1);
+      expect(script.sliceDocument(links[0].textRange)).toBe("act-two");
+    });
   });
 
   describe("isLinkNote", () => {

@@ -264,6 +264,7 @@ function generateScriptInstructions(
             currentState,
             element,
             fountainScript,
+            options,
           );
         }
         break;
@@ -658,49 +659,61 @@ function generateSceneInstructions(
 }
 
 /**
- * Generates instructions for a synopsis
+ * Generates instructions for a synopsis. Synopsis text renders italic +
+ * gray; inline `**bold**` etc. layer on top of the italic+gray base, so
+ * a `**bold**` segment becomes bold-italic-gray. Notes follow the same
+ * `hideNotes` rules as elsewhere; `[[>...]]` link display text renders
+ * inline as plain text.
  */
 function generateSynopsisInstructions(
   instructions: Instruction[],
   pageState: PageState,
   synopsis: Synopsis,
   fountainScript: FountainScript,
+  options: PDFOptions,
 ): PageState {
-  // Add spacing before synopsis and ensure we have space
   let currentState = addElementSpacing(pageState);
 
-  // Extract and render each line of the synopsis
-  for (const lineRange of synopsis.linesOfText) {
-    const synopsisText = fountainScript.document
-      .substring(lineRange.start, lineRange.end)
-      .trim();
-
-    if (synopsisText.length > 0) {
-      // Wrap synopsis text to fit within action line width
-      const wrappedLines = wrapPlainText(
-        synopsisText,
-        pageState.charactersPerLine.action,
-      );
-
-      for (const line of wrappedLines) {
-        currentState = needLines(instructions, currentState, 1);
-
-        emitText(instructions, currentState, {
-          data: line,
-          x: ACTION_INDENT,
-          bold: false,
-          italic: true, // Synopsis in CourierOblique
-          underline: false,
-          color: "gray", // Synopsis in gray
-          strikethrough: false,
-          backgroundColor: undefined,
-        });
-
-        currentState = advanceLine(currentState);
-      }
-    } else {
-      // Empty synopsis line
+  for (const line of synopsis.lines) {
+    if (line.elements.length === 0) {
       currentState = needLines(instructions, currentState, 1);
+      currentState = advanceLine(currentState);
+      continue;
+    }
+
+    const styledSegments = extractStyledSegments(
+      line.elements,
+      fountainScript.document,
+      options,
+    );
+
+    const wrappedLines = wrapStyledText(
+      styledSegments,
+      pageState.charactersPerLine.action,
+      false,
+    );
+
+    for (const wrappedLine of wrappedLines) {
+      currentState = needLines(instructions, currentState, 1);
+
+      for (const segment of wrappedLine.segments) {
+        if (segment.text.length === 0) continue;
+        emitText(instructions, currentState, {
+          data: segment.text,
+          x: ACTION_INDENT,
+          bold: segment.bold ?? false,
+          italic: true,
+          underline: segment.underline ?? false,
+          color: segment.color ?? "gray",
+          strikethrough: segment.strikethrough ?? false,
+          backgroundColor: segment.backgroundColor,
+        });
+      }
+
+      if (wrappedLine.marginMarks.length > 0) {
+        emitMarginMarks(instructions, currentState, wrappedLine.marginMarks);
+      }
+
       currentState = advanceLine(currentState);
     }
   }

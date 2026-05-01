@@ -231,14 +231,14 @@ class TocSection extends SidebarSection {
     synopsis?: Synopsis,
   ) {
     if (synopsis) {
-      for (const l of synopsis.linesOfText) {
+      for (const line of synopsis.lines) {
         const d = s.createDiv({
           cls: "synopsis",
-          attr: dataRange(l),
-          text: script.sliceDocumentForDisplay(l),
+          attr: dataRange(line.range),
         });
+        styledTextToHtml(script, d, line.elements, {}, true);
         d.addEventListener("click", (evt: Event) => {
-          this.callbacks.scrollToRange(l);
+          this.callbacks.scrollToRange(line.range);
         });
       }
     }

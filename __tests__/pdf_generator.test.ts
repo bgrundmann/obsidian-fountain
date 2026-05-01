@@ -754,10 +754,11 @@ describe("PDF Instruction Generation", () => {
         hideMarginMarks: false,
       });
 
-      // Find synopsis instruction
+      // Synopsis text is emitted per word (styled segment + wrapStyledText).
+      // Pick the unique word "synopsis" to identify a synopsis instruction.
       const synopsisInstruction = instructions.find(
         (inst): inst is TextInstruction =>
-          inst.type === "text" && inst.data === "This is a synopsis",
+          inst.type === "text" && inst.data === "synopsis",
       );
       expect(synopsisInstruction).toBeDefined();
       expect(synopsisInstruction?.italic).toBe(true);

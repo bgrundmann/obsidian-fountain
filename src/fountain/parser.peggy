@@ -152,7 +152,10 @@ Synopsis
  = lines:SynopsisLine+ NewLine? { return mkSynopsis(range(), lines); }
 
 SynopsisLine
- = OptionalBlanks "=" synopsis:RestOfLine NewLineOrEndOfInput { return synopsis; }
+ = OptionalBlanks "=" @SynopsisLineInner NewLineOrEndOfInput
+
+SynopsisLineInner
+ = elements:LineTextElement* { return mkLine(range(), mergeText(elements)); }
 
 NewLine
  = "\n" { return range() }

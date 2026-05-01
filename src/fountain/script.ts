@@ -289,8 +289,11 @@ export class FountainScript {
     },
   ): FountainElement | null {
     switch (element.kind) {
-      case "synopsis":
-        return settings.hideSynopsis ? null : element;
+      case "synopsis": {
+        if (settings.hideSynopsis) return null;
+        const filteredLines = this.filterLines(element.lines, settings);
+        return { ...element, lines: filteredLines };
+      }
 
       case "action": {
         const filteredLines = this.filterLines(element.lines, settings);

@@ -127,10 +127,10 @@ function editSynopsisHandler(
   el: HTMLElement,
   path: string,
   range: Range,
-  linesOfText: Range[],
+  lineRanges: Range[],
   callbacks: ReadonlyViewCallbacks,
 ) {
-  const lines = linesOfText.map((r) => callbacks.getText(r));
+  const lines = lineRanges.map((r) => callbacks.getText(r));
   const textarea = createEl("textarea", {
     text: lines.join("\n"),
   });
@@ -226,16 +226,16 @@ function renderSynopsis(
           div2,
           path,
           synopsisRange,
-          synopsis?.linesOfText || [],
+          (synopsis?.lines ?? []).map((line) => line.range),
           callbacks,
         );
       });
-      for (const l of synopsis?.linesOfText || []) {
-        div2.createDiv({
+      for (const line of synopsis?.lines ?? []) {
+        const lineDiv = div2.createDiv({
           cls: "synopsis",
-          attr: dataRange(l),
-          text: script.sliceDocumentForDisplay(l),
+          attr: dataRange(line.range),
         });
+        styledTextToHtml(script, lineDiv, line.elements, {}, true);
       }
       if (!synopsis) {
         const preview = scene ? getScenePreview(script, scene, 220) : null;

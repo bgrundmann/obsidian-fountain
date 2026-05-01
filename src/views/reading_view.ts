@@ -143,13 +143,7 @@ function renderSynopsis(
   synopsis: Synopsis,
   settings: ShowHideSettings,
 ): void {
-  for (const l of synopsis.linesOfText) {
-    parent.createDiv({
-      cls: "synopsis",
-      attr: dataRange(l),
-      text: script.sliceDocumentForDisplay(l),
-    });
-  }
+  renderLines(parent, script, ["synopsis"], synopsis.lines, true, settings);
   renderBlankLine(parent, synopsis.range);
 }
 

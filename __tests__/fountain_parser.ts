@@ -596,7 +596,13 @@ describe("Synopsis handling", () => {
     {
       kind: "synopsis",
       range: { start: 0, end: 14 },
-      linesOfText: [{ start: 2, end: 13 }],
+      lines: [
+        {
+          range: { start: 2, end: 13 },
+          centered: false,
+          elements: [{ kind: "text" }],
+        },
+      ],
     },
   ]);
   test_script(
@@ -608,14 +614,53 @@ describe("Synopsis handling", () => {
       {
         kind: "synopsis",
         range: { start: 0, end: 78 },
-        linesOfText: [
-          { start: 2, end: 13 },
-          { start: 16, end: 44 },
-          { start: 46, end: 78 },
+        lines: [
+          {
+            range: { start: 2, end: 13 },
+            centered: false,
+            elements: [{ kind: "text" }],
+          },
+          {
+            range: { start: 16, end: 44 },
+            centered: false,
+            elements: [{ kind: "text" }],
+          },
+          {
+            range: { start: 46, end: 78 },
+            centered: false,
+            elements: [{ kind: "text" }],
+          },
         ],
       },
     ],
   );
+  test_script(
+    "Synopsis with styled text and a link",
+    "= **bold** and *ital* and [[>jane.md|Jane]]\n",
+    [
+      {
+        kind: "synopsis",
+        range: { start: 0, end: 44 },
+        lines: [
+          {
+            range: { start: 1, end: 43 },
+            centered: false,
+            elements: [
+              { kind: "text" },
+              { kind: "bold", elements: [{ kind: "text" }] },
+              { kind: "text" },
+              { kind: "italics", elements: [{ kind: "text" }] },
+              { kind: "text" },
+              { kind: "note", noteKind: ">" },
+            ],
+          },
+        ],
+      },
+    ],
+  );
+  test_script("Three or more equals is still a page break", "===\n", [
+    { kind: "page-break", range: { start: 0, end: 4 } },
+  ]);
 });
 
 describe("Lyrics handling", () => {
