@@ -559,14 +559,55 @@
 	padding: 0;
 }
 
-.screenplay-index-cards .drop-right {
-	transform: translate(-5px);
+.screenplay-index-card .drag-handle {
+	position: absolute;
+	top: 8px;
+	left: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	color: var(--text-faint);
+	cursor: grab;
+	border-radius: 3px;
+	transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.screenplay-index-card .drag-handle:hover {
+	color: var(--text-normal);
 	background-color: var(--background-modifier-hover);
 }
 
+.screenplay-index-card .drag-handle:active {
+	cursor: grabbing;
+}
+
+.screenplay-index-card .drag-handle .svg-icon {
+	width: 14px;
+	height: 14px;
+}
+
+.screenplay-index-card.dragging {
+	opacity: 0.4;
+}
+
+.screenplay-index-card.flip-animate {
+	transition: transform 200ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.screenplay-index-card.flip-animate {
+		transition: none;
+	}
+}
+
+.screenplay-index-cards .drop-right {
+	box-shadow: inset -3px 0 0 0 var(--interactive-accent);
+}
+
 .screenplay-index-cards .drop-left {
-	transform: translate(5px);
-	background-color: var(--background-modifier-hover);
+	box-shadow: inset 3px 0 0 0 var(--interactive-accent);
 }
 
 .screenplay-index-card .scene-heading {
@@ -576,7 +617,7 @@
 		var(--screenplay-font), "Courier Final Draft", "Courier",
 		var(--font-monospace);
 	margin-top: 0;
-	margin-left: 0;
+	margin-left: 18px;
 	margin-right: 0;
 	margin-bottom: 8px;
 	/* padding: 8px; */

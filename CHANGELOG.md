@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.29.0] - Index Card Drag & Drop Overhaul
+
+- **Drag handle**: Cards now show a grip icon at the top-left and drags only originate from there. The rest of the card is no longer a drag source, so clicking on the synopsis or scene heading to edit it can't be misread by the browser as the start of a drag.
+- **Reliable drops**: Fixed a long-standing bug where releasing the mouse over a child element of the target card (the heading, synopsis, ellipsis menu) silently did nothing. The drop indicator was being stripped by `dragleave` events fired when the cursor crossed into a nested element; the leave check now uses `relatedTarget` containment so child traversal no longer cancels the drop.
+- **Clearer drop indicator**: The "drop here" cue is now a colored insertion bar on the left or right edge of the target card. Previously the target card translated 5px sideways, which was easy to miss and read as "this card is moving" rather than "your card lands here." Splits cleanly at 50% so every position on a target produces an action — there's no longer a dead zone in the middle of each card.
+- **Source card fades while dragging**: The card you picked up dims to 40% opacity for the duration of the drag, and the drag preview is the whole card (via `setDragImage`) rather than a tiny grip-icon image.
+- **Cards animate into place after a drop**: A 200ms FLIP transition slides every card whose position changed from its old spot to its new one. Makes adjacent swaps unambiguous instead of looking like nothing happened. Respects the OS `prefers-reduced-motion` setting.
+
 ## [0.28.0] - Styled Synopses
 
 - **Synopsis content is now full-featured**: Synopsis lines (`= ...`) parse the same inline syntax as action and dialogue, so you can use `**bold**`, `*italics*`, `_underline_`, boneyard, todo/note kinds, margin marks, and `[[>links]]` inside a synopsis. Synopses render with the styling in reading view, the TOC sidebar, the index cards, and the editor; PDF export keeps the existing italic+gray base style and layers `**bold**` on top as bold-italic-gray.

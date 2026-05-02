@@ -27,24 +27,94 @@ function getDragData(evt: DragEvent): DragData | null {
   }
 }
 
+function clearDropIndicators(): void {
+  for (const el of document.querySelectorAll(
+    ".screenplay-index-card.drop-left, .screenplay-index-card.drop-right",
+  )) {
+    el.classList.remove("drop-left");
+    el.classList.remove("drop-right");
+  }
+}
+
+/** FLIP animation helpers: capture the bounding rects of every index card
+ * before a move, then after the re-render slide each card from its old
+ * position to its new one so the user sees the rearrangement. */
+function cardKey(card: Element): string {
+  // textContent of the card is heading + synopsis + todos — usually unique
+  // enough across a single document. Truncated so very long synopses don't
+  // dominate the map.
+  return (card.textContent ?? "").slice(0, 200);
+}
+
+function captureCardRects(): Map<string, DOMRect[]> {
+  const rects = new Map<string, DOMRect[]>();
+  const cards = document.querySelectorAll<HTMLElement>(
+    ".screenplay-index-card[data-range]",
+  );
+  for (const card of cards) {
+    const key = cardKey(card);
+    if (!key) continue;
+    const arr = rects.get(key);
+    const r = card.getBoundingClientRect();
+    if (arr) arr.push(r);
+    else rects.set(key, [r]);
+  }
+  return rects;
+}
+
+function applyFlipAnimations(oldRects: Map<string, DOMRect[]>): void {
+  if (oldRects.size === 0) return;
+  const seen = new Map<string, number>();
+  const cards = document.querySelectorAll<HTMLElement>(
+    ".screenplay-index-card[data-range]",
+  );
+  for (const card of cards) {
+    const key = cardKey(card);
+    if (!key) continue;
+    const arr = oldRects.get(key);
+    if (!arr) continue;
+    const idx = seen.get(key) ?? 0;
+    seen.set(key, idx + 1);
+    const oldRect = arr[idx];
+    if (!oldRect) continue;
+    const newRect = card.getBoundingClientRect();
+    const dx = oldRect.left - newRect.left;
+    const dy = oldRect.top - newRect.top;
+    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
+    card.style.transform = `translate(${dx}px, ${dy}px)`;
+    void card.offsetHeight; // force reflow so the transition picks up
+    card.classList.add("flip-animate");
+    card.style.transform = "";
+    card.addEventListener(
+      "transitionend",
+      () => {
+        card.classList.remove("flip-animate");
+      },
+      { once: true },
+    );
+  }
+}
+
 function dropHandler(
-  dropZone: Element,
+  dropZone: HTMLElement,
   path: string,
   dropZoneRange: Range,
   callbacks: ReadonlyViewCallbacks,
   evt: DragEvent,
 ) {
+  const before = dropZone.classList.contains("drop-left");
+  const after = dropZone.classList.contains("drop-right");
+  dropZone.classList.remove("drop-left");
+  dropZone.classList.remove("drop-right");
+  if (!before && !after) return;
   const dragData = getDragData(evt);
   if (!dragData) return;
   // Same-file no-op: dropping a card on itself.
   if (dragData.path === path && dragData.range.start === dropZoneRange.start) {
     return;
   }
-  const before = dropZone.classList.contains("drop-left");
-  if (!before && !dropZone.classList.contains("drop-right")) return;
-  dropZone.classList.remove("drop-left");
-  dropZone.classList.remove("drop-right");
   evt.preventDefault();
+  const oldRects = captureCardRects();
   callbacks.moveSceneAcross({
     srcPath: dragData.path,
     srcRange: dragData.range,
@@ -53,49 +123,60 @@ function dropHandler(
   });
   callbacks.requestSave();
   callbacks.reRender();
+  applyFlipAnimations(oldRects);
 }
 
-/** This handler just adds classes to visually indicate if dropping
- the scene here would drag it infront or behind the element.
- NOTE: The classes are not only used for the visual indicators
- but also in the drop handler so the decision where to drop is done
- only once.
- */
+/** Adds drop-left/drop-right classes to indicate where a drop would
+ land. The classes drive both the visual insertion bar and the drop
+ handler's decision (so the position is computed in one place).
+ No indicator is shown on the source card itself (the .dragging one). */
 function dragoverHandler(
-  dropZone: Element,
+  dropZone: HTMLElement,
   dropZoneRange: Range,
   evt: DragEvent,
 ) {
   evt.preventDefault();
+  if (dropZone.classList.contains("dragging")) {
+    dropZone.classList.remove("drop-left");
+    dropZone.classList.remove("drop-right");
+    return;
+  }
   const rect = dropZone.getBoundingClientRect();
-  const mouseX = evt.clientX;
-
-  // Clamp mouseX to element boundaries
-  const clampedX = Math.min(Math.max(mouseX, rect.left), rect.right);
-  //
-  // Calculate percentage within bounds
+  const clampedX = Math.min(Math.max(evt.clientX, rect.left), rect.right);
   const percentage = ((clampedX - rect.left) / rect.width) * 100;
 
-  if (percentage > 70) {
+  if (percentage >= 50) {
     dropZone.classList.add("drop-right");
     dropZone.classList.remove("drop-left");
-  } else if (percentage < 30) {
-    dropZone.classList.add("drop-left");
-    dropZone.classList.remove("drop-right");
   } else {
-    dropZone.classList.remove("drop-left");
+    dropZone.classList.add("drop-left");
     dropZone.classList.remove("drop-right");
   }
 }
 
-/** When we start dragging we store the range of the scene. */
-function dragstartHandler(path: string, range: Range, evt: DragEvent): void {
+/** When we start dragging we store the range of the scene and use the
+ whole card as the drag image (not the small handle that initiated it). */
+function dragstartHandler(
+  card: HTMLElement,
+  path: string,
+  range: Range,
+  evt: DragEvent,
+): void {
   if (!evt.dataTransfer) return;
   evt.dataTransfer.clearData();
   evt.dataTransfer.setData(
     "application/json",
     JSON.stringify({ path: path, range: range }),
   );
+  evt.dataTransfer.effectAllowed = "move";
+  try {
+    evt.dataTransfer.setDragImage(card, 12, 12);
+  } catch {
+    // setDragImage can throw on synthetic events in some browsers; ignore.
+  }
+  // Defer so the browser snapshots the card for its drag image at full
+  // opacity, then fades the original on the page.
+  setTimeout(() => card.classList.add("dragging"), 0);
 }
 
 function installDragAndDropHandlers(
@@ -108,6 +189,10 @@ function installDragAndDropHandlers(
     dragoverHandler(indexCard, range, evt);
   });
   indexCard.addEventListener("dragleave", (e: DragEvent) => {
+    // dragleave fires when the cursor enters a child element too. Only
+    // treat it as a real leave when we're moving outside the card.
+    const related = e.relatedTarget as Node | null;
+    if (related && indexCard.contains(related)) return;
     indexCard.classList.remove("drop-left");
     indexCard.classList.remove("drop-right");
   });
@@ -115,7 +200,11 @@ function installDragAndDropHandlers(
     dropHandler(indexCard, path, range, callbacks, e);
   });
   indexCard.addEventListener("dragstart", (evt: DragEvent) => {
-    dragstartHandler(path, range, evt);
+    dragstartHandler(indexCard, path, range, evt);
+  });
+  indexCard.addEventListener("dragend", () => {
+    indexCard.classList.remove("dragging");
+    clearDropIndicators();
   });
 }
 
@@ -270,12 +359,20 @@ function renderIndexCard(
       {
         cls: "screenplay-index-card",
         attr: {
-          draggable: true,
           ...dataRange(scene.range),
         },
       },
       (indexCard) => {
         installDragAndDropHandlers(path, callbacks, indexCard, scene.range);
+        indexCard.createDiv(
+          {
+            cls: "drag-handle",
+            attr: { draggable: true, "aria-label": "Drag to reorder" },
+          },
+          (handle) => {
+            setIcon(handle, "grip-vertical");
+          },
+        );
         indexCard.createEl(
           "h3",
           {
