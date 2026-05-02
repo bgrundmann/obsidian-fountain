@@ -23,6 +23,10 @@ Toggle between the editor and a near-print readonly view:
 
 ![toggle to readonly view](demo/toggle.gif)
 
+Reorder scenes by dragging index cards, then renumber them with two quick commands:
+
+![index cards and scene number commands](demo/index.gif)
+
 Rehearsal mode blacks out a character's dialogue:
 
 ![rehearsal mode](demo/rehearsal.gif)
