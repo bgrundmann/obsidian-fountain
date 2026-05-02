@@ -271,6 +271,30 @@ Notes can have a kind prefix before the colon:
 [[-Removed for pacing]]
 ```
 
+## Cross-File Links
+
+Notes prefixed with `>` are clickable links to other vault files:
+
+```fountain
+See [[>act-two]] for the next sequence.
+[[>characters/jane.md|Jane's bio]]
+```
+
+- Targets follow Obsidian's wiki-link conventions: with or without extension,
+  basename or path. Resolution uses `metadataCache.getFirstLinkpathDest`.
+- Optional display text follows a `|`. Without it, the target text is shown.
+- Links work anywhere a note can appear — action, dialogue, parentheticals,
+  synopsis, lyrics. They are tracked by an in-memory rename index, so
+  renaming a target file rewrites references in every fountain file.
+- In PDF export, the display text (or target) is rendered inline as plain
+  text — there's no clickable PDF annotation.
+- Because `[[>...]]` is syntactically a Fountain note, any standard Fountain
+  tool that doesn't recognize the `>` kind will silently treat it as a
+  comment.
+
+External URLs and section anchors (e.g. `[[>act-two#Scene 5]]`) are not
+supported.
+
 ## Snippets Section
 
 A `# Snippets` heading at the end of the document marks the beginning of reusable content blocks.
