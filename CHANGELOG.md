@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.30.0] - Index Card UX Overhaul
+
+The index card view is now a *structural* read on your script — a map you can rearrange. Operations that change the *shape* of the outline (navigation, reorder, rename, insert) live on the cards; operations that change scene *contents* (synopsis text, dialogue, action) live in the editor. The toggle between them is the most important affordance.
+
+- **Toggle (⌘⇧I)**: New rebindable shortcut that round-trips between the editor (or readonly script) and the index card view. From the editor, the card for the scene-under-cursor scrolls into view. From the cards, the editor opens at the *start of scene content* of the topmost visible card — the synopsis when one exists, otherwise the first action/dialogue line. A round-trip with no edits leaves you (approximately) where you started.
+- **Click anywhere on a card to navigate**: Clicking the body of a card now jumps to that scene in the editor. No more per-region click model — the card has one job.
+- **Pencil renames headings inline**: The pencil button in the top-right corner of each card opens an inline rename. `Enter` saves, `Esc` cancels, click outside also saves — so renaming a string of headings is a fluent click → type → click → type sequence. The input is fully chrome-less (no border, no shadow, just a tinted background) so the heading doesn't jump when you start editing.
+- **Insertion gutter**: Hover between any two cards (or before the first / after the last) to reveal a thin accent bar with a "+" icon. Click to insert a new `.SCENE HEADING` placeholder at that position; the new card auto-focuses its rename input. The dashed `+` card at the end of each section uses the same path and now also auto-focuses (previously it inserted but left you to find the new heading).
+- **Select current scene (⌘⇧L)**: New rebindable command in the editor that selects the entire `scene.range` — heading line through the line before the next scene/section heading. Designed as a primitive that composes with the system clipboard: `⌘X` to delete a scene, `⌘C` then `↓` then `⌘V` to duplicate, or cut-and-paste to move a scene across files.
+- **Drag a card into Snippets**: Dragging a scene card onto the snippets section in the sidebar copies it as a new snippet. The original scene stays in the script (snippets are a library, not a destination). Cross-file drags are supported — the scene lands in the *destination* script's `# Snippets` section.
+- **Removed from the cards view**: synopsis editing (synopses now contain styled text — `[[>links]]`, formatting, notes — that an inline `<textarea>` can't edit; the fast path is now click → edit → ⌘⇧I back) and the ellipsis menu's Copy/Edit/Delete (covered by ⌘⇧L plus the system clipboard, with the upside that the same primitive works across files and into snippets sections).
+
 ## [0.29.0] - Index Card Drag & Drop Overhaul
 
 - **Drag handle**: Cards now show a grip icon at the top-left and drags only originate from there. The rest of the card is no longer a drag source, so clicking on the synopsis or scene heading to edit it can't be misread by the browser as the start of a drag.
