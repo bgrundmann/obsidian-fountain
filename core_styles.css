@@ -584,7 +584,7 @@
 	position: absolute;
 	inset-block: 0;
 	width: 10px;
-	left: -5px;
+	left: -10px;
 	z-index: 1;
 	display: flex;
 	align-items: center;
@@ -594,13 +594,30 @@
 	transition: opacity 0.15s ease;
 }
 
+/* Thin vertical accent bar — same visual as drop-left/drop-right. */
 .insertion-gutter::before {
 	content: "";
 	position: absolute;
 	inset-block: 8px;
-	inset-inline: 3.5px;
+	width: 3px;
+	left: 50%;
+	transform: translateX(-50%);
 	background: var(--interactive-accent);
 	border-radius: 2px;
+}
+
+/* Circular "+" badge centered on the bar so the affordance reads as
+   "insert" rather than just a colored line. */
+.insertion-gutter .svg-icon {
+	position: relative;
+	z-index: 1;
+	width: 14px;
+	height: 14px;
+	color: var(--text-on-accent);
+	background: var(--interactive-accent);
+	border-radius: 50%;
+	padding: 2px;
+	box-sizing: border-box;
 }
 
 .insertion-gutter:hover {
@@ -675,6 +692,32 @@
 	margin-right: 36px;
 	margin-bottom: 8px;
 	/* padding: 8px; */
+}
+
+/* The inline rename input replaces the heading <h3> in place. Match the
+   heading's visual exactly, then strip browser/Obsidian input chrome.
+   The only edit-mode cue is the form-field background tint — no
+   border, no shadow, no rounded corners. */
+.screenplay-index-card input.scene-heading {
+	display: block;
+	font-weight: var(--bold-weight);
+	color: var(--h1-color);
+	border: none !important;
+	outline: none !important;
+	padding: 0 !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+	background: var(--background-modifier-form-field);
+	width: auto;
+	box-sizing: border-box;
+	height: auto;
+	line-height: 1.1;
+}
+
+.screenplay-index-card input.scene-heading:focus {
+	border: none !important;
+	outline: none !important;
+	box-shadow: none !important;
 }
 
 .screenplay-index-card .synopsis {

@@ -326,6 +326,7 @@ function renderIndexCard(
         attr: { "data-insert-pos": String(scene.range.start) },
       },
       (gutter) => {
+        setIcon(gutter, "plus");
         gutter.addEventListener("click", (evt: MouseEvent) => {
           evt.stopPropagation();
           callbacks.insertSceneAt(scene.range.start);
