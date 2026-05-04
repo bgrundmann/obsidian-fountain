@@ -4,9 +4,9 @@
 
 - **Views**: Readonly/edit modes with seamless toggling, PDF export, rehearsal mode with blackout
 - **Sidebar**: TOC with navigation, synopsis/notes toggles, snippets with drag-and-drop
-- **Index Cards**: Scene cards with drag-drop reordering, synopsis editing, cross-file moves
+- **Index Cards**: Click card → jump to editor at start-of-scene-content; pencil renames heading inline; hover-revealed gutter inserts a new scene at any position; drag-drop reordering across files; ⌘⇧I toggles cards ↔ editor preserving position. See `design/improved_index_card_view.md`.
 - **Snippets**: Store in `# Snippets` section, Mod+Shift+X/C to move/copy selection, drag into script/sidebar
-- **Editor**: Scene folding (Ctrl+Shift+[ ]), character name completion
+- **Editor**: Scene folding (Ctrl+Shift+[ ]), character name completion, ⌘⇧L selects the current scene as text (compose with ⌘X / ⌘C for delete / duplicate)
 - **Margin Marks**: `[[@marker]]` syntax renders in margin
 - **Links**: `[[>target]]` / `[[>target|display]]` link to other vault files; auto-rewritten on rename. See `design/links.md` for rationale and deferred features.
 - **Boneyard**: Content after `# boneyard` hidden when enabled
@@ -82,7 +82,7 @@ interface ScriptStructure { sections: StructureSection[]; snippets: Snippet[]; }
 All programmatic document mutations go through the path-keyed
 `applyEditsToFountainFile(app, path, edits): Promise<void>` in
 `src/edit_pipeline.ts`:
-- `Edit` and the `compute*Edits` helpers (move/duplicate/cross-file/scene numbers) live in `fountain/edits.ts` and are pure.
+- `Edit` and the `compute*Edits` helpers (move/cross-file/scene numbers) live in `fountain/edits.ts` and are pure. Pure structural-navigation helpers (scene-at-offset, start-of-scene-content) live in `fountain/structure_nav.ts`.
 - The helper picks source-of-truth based on whether the file is open: any open `FountainView`'s `cachedScript` (so typed-but-unsaved CM state isn't clobbered) or a `vault.read` if no view is open. It reparses once, distributes edits to every view, then awaits `vault.modify`.
 - `EditorViewState.receiveEdits` dispatches them as a single CM transaction so cursor/undo survive; `ReadonlyViewState.receiveEdits` re-renders.
 - `FountainView.applyEditsToFile` is a thin wrapper that delegates to the helper using the view's path — use it when you have a view in hand.

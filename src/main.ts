@@ -16,6 +16,7 @@ import { applyEditsToFountainFile } from "./edit_pipeline";
 import type { Edit } from "./fountain";
 import { parse } from "./fountain/parser";
 import { LinkIndex } from "./links_index";
+import { EditorViewState } from "./views/editor_view_state";
 import { FountainView, VIEW_TYPE_FOUNTAIN } from "./views/fountain_view";
 import { renderContent } from "./views/reading_view";
 import {
@@ -133,6 +134,25 @@ export default class FountainPlugin extends Plugin {
         const enabled = fv.toggleSpellCheck();
         new Notice(enabled ? "Spell check enabled" : "Spell check disabled");
       }),
+    });
+    this.addCommand({
+      id: "toggle-index-cards-view",
+      name: "Toggle index card view",
+      hotkeys: [{ modifiers: ["Mod", "Shift"], key: "i" }],
+      checkCallback: ifFountainView(this.app, (fv) => {
+        fv.toggleIndexCardsView();
+      }),
+    });
+    this.addCommand({
+      id: "select-current-scene",
+      name: "Select current scene",
+      hotkeys: [{ modifiers: ["Mod", "Shift"], key: "l" }],
+      checkCallback: (checking) => {
+        const fv = this.app.workspace.getActiveViewOfType(FountainView);
+        if (fv === null || !(fv.state instanceof EditorViewState)) return false;
+        if (!checking) fv.state.selectCurrentScene();
+        return true;
+      },
     });
   }
 }

@@ -19,6 +19,7 @@ export class ReadonlyViewState implements ViewState {
   public pstate: ReadonlyViewPersistedState;
   private contentEl: HTMLElement;
   private path: string;
+  private pendingPostRender: (() => void) | null = null;
 
   constructor(
     contentEl: HTMLElement,
@@ -29,6 +30,13 @@ export class ReadonlyViewState implements ViewState {
     this.contentEl = contentEl;
     this.path = path;
     this.pstate = pstate;
+  }
+
+  /** Run `fn` after the next `render()` completes. Cleared on use. Used to
+   *  focus a freshly created card's heading input after the async edit
+   *  pipeline writes the new scene and re-renders the index card view. */
+  schedulePostRender(fn: () => void): void {
+    this.pendingPostRender = fn;
   }
 
   public get showMode(): ShowMode {
@@ -102,6 +110,10 @@ export class ReadonlyViewState implements ViewState {
       this.installToggleBlackoutHandlers();
     }
     this.installLinkHandlers();
+
+    const fn = this.pendingPostRender;
+    this.pendingPostRender = null;
+    fn?.();
   }
 
   private installLinkHandlers() {
@@ -184,5 +196,27 @@ export class ReadonlyViewState implements ViewState {
     const screenplay = this.contentEl.querySelector(".screenplay");
     if (screenplay === null) return null;
     return rangeOfFirstVisibleLine(screenplay as HTMLElement);
+  }
+
+  /** First index card whose top edge is at or below the content area's
+   *  top, with its `data-range` parsed back to a {start, end}. Used by
+   *  the ⌘⇧I toggle to anchor the editor's cursor when leaving cards. */
+  firstVisibleCardRange(): Range | null {
+    if (this.pstate.mode !== ShowMode.IndexCards) return null;
+    const cards = this.contentEl.querySelectorAll<HTMLElement>(
+      ".screenplay-index-card[data-range]",
+    );
+    const containerTop = this.contentEl.getBoundingClientRect().top;
+    for (const card of Array.from(cards)) {
+      if (card.getBoundingClientRect().top >= containerTop) {
+        const dr = card.getAttribute("data-range");
+        if (!dr) continue;
+        const [s, e] = dr.split(",").map((n) => Number.parseInt(n, 10));
+        if (Number.isFinite(s) && Number.isFinite(e)) {
+          return { start: s, end: e };
+        }
+      }
+    }
+    return null;
   }
 }

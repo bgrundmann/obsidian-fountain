@@ -19,6 +19,7 @@ import { createFountainFoldService } from "../codemirror/folding";
 import type { LinkCompletionCandidate } from "../codemirror/link_completion";
 import { fountainScriptField } from "../codemirror/state";
 import type { Edit, FountainScript, Range } from "../fountain";
+import { findSceneAtOffset } from "../fountain";
 import type { ViewState } from "./view_state";
 
 export type EditorCallbacks = {
@@ -226,5 +227,24 @@ export class EditorViewState implements ViewState {
     const pos = this.cmEditor.posAtCoords({ x: bounds.x, y: bounds.y + 5 });
     const lp = this.cmEditor.lineBlockAt(pos ?? 0);
     return { start: lp.from, end: lp.to + 1 };
+  }
+
+  cursorOffset(): number {
+    return this.cmEditor.state.selection.main.head;
+  }
+
+  selectCurrentScene(): void {
+    const offset = this.cmEditor.state.selection.main.head;
+    const script = this.cmEditor.state.field(fountainScriptField);
+    const scene = findSceneAtOffset(script, offset);
+    if (!scene) return;
+    this.cmEditor.dispatch({
+      selection: EditorSelection.range(scene.range.start, scene.range.end),
+      effects: EditorView.scrollIntoView(scene.range.start, {
+        y: "start",
+        yMargin: 50,
+      }),
+    });
+    this.cmEditor.focus();
   }
 }

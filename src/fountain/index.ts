@@ -55,11 +55,15 @@ export {
   type Edit,
   applyEdits,
   computeMoveSceneEdits,
-  computeDuplicateSceneEdits,
   computeMoveSceneAcrossFilesEdits,
   computeAddSceneNumberEdits,
   computeRemoveSceneNumberEdits,
 } from "./edits";
+
+export {
+  findSceneAtOffset,
+  startOfSceneContent,
+} from "./structure_nav";
 
 export { removeElementsFromText } from "./removal";
 

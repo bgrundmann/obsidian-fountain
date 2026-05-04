@@ -17,7 +17,11 @@ export type ReadonlyViewCallbacks = {
   startEditModeHere: (range: Range) => void;
   startReadingModeHere: (range: Range) => void;
   replaceText: (range: Range, replacement: string) => void;
-  duplicateScene: (range: Range) => void;
+  /** Switch to edit mode and place the cursor at the start of the scene
+   *  containing `sceneRange.start`. */
+  navigateToSceneContent: (sceneRange: Range) => void;
+  /** Insert a fresh scene heading at `pos` and auto-focus its rename input. */
+  insertSceneAt: (pos: number) => void;
   /** Move a scene from `srcPath` (at `srcRange`) to `dstPath` (inserted at
    *  `dstPos`). When `srcPath === dstPath` both edits go through a single
    *  batch; otherwise the source delete and destination insert are routed

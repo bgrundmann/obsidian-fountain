@@ -1,4 +1,5 @@
-import { ItemView, type WorkspaceLeaf, debounce } from "obsidian";
+import { ItemView, TFile, type WorkspaceLeaf, debounce } from "obsidian";
+import { findFountainViewsForPath } from "../edit_pipeline";
 import {
   type FountainScript,
   type Range,
@@ -18,6 +19,8 @@ export const VIEW_TYPE_SIDEBAR = "fountain-sidebar";
 interface SidebarCallbacks {
   scrollToRange: (range: Range) => void;
   getText: (range: Range) => string;
+  /** Read text from any fountain file (open or not) at the given range. */
+  readFromFile: (path: string, range: Range) => Promise<string | null>;
   insertAfterSnippetsHeader: (text: string) => void;
 }
 
@@ -60,9 +63,33 @@ class SnippetsSection extends SidebarSection {
           sectionDiv.removeClass("drag-over");
         });
 
-        sectionDiv.addEventListener("drop", (event) => {
+        sectionDiv.addEventListener("drop", async (event) => {
+          // preventDefault must run synchronously, before any await, so the
+          // browser doesn't fall back to its default drop handling.
           event.preventDefault();
           sectionDiv.removeClass("drag-over");
+
+          // Index card drags carry an application/json payload of
+          // {path, range}; the source file may differ from the active
+          // (destination) file. Snippet-to-snippet drags use text/plain.
+          const json = event.dataTransfer?.getData("application/json");
+          if (json) {
+            try {
+              const { path, range } = JSON.parse(json) as {
+                path: string;
+                range: Range;
+              };
+              const text = await this.callbacks.readFromFile(path, range);
+              if (text) {
+                this.callbacks.insertAfterSnippetsHeader(
+                  `${text}\n\n===\n\n`,
+                );
+              }
+            } catch {
+              // Malformed JSON — fall through to text/plain handling.
+            }
+            return;
+          }
 
           const droppedText = event.dataTransfer?.getData("text/plain");
           if (droppedText) {
@@ -329,11 +356,30 @@ export class FountainSideBarView extends ItemView {
     const callbacks: SidebarCallbacks = {
       scrollToRange: (range: Range) => this.scrollActiveScriptToHere(range),
       getText: (range: Range) => this.getText(range),
+      readFromFile: (path: string, range: Range) =>
+        this.readFromFile(path, range),
       insertAfterSnippetsHeader: (text: string) =>
         this.insertAfterSnippetsHeader(text),
     };
 
     this.sections = [new TocSection(callbacks), new SnippetsSection(callbacks)];
+  }
+
+  /** Read a slice of text from `path`, preferring an open FountainView's
+   *  cached script (which may carry typed-but-unsaved CM state) and
+   *  falling back to a vault read. */
+  private async readFromFile(
+    path: string,
+    range: Range,
+  ): Promise<string | null> {
+    const views = findFountainViewsForPath(this.app, path);
+    if (views.length > 0) return views[0].getText(range);
+    const file = this.app.vault.getAbstractFileByPath(path);
+    if (file instanceof TFile) {
+      const txt = await this.app.vault.read(file);
+      return txt.slice(range.start, range.end);
+    }
+    return null;
   }
 
   getViewType(): string {

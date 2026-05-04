@@ -9,7 +9,7 @@ A plugin for writing screenplays in [Fountain format](https://fountain.io) insid
 - **Live screenplay formatting** as you type — follow Fountain syntax, the editor handles the formatting.
 - **Near-print readonly view** with optional hiding of notes, synopsis, and boneyard.
 - **PDF export** with configurable paper size, scene heading style, and synopsis/notes inclusion.
-- **Editable index cards** with drag-and-drop scene reordering (across files, even).
+- **Index card view** — click a card to jump back to the editor at that scene; rename headings inline; insert new scenes between any two cards; drag-reorder across files; ⌘⇧I round-trips between cards and editor.
 - **Outline-style sidebar** that doubles as a planning tree — sections, synopses, and per-scene todos, all click-to-jump.
 - **Rehearsal mode** that blacks out a character's dialogue, so you can actually rehearse from the script.
 
@@ -46,6 +46,8 @@ Rehearsal mode blacks out a character's dialogue:
 - toggle spell check command (off by default to avoid distraction during creative writing)
 - search and replace in editor (Cmd/Ctrl+F)
 - toggle edit mode with Cmd/Ctrl+E (when a fountain file has focus)
+- toggle index-card view with Cmd/Ctrl+Shift+I; the cursor and scroll position are preserved across the round-trip
+- select the current scene as text with Cmd/Ctrl+Shift+L — composes with the system clipboard for delete (`⌘X`) and duplicate (`⌘C`, `↓`, `⌘V`), or to cut a scene out and paste it into another file
 
 ## Command reference
 
@@ -80,6 +82,42 @@ This plugin handles `.fountain` files natively and doesn't require Custom File E
 On the todo list with low priority:
 
 - support for dual dialogue
+
+## Using the Index Card View
+
+The index card view is the structural read on your script — a map you can rearrange. It is not a second editor; anything that changes scene *contents* (synopsis text, dialogue, action) lives in the editor.
+
+### Toggle (⌘⇧I)
+
+Press `Cmd/Ctrl+Shift+I` to flip between the editor (or readonly script) and the index card view. The toggle remembers where you came from:
+
+- From the editor → the card for the scene under the cursor scrolls into view.
+- From the cards → the editor opens at the **start of scene content** of the topmost visible card. That's the first character after the heading's blank line — your synopsis if one exists, otherwise the first action / dialogue line.
+
+A round-trip with no edits leaves you (approximately) where you started.
+
+### Click model
+
+- **Click anywhere on a card** — jump back to the editor at that scene.
+- **Pencil icon (top-right)** — rename the heading inline. `Enter` saves, `Esc` cancels, click outside also saves.
+- **Grip handle (top-left)** — drag to reorder. Same drag works across open files.
+- **Todo lines** on the card jump to the todo's exact location, not the scene heading.
+
+### Inserting scenes
+
+Hover between any two cards (or before the first / after the last) to reveal a thin gutter. Click it to insert a new `.SCENE HEADING` placeholder at that position; the new card auto-focuses its rename input so you can start typing immediately. The dashed `+` card at the end of each section is the same affordance for empty sections.
+
+### Cut / copy / duplicate scenes
+
+There is no per-card menu. Use **Select current scene** (`Cmd/Ctrl+Shift+L`) in the editor to set the selection to the whole scene, then compose with the system clipboard:
+
+- `⌘⇧L`, `⌘X` — delete a scene.
+- `⌘⇧L`, `⌘C`, `↓`, `⌘V` — duplicate a scene.
+- `⌘⇧L`, `⌘X`, switch file, `⌘V` — move a scene across files.
+
+### Drag a card into Snippets
+
+Drag any card onto the snippets section in the sidebar to copy that scene as a new snippet. The original scene stays in the script (snippets are a library, not a destination). Cross-file drags are supported — the dragged scene lands in the *destination* script's `# Snippets` section.
 
 ## Using the Table of Contents
 

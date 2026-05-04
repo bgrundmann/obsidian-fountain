@@ -49,20 +49,6 @@ export function computeMoveSceneEdits(
   ];
 }
 
-/** Edit that duplicates the scene-sized `range` immediately after itself. */
-export function computeDuplicateSceneEdits(
-  script: FountainScript,
-  range: Range,
-): Edit[] {
-  const sceneText = script.document.slice(range.start, range.end);
-  return [
-    {
-      range: { start: range.end, end: range.end },
-      replacement: trailingNewlinesNeeded(sceneText) + sceneText,
-    },
-  ];
-}
-
 /**
  * Edits for moving a scene from `src` at `srcRange` into `dst` at `dstPos`.
  * The returned edits are applied against `src.document` and `dst.document`

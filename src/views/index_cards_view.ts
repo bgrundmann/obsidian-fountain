@@ -1,4 +1,4 @@
-import { Menu, setIcon } from "obsidian";
+import { setIcon } from "obsidian";
 import type {
   FountainScript,
   Range,
@@ -174,6 +174,9 @@ function dragstartHandler(
   } catch {
     // setDragImage can throw on synthetic events in some browsers; ignore.
   }
+  // Mark the surrounding cards container so insertion gutters can opt
+  // out of pointer events for the duration of the drag (see CSS).
+  card.closest(".screenplay-index-cards")?.classList.add("dragging-active");
   // Defer so the browser snapshots the card for its drag image at full
   // opacity, then fades the original on the page.
   setTimeout(() => card.classList.add("dragging"), 0);
@@ -204,6 +207,9 @@ function installDragAndDropHandlers(
   });
   indexCard.addEventListener("dragend", () => {
     indexCard.classList.remove("dragging");
+    indexCard
+      .closest(".screenplay-index-cards")
+      ?.classList.remove("dragging-active");
     clearDropIndicators();
   });
 }
@@ -212,93 +218,62 @@ function assertNever(x: never): never {
   throw new Error(`Unexpected object: ${x}`);
 }
 
-function editSynopsisHandler(
-  el: HTMLElement,
-  path: string,
-  range: Range,
-  lineRanges: Range[],
-  callbacks: ReadonlyViewCallbacks,
-) {
-  const lines = lineRanges.map((r) => callbacks.getText(r));
-  const textarea = createEl("textarea", {
-    text: lines.join("\n"),
-  });
-  const buttonContainer = el.createDiv({
-    cls: "edit-buttons",
-  });
-  const cancelButton = buttonContainer.createEl("button", {
-    text: "Cancel",
-  });
-  const okButton = buttonContainer.createEl("button", {
-    text: "OK",
-  });
-  el.replaceWith(textarea, buttonContainer);
-  textarea.focus();
-  cancelButton.addEventListener("click", () => {
-    callbacks.reRender();
-  });
-  okButton.addEventListener("click", () => {
-    const trimmed = textarea.value.trim();
-    if (trimmed === "") {
-      // Empty synopsis - remove it entirely
-      callbacks.replaceText(range, "");
-    } else {
-      const synopsified = textarea.value
-        .split("\n")
-        .map((l) => `= ${l}`)
-        .join("\n");
-      callbacks.replaceText(range, `${synopsified}\n`);
-    }
-    callbacks.requestSave();
-    callbacks.reRender();
-  });
-}
-
+/** Replace the heading <h3> with an <input>; commit on Enter or blur,
+ *  cancel on Esc. The committed flag avoids the re-entry that would
+ *  otherwise occur when commit's `reRender` detaches the input and fires
+ *  a synthetic blur on a stale node. */
 function editSceneHeadingHandler(
   indexCardDiv: HTMLDivElement,
-  path: string,
   script: FountainScript,
   headingRange: Range,
   callbacks: ReadonlyViewCallbacks,
 ): void {
   const heading = indexCardDiv.querySelector(".scene-heading");
+  if (!heading) return;
   const headingTextWithNewlines = script.sliceDocument(headingRange);
   const headingText = headingTextWithNewlines.replace(/\n{1,2}/, "");
   const numNewlines = headingTextWithNewlines.length - headingText.length;
 
-  if (heading) {
-    const headingInput = createEl("input", {
-      cls: "scene-heading",
-      type: "text",
-      value: headingText,
-    });
-    headingInput.addEventListener("keyup", (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        callbacks.reRender();
-        event.preventDefault();
-      } else if (event.key === "Enter") {
-        callbacks.replaceText(
-          headingRange,
-          headingInput.value + "\n".repeat(numNewlines),
-        );
-        callbacks.requestSave();
-        callbacks.reRender();
-        event.preventDefault();
-      }
-    });
-    //headingInput.addEventListener(type, listener)
-    heading.replaceWith(headingInput);
-    headingInput.focus();
-  }
+  const headingInput = createEl("input", {
+    cls: "scene-heading",
+    type: "text",
+    value: headingText,
+  });
+  let committed = false;
+  const commit = () => {
+    if (committed) return;
+    committed = true;
+    callbacks.replaceText(
+      headingRange,
+      headingInput.value + "\n".repeat(numNewlines),
+    );
+    callbacks.requestSave();
+    callbacks.reRender();
+  };
+  const cancel = () => {
+    if (committed) return;
+    committed = true;
+    callbacks.reRender();
+  };
+  headingInput.addEventListener("keyup", (event: KeyboardEvent) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancel();
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      commit();
+    }
+  });
+  headingInput.addEventListener("blur", () => commit());
+  heading.replaceWith(headingInput);
+  headingInput.focus();
 }
 
 function renderSynopsis(
   div: HTMLElement,
-  path: string,
   script: FountainScript,
   synopsis: Synopsis | undefined,
   startPosIfEmpty: number,
-  callbacks: ReadonlyViewCallbacks,
   scene?: StructureScene,
 ): void {
   const synopsisRange = synopsis?.range || {
@@ -310,15 +285,6 @@ function renderSynopsis(
       attr: dataRange(synopsisRange),
     },
     (div2) => {
-      div2.addEventListener("click", (_evt: Event) => {
-        editSynopsisHandler(
-          div2,
-          path,
-          synopsisRange,
-          (synopsis?.lines ?? []).map((line) => line.range),
-          callbacks,
-        );
-      });
       for (const line of synopsis?.lines ?? []) {
         const lineDiv = div2.createDiv({
           cls: "synopsis",
@@ -334,17 +300,13 @@ function renderSynopsis(
             text: preview,
           });
         }
-        div2.createDiv({
-          cls: ["synopsis", "show-on-hover"],
-          text: "Click to edit",
-        });
       }
     },
   );
 }
 
-/** Render a index card. As of right now that includes only the scene heading
-and if the scene heading was followed by a synopsis, that synopsis. */
+/** Render an index card. The whole card click navigates to the scene; the
+ *  pencil button opens an inline rename for the heading. */
 function renderIndexCard(
   div: HTMLElement,
   path: string,
@@ -352,10 +314,26 @@ function renderIndexCard(
   scene: StructureScene,
   callbacks: ReadonlyViewCallbacks,
 ): void {
-  if (scene.scene) {
-    const heading = scene.scene;
-    const content = scene.content;
-    div.createDiv(
+  if (!scene.scene) return;
+  const heading = scene.scene;
+  const content = scene.content;
+
+  div.createDiv({ cls: "card-slot" }, (slot) => {
+    // Insertion gutter — click to insert a new scene before this card.
+    slot.createDiv(
+      {
+        cls: "insertion-gutter",
+        attr: { "data-insert-pos": String(scene.range.start) },
+      },
+      (gutter) => {
+        gutter.addEventListener("click", (evt: MouseEvent) => {
+          evt.stopPropagation();
+          callbacks.insertSceneAt(scene.range.start);
+        });
+      },
+    );
+
+    slot.createDiv(
       {
         cls: "screenplay-index-card",
         attr: {
@@ -364,6 +342,11 @@ function renderIndexCard(
       },
       (indexCard) => {
         installDragAndDropHandlers(path, callbacks, indexCard, scene.range);
+        // Click anywhere on the card → navigate to scene content in editor.
+        indexCard.addEventListener("click", () => {
+          callbacks.navigateToSceneContent(scene.range);
+        });
+
         indexCard.createDiv(
           {
             cls: "drag-handle",
@@ -371,21 +354,29 @@ function renderIndexCard(
           },
           (handle) => {
             setIcon(handle, "grip-vertical");
+            // Clicks on the grip shouldn't navigate; mousedown still
+            // initiates drag normally.
+            handle.addEventListener("click", (evt: MouseEvent) => {
+              evt.stopPropagation();
+            });
           },
         );
-        indexCard.createEl(
-          "h3",
+        indexCard.createEl("h3", {
+          cls: "scene-heading",
+          attr: dataRange(heading.range),
+          text: heading.heading,
+        });
+        indexCard.createDiv(
           {
-            cls: "scene-heading",
-            attr: dataRange(heading.range),
-            text: heading.heading,
+            cls: "pencil-button",
+            attr: { "aria-label": "Rename scene heading" },
           },
-          (headingEl) => {
-            headingEl.addEventListener("click", (_evt) => {
-              //callbacks.startReadingModeHere(scene.range);
+          (pencil) => {
+            setIcon(pencil, "pencil");
+            pencil.addEventListener("click", (evt: MouseEvent) => {
+              evt.stopPropagation();
               editSceneHeadingHandler(
                 indexCard,
-                path,
                 script,
                 heading.range,
                 callbacks,
@@ -393,48 +384,11 @@ function renderIndexCard(
             });
           },
         );
-        indexCard.createDiv({ cls: ["index-card-buttons"] }, (buttons) => {
-          buttons.createEl("button", { cls: "clickable-icon" }, (bt) => {
-            setIcon(bt, "ellipsis");
-            bt.addEventListener("click", (evt: MouseEvent) => {
-              const m = new Menu();
-              m.addItem((item) => {
-                item
-                  .setTitle("Copy")
-                  .setIcon("copy")
-                  .onClick(() => {
-                    callbacks.duplicateScene(scene.range);
-                    callbacks.requestSave();
-                    callbacks.reRender();
-                  });
-              });
-              m.addItem((item) => {
-                item
-                  .setTitle("Edit")
-                  .setIcon("edit")
-                  .onClick(() => {
-                    callbacks.startEditModeHere(scene.range);
-                  });
-              });
-              m.addItem((item) => {
-                item.setTitle("Delete").onClick(() => {
-                  callbacks.replaceText(scene.range, "");
-                  callbacks.requestSave();
-                  callbacks.reRender();
-                });
-              });
-
-              m.showAtMouseEvent(evt);
-            });
-          });
-        });
         renderSynopsis(
           indexCard,
-          path,
           script,
           scene.synopsis,
           heading.range.end,
-          callbacks,
           scene,
         );
         const todos = extractNotes(content).filter(
@@ -443,14 +397,15 @@ function renderIndexCard(
         for (const note of todos) {
           indexCard.createDiv({}, (div) => {
             styledTextToHtml(script, div, [note], {}, false);
-            div.addEventListener("click", () =>
-              callbacks.startEditModeHere(note.range),
-            );
+            div.addEventListener("click", (evt: MouseEvent) => {
+              evt.stopPropagation();
+              callbacks.startEditModeHere(note.range);
+            });
           });
         }
       },
     );
-  }
+  });
 }
 
 /** Render a section, that is a combination of a heading followed by all the
@@ -482,14 +437,7 @@ function renderSection(
     });
   }
   if (section.synopsis) {
-    renderSynopsis(
-      parent,
-      path,
-      script,
-      section.synopsis,
-      section.synopsis.range.start,
-      callbacks,
-    );
+    renderSynopsis(parent, script, section.synopsis, section.synopsis.range.start);
   }
   parent.createDiv({ cls: "screenplay-index-cards" }, (sectionDiv) => {
     for (const el of section.content) {
@@ -514,11 +462,8 @@ function renderSection(
       },
       (div) => {
         setIcon(div, "plus");
-        div.addEventListener("click", (evt: MouseEvent) => {
-          const r = section.range;
-          callbacks.replaceText(endOfRange(r), ".SCENE HEADING\n\n");
-          callbacks.requestSave();
-          callbacks.reRender();
+        div.addEventListener("click", (_evt: MouseEvent) => {
+          callbacks.insertSceneAt(endOfRange(section.range).start);
         });
       },
     );

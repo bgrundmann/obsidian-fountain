@@ -18,10 +18,11 @@ import {
   type ShowHideSettings,
   collapseRangeToStart,
   computeAddSceneNumberEdits,
-  computeDuplicateSceneEdits,
   computeMoveSceneAcrossFilesEdits,
   computeMoveSceneEdits,
   computeRemoveSceneNumberEdits,
+  findSceneAtOffset,
+  startOfSceneContent,
 } from "../fountain";
 import { parse } from "../fountain/parser";
 import { FuzzySelectString } from "../fuzzy_select_string";
@@ -44,7 +45,7 @@ export const VIEW_TYPE_FOUNTAIN = "fountain";
 /** Obsidian TextFileView for .fountain files, managing mode switching and document operations. */
 export class FountainView extends TextFileView {
   state: ViewState;
-  private readonlyViewState: ReadonlyViewPersistedState;
+  private readonlyViewState: FountainViewPersistedState;
   private toggleEditAction: HTMLElement;
   private showViewMenuAction: HTMLElement;
   private stopRehearsalModeAction: HTMLElement;
@@ -110,11 +111,40 @@ export class FountainView extends TextFileView {
       startReadingModeHere: (r) => this.state.scrollToHere(r),
       requestSave: () => this.requestSave(),
       replaceText: (r, s) => this.replaceText(r, s),
-      duplicateScene: (r) => this.duplicateScene(r),
+      navigateToSceneContent: (r) => this.navigateToSceneContent(r),
+      insertSceneAt: (pos) => this.insertSceneAt(pos),
       moveSceneAcross: (args) => this.moveSceneAcross(args),
       getText: (r) => this.getText(r),
       openLink: (target, event) => this.openLink(target, event),
     };
+  }
+
+  private navigateToSceneContent(sceneRange: Range): void {
+    const scene = findSceneAtOffset(this.cachedScript, sceneRange.start);
+    if (!scene) return;
+    const pos = startOfSceneContent(this.cachedScript, scene);
+    this.startEditModeHere({ start: pos, end: pos });
+  }
+
+  /** Insert a new `.SCENE HEADING` placeholder at `pos`, then auto-focus
+   *  the rename input on the freshly created card so the user can type
+   *  immediately. Used by the gutter and the dashed `+` card. */
+  private insertSceneAt(pos: number): void {
+    if (this.state instanceof ReadonlyViewState) {
+      this.state.schedulePostRender(() => this.focusNewCardHeading(pos));
+    }
+    this.applyEditsToFile([
+      { range: { start: pos, end: pos }, replacement: ".SCENE HEADING\n\n" },
+    ]);
+  }
+
+  private focusNewCardHeading(pos: number): void {
+    const card = this.contentEl.querySelector<HTMLElement>(
+      `.screenplay-index-card[data-range^="${pos},"]`,
+    );
+    if (!card) return;
+    const pencil = card.querySelector<HTMLElement>(".pencil-button");
+    pencil?.click();
   }
 
   /** Navigate to a `[[>target]]` link using Obsidian's standard link resolution. */
@@ -364,10 +394,6 @@ export class FountainView extends TextFileView {
     this.applyEditsToFile([{ range, replacement }]);
   }
 
-  duplicateScene(range: Range): void {
-    this.applyEditsToFile(computeDuplicateSceneEdits(this.cachedScript, range));
-  }
-
   /**
    * Move a scene from one file to another. When src and dst are the same
    * file the two edits are sent through a single `applyEditsToFile` call
@@ -446,6 +472,88 @@ export class FountainView extends TextFileView {
     }
     this.toggleEditAction.empty();
     setIcon(this.toggleEditAction, this.isEditMode() ? "book-open" : "edit");
+  }
+
+  /** ⌘⇧I — toggle the active fountain view between IndexCards and the
+   *  prior non-cards mode (edit or readonly Script). Position is preserved
+   *  across the trip per design/improved_index_card_view.md §1. */
+  toggleIndexCardsView(): void {
+    if (
+      this.state instanceof ReadonlyViewState &&
+      this.state.pstate.mode === ShowMode.IndexCards
+    ) {
+      // Cards → non-cards.
+      const target = this.state.firstVisibleCardRange();
+      const scene = target
+        ? findSceneAtOffset(this.cachedScript, target.start)
+        : null;
+      const wasEditing = this.readonlyViewState.editing ?? false;
+      // Drop cards mode in the persisted state so the readonly side
+      // remembers Script (next ⌘E from edit mode should land in Script).
+      this.state.pstate = { ...this.state.pstate, mode: ShowMode.Script };
+
+      if (wasEditing) {
+        this.switchToEditMode();
+        if (scene) {
+          const pos = startOfSceneContent(this.cachedScript, scene);
+          this.scrollToHere({ start: pos, end: pos });
+        }
+      } else {
+        this.state.render();
+        if (scene?.scene) {
+          this.state.scrollToHere(scene.scene.range);
+        }
+      }
+      this.app.workspace.requestSaveLayout();
+      return;
+    }
+
+    // Non-cards → cards.
+    let offset = 0;
+    if (this.state instanceof EditorViewState) {
+      offset = this.state.cursorOffset();
+    } else {
+      const firstLine = this.state.rangeOfFirstVisibleLine();
+      offset = firstLine?.start ?? 0;
+    }
+    const scene = findSceneAtOffset(this.cachedScript, offset);
+    const cameFromEdit = this.state.isEditMode;
+
+    this.readonlyViewState = {
+      ...this.readonlyViewState,
+      editing: cameFromEdit,
+      mode: ShowMode.IndexCards,
+    };
+
+    if (cameFromEdit) {
+      // Inline editor → readonly switch. Going via `toggleEditMode()`
+      // would auto-scroll to the editor's first-visible line, which
+      // (in IndexCards mode) flips back to Script via
+      // `ReadonlyViewState.scrollToHere`. We pick our own scroll target
+      // (the scene-under-cursor card), so we skip that path.
+      this.showViewMenuAction.show();
+      this.state.destroy();
+      this.state = this.createReadonlyState(
+        this.readonlyViewState,
+        this.file?.path ?? "",
+      );
+      this.state.render();
+      this.toggleEditAction.empty();
+      setIcon(this.toggleEditAction, "edit");
+    } else if (this.state instanceof ReadonlyViewState) {
+      this.state.setPersistentState(this.readonlyViewState);
+    }
+
+    if (scene?.scene) {
+      const start = scene.scene.range.start;
+      requestAnimationFrame(() => {
+        const cardEl = this.contentEl.querySelector(
+          `.screenplay-index-card[data-range^="${start},"]`,
+        );
+        cardEl?.scrollIntoView();
+      });
+    }
+    this.app.workspace.requestSaveLayout();
   }
 
   onLoadFile(file: TFile): Promise<void> {

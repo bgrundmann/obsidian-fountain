@@ -543,20 +543,74 @@
 	border: 1px dashed #ccc;
 }
 
-.show-on-hover {
-	opacity: 0;
-	transition: opacity 0.2s ease-in-out;
+.screenplay-index-card { cursor: pointer; }
+
+.screenplay-index-card .pencil-button {
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--text-faint);
+	border-radius: 3px;
+	cursor: pointer;
+	opacity: 0.35;
+	transition: opacity 0.15s ease, color 0.15s ease,
+		background-color 0.15s ease;
 }
 
-.show-on-hover:hover {
+.screenplay-index-card:hover .pencil-button {
 	opacity: 1;
 }
 
-.index-card-buttons {
+.screenplay-index-card .pencil-button:hover {
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover);
+}
+
+.screenplay-index-card .pencil-button .svg-icon {
+	width: 14px;
+	height: 14px;
+}
+
+.card-slot {
+	position: relative;
+}
+
+.insertion-gutter {
 	position: absolute;
-	top: 10px;
-	right: 10px;
-	padding: 0;
+	inset-block: 0;
+	width: 10px;
+	left: -5px;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	opacity: 0;
+	transition: opacity 0.15s ease;
+}
+
+.insertion-gutter::before {
+	content: "";
+	position: absolute;
+	inset-block: 8px;
+	inset-inline: 3.5px;
+	background: var(--interactive-accent);
+	border-radius: 2px;
+}
+
+.insertion-gutter:hover {
+	opacity: 1;
+}
+
+.screenplay-index-cards.dragging-active .insertion-gutter {
+	pointer-events: none;
+	opacity: 0;
+	transition: none;
 }
 
 .screenplay-index-card .drag-handle {
@@ -618,7 +672,7 @@
 		var(--font-monospace);
 	margin-top: 0;
 	margin-left: 18px;
-	margin-right: 0;
+	margin-right: 36px;
 	margin-bottom: 8px;
 	/* padding: 8px; */
 }
@@ -634,20 +688,6 @@
 		var(--screenplay-font), "Courier Final Draft", "Courier",
 		var(--font-monospace);
 	font-size: 11px;
-}
-
-.screenplay-index-card textarea {
-	font-size: 11px;
-	flex: 1;
-	resize: none;
-}
-
-.screenplay-index-card .edit-buttons {
-	margin-top: 4px;
-	margin-bottom: 0;
-	justify-content: flex-end;
-	display: flex;
-	gap: 10px;
 }
 
 .screenplay-index-card .note-todo {

@@ -4,7 +4,6 @@ import {
   type FountainScript,
   type SceneHeading,
   applyEdits,
-  computeDuplicateSceneEdits,
   computeMoveSceneAcrossFilesEdits,
   computeMoveSceneEdits,
 } from "../src/fountain";
@@ -95,31 +94,6 @@ describe("computeMoveSceneEdits", () => {
       "INT. HOUSE - DAY",
       "EXT. PARK - NIGHT",
     ]);
-  });
-});
-
-describe("computeDuplicateSceneEdits", () => {
-  test("duplicates a scene immediately after itself", () => {
-    const script = parse(THREE_SCENES, {});
-    const second = sceneRange(script, 1);
-    const edits = computeDuplicateSceneEdits(script, second);
-    const reparsed = parse(applyEdits(script.document, edits), {});
-    expect(sceneHeadings(reparsed)).toEqual([
-      "INT. HOUSE - DAY",
-      "EXT. PARK - NIGHT",
-      "EXT. PARK - NIGHT",
-      "INT. CAR - DAY",
-    ]);
-  });
-
-  test("adds a blank line before the duplicate when the source lacks one", () => {
-    const withoutTrailer =
-      "INT. HOUSE - DAY\n\nAction.\n\nEXT. PARK - NIGHT\n\nMore action.";
-    const script = parse(withoutTrailer, {});
-    const second = sceneRange(script, 1);
-    const edits = computeDuplicateSceneEdits(script, second);
-    const reparsed = parse(applyEdits(script.document, edits), {});
-    expect(reparsed.script.filter(isScene)).toHaveLength(3);
   });
 });
 
