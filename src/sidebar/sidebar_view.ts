@@ -233,7 +233,7 @@ class TocSection extends SidebarSection {
           );
           tocControls.createEl("label", {
             attr: { for: "synopsis" },
-            text: "preview?",
+            text: "synopsis?",
           });
         });
 
@@ -387,7 +387,7 @@ export class FountainSideBarView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Table of contents of fountain script";
+    return "Fountain Outline";
   }
 
   getIcon(): string {

@@ -426,7 +426,7 @@
 	font-style: italic;
 	background-image: linear-gradient(
 		transparent 70%,
-		rgba(243, 245, 39, 0.4) 70%
+		rgba(var(--color-yellow-rgb), 0.4) 70%
 	);
 }
 
@@ -562,19 +562,36 @@
 }
 
 .screenplay-index-card {
-	border: 1px solid #ccc;
+	border: 1px solid var(--background-modifier-border);
 	padding: 10px;
 	height: 160px;
 	background-color: var(--background-primary-alt);
-	border-radius: 8px;
+	border-radius: var(--radius-m);
 	overflow: hidden;
 	position: relative;
 	display: flex;
 	flex-direction: column;
 }
 
+/* Fade the bottom edge into the card background to signal truncation
+   when content overflows. Invisible on under-filled cards because the
+   gradient ends in the same color as the background it sits on. */
+.screenplay-index-card:not(.dashed)::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 24px;
+	background: linear-gradient(
+		transparent,
+		var(--background-primary-alt)
+	);
+	pointer-events: none;
+}
+
 .screenplay-index-card.dashed {
-	border: 1px dashed #ccc;
+	border: 1px dashed var(--background-modifier-border);
 }
 
 .screenplay-index-card { cursor: pointer; }
@@ -772,7 +789,7 @@
 	margin: 5px;
 	background-image: linear-gradient(
 		transparent 70%,
-		rgba(243, 245, 39, 0.4) 70%
+		rgba(var(--color-yellow-rgb), 0.4) 70%
 	);
 }
 
