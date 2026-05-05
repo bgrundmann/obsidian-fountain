@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.30.1] - Link Completion While Editing
+
+- **Edit-aware `[[>...]]` completion**: Completing inside an existing `[[>oldname]]` (or `[[>oldname|My Display]]`) now replaces the whole linktext cleanly. Picking a candidate consumes the trailing `]]` (and any `|alias`), so you no longer end up with `[[>NewName]]]]` or stray alias text. The completion popup also appears while the cursor sits inside a closed link — previously typing inside `[[>partial]]` to point it elsewhere produced no suggestions.
+- **Anchors at the most recent `[[>`**: When two `[[>` openings sit on the same line, completion now fires for the one nearest the cursor instead of treating everything back to the first opener as one prefix.
+- **Internal**: The wider replacement (eating `|alias` and `]]`) moved into a per-option `apply` function so CodeMirror's filter pattern stays bounded to what the user has typed; widening `result.to` past the cursor poisoned the fuzzy match and was the root cause of the "popup never appears" symptom. New unit tests in `__tests__/link_completion.test.ts` cover the editing scenarios and lock in `result.to <= cursor` as a regression guard.
+
 ## [0.30.0] - Index Card UX Overhaul
 
 The index card view is now a *structural* read on your script — a map you can rearrange. Operations that change the *shape* of the outline (navigation, reorder, rename, insert) live on the cards; operations that change scene *contents* (synopsis text, dialogue, action) live in the editor. The toggle between them is the most important affordance.
