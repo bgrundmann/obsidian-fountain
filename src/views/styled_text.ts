@@ -74,6 +74,8 @@ function renderTextElement(
       return true;
 
     case "note": {
+      if (settings.hideNotes) return false;
+
       if (isLinkNote(el)) {
         const { target, displayText } = parseLinkContent(
           script.sliceDocument(el.textRange),
@@ -90,8 +92,6 @@ function renderTextElement(
         );
         return true;
       }
-
-      if (settings.hideNotes) return false;
 
       const markerWord = extractMarginMarker(el);
       if (markerWord !== null) {

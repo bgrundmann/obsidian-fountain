@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.31.0] - Links Follow "Hide Notes"
+
+- **`[[>...]]` links now obey the note-visibility toggle**: Both the PDF dialog's **Hide notes** option and the reading view's note toggle treat link display text the same as any other note. With notes visible the link label still renders inline as plain text (exactly as before); with notes hidden the whole link disappears. A clean shooting-script export shouldn't carry authorial cross-references, and a `>` note is still a note — making links a carve-out was the inconsistency. Design rationale in `design/links.md`.
+- **Migration note**: `[[>kitchen|kitchen]]`-style inline content links will now leave a gap in hide-notes PDFs. Use plain prose for words you want in the printed script and reserve `[[>...]]` for navigation annotation.
+
 ## [0.30.1] - Link Completion While Editing
 
 - **Edit-aware `[[>...]]` completion**: Completing inside an existing `[[>oldname]]` (or `[[>oldname|My Display]]`) now replaces the whole linktext cleanly. Picking a candidate consumes the trailing `]]` (and any `|alias`), so you no longer end up with `[[>NewName]]]]` or stray alias text. The completion popup also appears while the cursor sits inside a closed link — previously typing inside `[[>partial]]` to point it elsewhere produced no suggestions.

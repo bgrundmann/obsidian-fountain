@@ -189,29 +189,34 @@ describe("Links", () => {
   });
 
   describe("hideNotes interaction", () => {
-    it("keeps link notes when hideNotes is on", () => {
+    it("removes link notes alongside plain notes when hideNotes is on", () => {
       const script = parse(
         "Action with [[a regular note]] and [[>a-link]] inline.",
       );
       const filtered = script.withHiddenElementsRemoved({ hideNotes: true });
-      const links = extractLinks(filtered.script);
-      expect(links).toHaveLength(1);
-      expect(filtered.sliceDocument(links[0].textRange)).toBe("a-link");
+      expect(extractLinks(filtered.script)).toHaveLength(0);
 
-      // The plain note should be gone
-      let plainNoteFound = false;
+      let anyNoteFound = false;
       for (const el of filtered.script) {
         if (el.kind === "action") {
           for (const line of el.lines) {
             for (const tel of line.elements) {
-              if (tel.kind === "note" && tel.noteKind !== ">") {
-                plainNoteFound = true;
-              }
+              if (tel.kind === "note") anyNoteFound = true;
             }
           }
         }
       }
-      expect(plainNoteFound).toBe(false);
+      expect(anyNoteFound).toBe(false);
+    });
+
+    it("keeps link notes when hideNotes is off", () => {
+      const script = parse(
+        "Action with [[a regular note]] and [[>a-link]] inline.",
+      );
+      const filtered = script.withHiddenElementsRemoved({ hideNotes: false });
+      const links = extractLinks(filtered.script);
+      expect(links).toHaveLength(1);
+      expect(filtered.sliceDocument(links[0].textRange)).toBe("a-link");
     });
   });
 });

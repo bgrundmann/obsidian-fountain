@@ -191,9 +191,11 @@ export function extractStyledSegments(
         break;
       }
       case "note": {
-        // Links render as plain inline text regardless of hideNotes, since
-        // they are content rather than authorial notes.
+        // Links are notes (`noteKind = ">"`) and follow `hideNotes`. When
+        // notes are visible the link's display label (or target) renders
+        // as plain inline text — the PDF can't be clicked anyway.
         if (isLinkNote(element as Note)) {
+          if (options.hideNotes) break;
           const { target, displayText } = parseLinkContent(
             document.substring(element.textRange.start, element.textRange.end),
           );

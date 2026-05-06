@@ -661,9 +661,8 @@ function generateSceneInstructions(
 /**
  * Generates instructions for a synopsis. Synopsis text renders italic +
  * gray; inline `**bold**` etc. layer on top of the italic+gray base, so
- * a `**bold**` segment becomes bold-italic-gray. Notes follow the same
- * `hideNotes` rules as elsewhere; `[[>...]]` link display text renders
- * inline as plain text.
+ * a `**bold**` segment becomes bold-italic-gray. Notes (including
+ * `[[>...]]` link notes) follow the same `hideNotes` rules as elsewhere.
  */
 function generateSynopsisInstructions(
   instructions: Instruction[],

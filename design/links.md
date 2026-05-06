@@ -18,6 +18,28 @@ Targets follow Obsidian's wiki-link conventions (with or without
 extension, `|` separates display text). External URLs and section
 anchors are out of scope for v1.
 
+## How links render
+
+A `[[>target]]` is a Fountain note with `noteKind = ">"`, and it
+follows the same visibility rule as every other note:
+
+- **PDF export**: with `Hide notes` on, links are omitted entirely.
+  With `Hide notes` off, the link's display label (or the target name
+  if no `|display` was given) is rendered as plain inline text.
+- **Reading view**: under the reading-view note-visibility toggle, the
+  same rule applies — links render as clickable styled text when notes
+  are visible, and disappear when notes are hidden.
+
+This is the simple consistent rule, and it follows from the grammar
+choice: a `>` note is still a note. The corollary is that `[[>...]]`
+is a *navigation annotation*, not a way to inject inline prose into
+the printed script. Writing `[[>kitchen|kitchen]]` to make the word
+"kitchen" clickable inside an action line will leave a gap when the
+user generates a clean PDF — the cleaner pattern is plain prose plus
+filename-based automatic linking (see Deferred features) so the
+visible text is content and the linkage is layered on top by the
+plugin.
+
 ## Why no backlinks / graph-view integration
 
 Obsidian's `metadataCache` is built for `.md` files. There is no public
@@ -90,46 +112,24 @@ resolution from filenames (see Deferred features).
   `>` form by detecting `://`-style targets, but no compelling use
   case yet.
 
-### Embedded links — `[[!>target]]`
+## Embeds (unsettled)
 
-Parallel to Obsidian's `![[...]]`. New `noteKind` prefix `!>`
-alongside `>`; one-line grammar change plus an `extractEmbeds` helper.
+There is no embed feature today; this is sketch-level thinking, not a
+spec. A `[[!>target]]` form parallel to Obsidian's `![[...]]` would be
+the natural way to splice referenced content into a script — a
+fountain file inlined as if written at the embed site, a markdown
+note rendered in place, an image scaled to the printable region. The
+grammar cost is small (a new `noteKind`).
 
-**Per target type:**
-- **Fountain** — splice the referenced script's content inline, as if
-  it had been written at the embed site. Strip the title page, strip
-  the boneyard, drop the `# Snippets` section (an authoring artifact,
-  not script content). Recursively resolve the embed's own links and
-  embeds, with a cycle guard (visited set keyed by resolved path);
-  render an inline error if a cycle is detected.
-- **Markdown** — render via `MarkdownRenderer.render` inside the
-  embed frame.
-- **Images** — render at the page content width (page width minus
-  margins). Reading view: `width: 100%` of the embed container. PDF:
-  printable region width, aspect-ratio preserved, capped at the
-  printable page height so a tall image doesn't force a multi-page
-  split.
-- **Anything else** (PDFs, audio, etc.) — fall back to rendering as a
-  plain `[[>...]]` link.
+Beyond that, the design is open. Among the questions a real design
+pass would have to answer: what to strip from an embedded fountain
+file (title page, boneyard, `# Snippets`); how recursive embeds and
+cycles are detected and reported; whether the scene-numbering command
+descends into embeds and writes back through `applyEditsToFountainFile`;
+whether embeds should track `hideNotes` or have their own visibility
+toggle, given that they carry script content rather than authorial
+annotation; and whether `[[>...]]` references to an embedded target
+should be promoted to clickable intra-PDF GoTo annotations once a
+Named Destination exists at the embed site.
 
-**Reading view chrome:** fold/collapse toggle, no max-height. Each
-embed is its own foldable block.
-
-**Editor view:** show the literal `[[!>...]]` text, consistent with
-how `[[>...]]` is shown today. No inline preview in the editor — the
-reading-view fold is enough.
-
-**Scene numbers:** stage 1 does nothing special. Embedded fountain
-scenes carry whatever number text they already have (or none); the
-scene-numbering command treats embeds as opaque. A future change can
-make the numbering command descend into embeds and write back to the
-referenced files via `applyEditsToFountainFile`, which is the
-"what-you'd-expect" behaviour but mutates other files and so wants
-its own design pass.
-
-**Clickable PDF annotations** become useful once embeds exist: the
-embed site emits a Named Destination, and any `[[>...]]` reference to
-the same target is rendered as an intra-PDF GoTo annotation
-(`pdf-lib` supports both). Plain `[[>...]]` without a corresponding
-embed continues to render as display text only — a clickable link to
-a `.md` file the reader doesn't have is dead weight.
+Resolving these belongs to its own design document, not this one.

@@ -1041,6 +1041,52 @@ MARY
       );
       expect(marginInstruction).toBeDefined();
     });
+
+    test("should hide link display text when hideNotes is true", () => {
+      const script = parser.parse(
+        "JANE walks into [[>kitchen|the kitchen]].",
+      );
+
+      const instructions = generateInstructions(script, {
+        sceneHeadingBold: false,
+        paperSize: "letter",
+        hideNotes: true,
+        hideSynopsis: false,
+        hideMarginMarks: false,
+      });
+
+      const textInstructions = instructions.filter(
+        (inst) => inst.type === "text",
+      ) as TextInstruction[];
+
+      const linkInstruction = textInstructions.find((inst) =>
+        inst.data.includes("kitchen"),
+      );
+      expect(linkInstruction).toBeUndefined();
+    });
+
+    test("should show link display text when hideNotes is false", () => {
+      const script = parser.parse(
+        "JANE walks into [[>kitchen|the kitchen]].",
+      );
+
+      const instructions = generateInstructions(script, {
+        sceneHeadingBold: false,
+        paperSize: "letter",
+        hideNotes: false,
+        hideSynopsis: false,
+        hideMarginMarks: false,
+      });
+
+      const textInstructions = instructions.filter(
+        (inst) => inst.type === "text",
+      ) as TextInstruction[];
+
+      const linkInstruction = textInstructions.find((inst) =>
+        inst.data.includes("kitchen"),
+      );
+      expect(linkInstruction).toBeDefined();
+    });
   });
 });
 

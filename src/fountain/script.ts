@@ -346,9 +346,6 @@ export class FountainScript {
   ): boolean {
     switch (element.kind) {
       case "note":
-        // Link notes (`[[>...]]`) are content, not authorial notes; keep them
-        // even when hideNotes is on.
-        if (element.noteKind === ">") return true;
         return !settings.hideNotes;
       case "boneyard":
         return !settings.hideBoneyard;

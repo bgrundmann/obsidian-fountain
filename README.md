@@ -193,7 +193,7 @@ The target is resolved the same way as Obsidian's wiki-links — by basename or 
 
 - **Reading view**: Links render as styled, clickable text. Click to navigate; Mod/Ctrl-click opens in a new tab.
 - **Editor**: Links are syntax-highlighted to stand out from plain notes. Typing `[[>` triggers autocomplete with vault file names — pick one and the closing `]]` is added for you.
-- **PDF export**: Links render inline as plain text (the display text if present, otherwise the target name). Hidden when their containing element is hidden (e.g. a link inside a synopsis is omitted when synopses are hidden).
+- **PDF export**: Links are notes (a Fountain `[[ ]]` with a `>` prefix), so they follow the **Hide notes** option in the PDF dialog. With **Hide notes** off, the link's display text (or target name) renders inline as plain text. With **Hide notes** on, links are omitted along with every other note. Use plain prose if you want the word to remain in a notes-hidden export.
 - **Rename**: When a linked file is renamed, every `[[>...]]` in your fountain files is updated automatically — preserving the form you originally used (basename vs full path, with/without extension).
 
 ### Limitations
