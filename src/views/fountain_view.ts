@@ -667,26 +667,30 @@ export class FountainView extends TextFileView {
     return this.state.getViewData();
   }
 
+  /** Obsidian-initiated reload of THIS view only (initial load, or a
+   *  vault-modify on the file while this view wasn't the one saving).
+   *  Must never write to sibling views: Obsidian delivers a separate
+   *  setViewData to every non-saving view, and when a sibling's autosave
+   *  triggers this, `data` is a snapshot that can be stale relative to an
+   *  actively-typed editor — fanning it out clobbered the editor's newest
+   *  keystrokes and reset its cursor (issue #36). Live cross-view sync is
+   *  onUserEdit's job; programmatic edits go through the edit pipeline. */
   setViewData(data: string, _clear: boolean): void {
     const path = this.file?.path;
     if (!path) return;
-    // Short-circuit if the data hasn't actually changed — Obsidian fires
-    // setViewData on all views of the same file when any one of them
-    // saves, and re-parsing every time would be wasteful.
-    if (this.cachedScript.document === data) {
-      // Still keep paths in sync on the first load, where the state was
-      // constructed with an empty path.
-      for (const view of findFountainViewsForPath(this.app, path)) {
-        view.state.setPath(path);
-      }
-      return;
-    }
-    const newScript = parse(data, {});
-    for (const view of findFountainViewsForPath(this.app, path)) {
-      view.cachedScript = newScript;
-      view.state.setPath(path);
-      view.state.receiveScript(newScript);
-    }
+    // Keep the path in sync on the first load, where the state was
+    // constructed with an empty path.
+    this.state.setPath(path);
+    if (this.cachedScript.document === data) return;
+    // Parse trees are the biggest structures we build, so reuse a
+    // sibling's when its document matches `data` — sound because a
+    // cachedScript is always exactly the parse of its own `document`
+    // (typically hits when an editor's autosave echoes back to us here).
+    const sibling = findFountainViewsForPath(this.app, path).find(
+      (v) => v.cachedScript.document === data,
+    );
+    this.cachedScript = sibling?.cachedScript ?? parse(data, {});
+    this.state.receiveScript(this.cachedScript);
   }
 
   getState(): Record<string, unknown> {
