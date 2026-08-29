@@ -602,6 +602,11 @@
 	background-color: var(--text-selection);
 }
 
+.theme-dark .screenplay .cm-selectionLayer .cm-selectionBackground {
+	background-color: var(--text-selection) !important;
+	opacity: 0.35 !important;
+}
+
 .screenplay.cm-editor:focus,
 .cm-editor.cm-focused {
 	outline: none !important;

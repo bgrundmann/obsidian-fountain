@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.34.3] - Two-Pane Typing No Longer Loses Keystrokes
+
+- **Fix**: With the same file open in two panes (e.g. editor beside index cards), typing in the editor no longer gets interrupted by the cursor jumping to the top of the file — which also silently rolled back the most recently typed words. Every autosave delivers a snapshot of the document to the sibling pane, and when typing continued during the write that snapshot was stale; the sibling's reload handler then broadcast the stale text back into the live editor, replacing its document wholesale. Reloads now update only the pane they were delivered to (live cross-pane sync during typing was always handled separately and is unaffected). To avoid re-parsing on every autosave echo, a pane adopts a sibling's already-parsed script when the contents match. Reported in #36.
+- **Internal**: New `test/e2e/specs/two_pane_autosave.e2e.ts` reproduces the clobber deterministically by typing into the autosave's write window; it runs in its own Obsidian session because leftover debounced autosaves from sibling specs can mask the data loss.
+
 ## [0.34.2] - Forced Character Marker Hidden in Render
 
 - **Fix**: Forced character cues (`@KOOL-AID MAN`, `@McDonald`) no longer render the literal `@` in the preview, PDF, or the rehearsal/completion/removal character lists. The `@` is a parser-only hint per the Fountain spec; it now lives on a separate `Dialogue.forcedMarkerRange` (mirroring `caretRange`) while `characterRange` covers just the name, so every consumer that slices `characterRange` gets the displayable name for free. Reported in #31.
